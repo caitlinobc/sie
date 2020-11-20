@@ -34,13 +34,19 @@ length(files)
 # --------------------
 # Create a prep function to be run on facility-level weekly data
 
-f = 1
-
+for (f in seq(length(files))) {
+  
 # ------------------------------------
 # FORMAT AND PREP FACILITY LEVEL DATA 
 
 # read in the weekly facility level data 
+# most sheets appear to have three tabs but have an embedded fourth
 dt = data.table(read_excel(paste0(dir, files[f]), sheet=3))
+
+
+
+if (length(dt[,dt$Region])==0) {
+  dt = data.table(read_excel(paste0(dir, files[f]), sheet=2)) }
 
 # strip the date from the file name and save as a vector
 file_name = gsub("weekly report ", "", tolower(files[f]))
@@ -61,8 +67,10 @@ if (grepl("53fy", file_name)==TRUE) { fiscal_yr = 20
 
 # --------------------
 # rename the correctly named columns
-original_names = c('Region', 'District', 'Facility Name', 'Tiers')
-setnames(dt, original_names, c('region', 'district', 'facility', 'tier'))
+# original_names = c('Region', 'District', 'Facility Name', 'Tier')
+# setnames(dt, original_names, c('region', 'district', 'facility', 'tier'))
+
+setnames(dt, 1:4, c('region', 'district', 'facility', 'tier'))
 
 # drop the totals row and save for quality check
 tot_rows = dt[ ,.N]
@@ -147,6 +155,19 @@ dt_long[fiscal_yr==20, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
 dt_long[fiscal_yr==21, 
         date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*week)]
 
+# add file name column for loop testing
+dt_long[ , file_name:=file_name]
+
+# --------------------
+# rbind the files together to create a complete data set
+if (f==1) { full_data = dt_long } else {
+  full_data = rbind(full_data, dt_long)
+}
+
+} # end of for loop
+
+
+# --------------------
 # shorten the indicator variable and alter to description
 
 # arrange columns in an intuitive order
