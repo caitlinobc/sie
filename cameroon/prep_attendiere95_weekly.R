@@ -40,13 +40,16 @@ for (f in seq(length(files))) {
 # FORMAT AND PREP FACILITY LEVEL DATA 
 
 # read in the weekly facility level data 
-# most sheets appear to have three tabs but have an embedded fourth
-dt = data.table(read_excel(paste0(dir, files[f]), sheet=3))
+file_name = files[f]
 
+#list the sheets to extract the tab by name
+sheets = excel_sheets(file_name)
+if (any(grepl("Littoral_Report", sheets))==T) sheet_name = "Littoral_Report"
+if (any(grepl("SouthSite_Report", sheets))==T) sheet_name = "SouthSite_Report"
+if (any(grepl("SITE Weekly", sheets))==T) sheet_name = "SITE Weekly"
 
-
-if (length(dt[,dt$Region])==0) {
-  dt = data.table(read_excel(paste0(dir, files[f]), sheet=2)) }
+# import the correct facility level sheet by name
+dt = data.table(read_excel(paste0(dir, file_name), sheet = sheet_name))
 
 # strip the date from the file name and save as a vector
 file_name = gsub("weekly report ", "", tolower(files[f]))
@@ -67,12 +70,10 @@ if (grepl("53fy", file_name)==TRUE) { fiscal_yr = 20
 
 # --------------------
 # rename the correctly named columns
-# original_names = c('Region', 'District', 'Facility Name', 'Tier')
-# setnames(dt, original_names, c('region', 'district', 'facility', 'tier'))
+original_names = c('Region', 'District', 'Facility Name', 'Tiers')
+setnames(dt, original_names, c('region', 'district', 'facility', 'tier'))
 
-setnames(dt, 1:4, c('region', 'district', 'facility', 'tier'))
-
-# drop the totals row and save for quality check
+# drop the totals row and save for quality check (last row)
 tot_rows = dt[ ,.N]
 tot_check = dt[tot_rows]
 dt = dt[-tot_rows] 
@@ -165,7 +166,6 @@ if (f==1) { full_data = dt_long } else {
 }
 
 } # end of for loop
-
 
 # --------------------
 # shorten the indicator variable and alter to description
