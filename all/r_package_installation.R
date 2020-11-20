@@ -1,0 +1,35 @@
+# ----------------------------------------------
+# Caitlin O'Brien-Carelli
+#
+# 11/19/20
+# List of packages to install to set up R
+# ----------------------------------------------
+
+# ------------------------
+# install packages to use in R
+
+# packages to import and export data
+install.packages('openxlsx')
+install.packages('readxl')
+install.packages('xlsx')
+
+# key packages for munging and visualization
+install.packages('data.table')
+install.packages('liquidate')
+install.packages('tidyr')
+install.packages('plyr')
+install.packages('dplyr')
+install.packages('zoo')
+install.packages('stringr')
+install.packages('ggplot2')
+
+# mapping packages
+install.packages('maptools')
+install.packages('raster')
+
+# webscrape packages
+install.packages('jsonlite')
+install.packages('httr')
+
+
+# ------------------------
