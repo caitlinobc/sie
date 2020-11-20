@@ -3,14 +3,16 @@
 #
 # 11/19/20
 # Cleaning and prep file for Attendiere 95 weekly data 
+# Uses the weekly reporting tab at the site (facility) level
 # ----------------------------------------------
 
 # --------------------
 # Set up R
 
-rm(list=ls())
+rm(list=ls()) # clear the workspace
 library(readxl)
 library(data.table)
+library(lubridate)
 library(plyr)
 library(dplyr)
 library(tidyr)
@@ -32,7 +34,7 @@ length(files)
 # --------------------
 # Create a prep function to be run on facility-level weekly data
 
-f = 5
+f = 1
 
 # ------------------------------------
 # FORMAT AND PREP FACILITY LEVEL DATA 
@@ -85,7 +87,7 @@ vec[ ,variable:=NULL]
 vec[ , value:= na.locf(value, na.rm = F)]
 vec[ , placehold:=seq(from = 1, to = nrow(vec))]
 
-# shape wind to attach to the data set and subset to filled rows
+# shape the data wide to attach to the data set and subset to filled rows
 vec_wide = dcast(vec,region+district+facility+tier~placehold, value.var = 'value')
 alt = rbind(alt, vec_wide, use.names = F) }
 alt = alt[-(1:3)]
@@ -119,7 +121,7 @@ dt = dt[-(1:3)]
 dt_long = melt(dt, id.vars = IDvars)
 dt_long[,variable:=trimws(variable, which = "both")] #ensure no excess white space
 
-# create age, sex, indicator variables
+# create sex, age, indicator variables
 dt_long[grepl('M$', dt_long$variable)==T, sex:='Male']
 dt_long[grepl('F$', dt_long$variable)==T, sex:='Female']
 
@@ -132,20 +134,25 @@ dt_long$variable = unlist(lapply(strsplit(dt_long$variable,
 
 # format the tier variable
 dt_long[ , tier:=gsub('Tiers', '', tier)]
-dt_long[ ,tier:=as.numeric(as.character(tier))]
+dt_long[ , tier:=as.numeric(as.character(tier))]
 
 # --------------------
-# strip the date from the file name
+# create a date using information stripped from the file name
+dt_long[ , week:=start_week]
+dt_long[ , fiscal_yr:=fiscal_yr]
 
-
+# calculate dates as seven days from the first monday in fiscal year 21
+# in other words, monday, sept. 28 as october 1 was on thursday
+dt_long[fiscal_yr==20, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
+dt_long[fiscal_yr==21, 
+        date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*week)]
 
 # shorten the indicator variable and alter to description
 
-
+# arrange columns in an intuitive order
 
 # save as rds
 
-# run function on sud
 
 
 

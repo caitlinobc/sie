@@ -15,7 +15,7 @@ install.packages('xlsx')
 
 # key packages for munging and visualization
 install.packages('data.table')
-install.packages('liquidate')
+install.packages('lubridate')
 install.packages('tidyr')
 install.packages('plyr')
 install.packages('dplyr')
