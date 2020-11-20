@@ -32,11 +32,30 @@ length(files)
 # --------------------
 # Create a prep function to be run on facility-level weekly data
 
+f = 5
+
 # ------------------------------------
 # FORMAT AND PREP FACILITY LEVEL DATA 
 
 # read in the weekly facility level data 
-dt = data.table(read_excel(paste0(dir, files[1]), sheet=3))
+dt = data.table(read_excel(paste0(dir, files[f]), sheet=3))
+
+# strip the date from the file name and save as a vector
+file_name = gsub("weekly report ", "", tolower(files[f]))
+file_name = gsub(".xlsx", "", file_name)
+
+# the first week in fiscal year 2
+if (grepl("53fy", file_name)==TRUE) { fiscal_yr = 20
+  start_week = trimws(sapply(strsplit(file_name,"week"), "[", 2))
+  start_week = gsub("fy19","",start_week)
+  start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
+                                "", start_week, perl = TRUE)))
+  print(paste0("FY overlap week: FY", fiscal_yr, " Week ", start_week))
+   } else {fiscal_yr = 21 # refers to the fiscal year of the first day of the week
+  start_week = sapply(strsplit(file_name,"week"), "[", 2)
+  start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
+                        "", start_week, perl = TRUE)))
+  } 
 
 # --------------------
 # rename the correctly named columns
@@ -116,9 +135,13 @@ dt_long[ , tier:=gsub('Tiers', '', tier)]
 dt_long[ ,tier:=as.numeric(as.character(tier))]
 
 # --------------------
+# strip the date from the file name
+
+
+
 # shorten the indicator variable and alter to description
 
-# strip the date from the file name
+
 
 # save as rds
 
