@@ -31,6 +31,7 @@ setwd(dir)
 files = list.files('./', recursive=TRUE)
 length(files)
 
+f = 1
 # --------------------
 # Create a prep function to be run on facility-level weekly data
 
@@ -71,8 +72,7 @@ if (grepl("53fy", file_name)==TRUE) { fiscal_yr = 20
 
 # --------------------
 # rename the correctly named columns
-original_names = c('Region', 'District', 'Facility Name', 'Tiers')
-setnames(dt, original_names, c('region', 'district', 'facility', 'tier'))
+setnames(dt, 1:4,  c('region', 'district', 'facility', 'tier'))
 
 # drop the totals row and save for quality check (last row)
 tot_rows = dt[ ,.N]
@@ -104,7 +104,11 @@ alt = alt[-(1:3)]
 alt[ ,row:=seq(1:nrow(alt))] # drop the rows with NA included
 
 # --------------------
-# create collapsed identifiers with indicator, age, sex
+# for data that are not sex stratified, drop additional rows
+if (sheet_name=='SITE Weekly') alt = alt[-(2:3)]
+
+# --------------------
+# create collapsed identifiers with indicator, age, sex for sex stratified data
 alt_long = melt(alt, id.vars = c('region',
           'district', 'facility', 'tier', 'row')) # shape data long to paste
 alt_long[ , var_new:='p']
