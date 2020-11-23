@@ -39,8 +39,9 @@ dt[ ,tier:=factor(tier)]
 
 # store colors
 ratio_colors = brewer.pal(8, 'Spectral')
-blue_colors = brewer.pal(6, 'Blues')
-red_colors = brewer.pal(6, 'Reds')
+blues = brewer.pal(6, 'Blues')
+reds = brewer.pal(6, 'Reds')
+
 
 ladies = brewer.pal(11, 'RdYlBu')
 gents = brewer.pal(9, 'Purples')
@@ -77,23 +78,47 @@ ggplot(reg_fac, aes(x=region, y=facilities, fill=tier)) +
 # Number of facilities by district, tier: Sud
 ggplot(dist_fac[region=='Sud'], aes(x=district, y=facilities, fill=tier)) + 
   geom_bar(stat="identity") + 
-  scale_fill_manual(name='Tier', values=red_colors) + theme_minimal() +
+  scale_fill_manual(name='Tier', values=reds) + theme_minimal() +
   labs(title = "Number of health facilities by district: Sud", 
        x='District', y="Number of sites", 
        caption="Source: Attendiere 95 weekly reporting")
 
 # Number of facilities by district, tier: Littoral
-ggplot(dist_fac[region=='Sud'], aes(x=district, y=facilities, fill=tier)) + 
+ggplot(dist_fac[region=='Littoral'], aes(x=district, y=facilities, fill=tier)) + 
   geom_bar(stat="identity") + 
-  scale_fill_manual(name='Tier', values=red_colors) + theme_minimal() +
-  labs(title = "Number of health facilities by district: Sud", 
+  scale_fill_manual(name='Tier', values=blues) + theme_minimal() +
+  labs(title = "Number of health facilities by district: Littoral", 
        x='District', y="Number of sites", 
        caption="Source: Attendiere 95 weekly reporting")
 
 
 
 
+# --------------------
+# loop by indicator
 
+
+
+reg_loop = dt[ , .(value = sum(value)),
+         by = .(region, variable, date)]
+
+
+
+list_of_plots = NULL
+i=1
+
+for(v in unique(reg_loop$variable)) {
+
+  list_of_plots[[i]] = ggplot(reg_loop[variable==v], 
+    aes(x=date, y=value, color=factor(region), group=region)) + 
+    geom_point(size=0.5) + 
+    geom_line(alpha=0.5) + 
+    facet_wrap(~variable, scales='free_y') +
+    labs(title=v, x="Date (weekly)", y="Count", color="Region") + theme_bw()
+  
+  i=i+1
+
+}
 
 
 

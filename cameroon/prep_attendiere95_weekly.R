@@ -186,6 +186,7 @@ if (f==1) { full_data = dt_long } else {
 # --------------------
 # shorten the indicator variable and alter to description
 
+full_data[ , value:=as.numeric(as.character(value))]
 # --------------------
 # arrange columns in an intuitive order
 
