@@ -24,7 +24,8 @@ library(ggplot2)
 # Files and directories
 
 # set the working directory to the cameroon data
-dir = 'C:/Users/ccarelli/Documents/data/'
+dir = 'C:/Users/ccarelli/Documents/data/raw_att95_weekly/'
+OutDir = 'C:/Users/ccarelli/Documents/data/prepped/'
 setwd(dir)
 
 # list the files to be prepped
@@ -76,8 +77,7 @@ setnames(dt, 1:4,  c('region', 'district', 'facility', 'tier'))
 # drop the totals row and save for quality check (last row)
 tot_rows = dt[ ,.N]
 tot_check = dt[tot_rows]
-dt = dt[-tot_rows] 
-
+dt = dt[-tot_rows]
 # --------------------
 # replace values with preceding values in nested columns 
 
@@ -187,15 +187,25 @@ if (f==1) { full_data = dt_long } else {
 # shorten the indicator variable and alter to description
 
 full_data[ , value:=as.numeric(as.character(value))]
+
+# --------------------
+# fix minor data inconsistencies
+
+full_data[region=='South', region:='Sud']
+
+# some rows have double totals - ensure 'all' is not included
+full_data = full_data[region!='ALL']
+
 # --------------------
 # arrange columns in an intuitive order
 
 
 # --------------------
 # save as rds
-saveRDS(full_data, paste0(dir, 'prepped/cameroon_weekly_fy21.rds'))
+saveRDS(full_data, paste0(OutDir, 'cameroon_weekly_fy21.rds'))
 
 # --------------------
+# source file to check totals
 
 # ------------------------------------
 
