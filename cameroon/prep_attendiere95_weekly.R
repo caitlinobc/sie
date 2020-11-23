@@ -51,11 +51,12 @@ if (any(grepl("SITE Weekly", sheets))==T) sheet_name = "SITE Weekly"
 # import the correct facility level sheet by name
 dt = data.table(read_excel(paste0(dir, file_name), sheet = sheet_name))
 
+# --------------------
 # strip the date from the file name and save as a vector
 file_name = gsub("weekly report ", "", tolower(files[f]))
 file_name = gsub(".xlsx", "", file_name)
 
-# the first week in fiscal year 2
+# the first week of this data set begins in fiscal year 20
 if (grepl("53fy", file_name)==TRUE) { fiscal_yr = 20
   start_week = trimws(sapply(strsplit(file_name,"week"), "[", 2))
   start_week = gsub("fy19","",start_week)
@@ -170,14 +171,18 @@ if (f==1) { full_data = dt_long } else {
 # --------------------
 # shorten the indicator variable and alter to description
 
+# --------------------
 # arrange columns in an intuitive order
+
+
+# --------------------
 
 # save as rds
 
 
 
 
-
+View(full_data)
 
 
 
