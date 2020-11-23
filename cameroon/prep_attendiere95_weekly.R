@@ -31,7 +31,6 @@ setwd(dir)
 files = list.files('./', recursive=TRUE)
 length(files)
 
-f = 1
 # --------------------
 # Create a prep function to be run on facility-level weekly data
 
@@ -111,17 +110,26 @@ if (sheet_name=='SITE Weekly') alt = alt[-(2:3)]
 # create collapsed identifiers with indicator, age, sex for sex stratified data
 alt_long = melt(alt, id.vars = c('region',
           'district', 'facility', 'tier', 'row')) # shape data long to paste
-alt_long[ , var_new:='p']
+alt_long[ , variable:=as.character(variable)]
 
+# for data that are not sex stratified, create collapsed identifiers
+if (sheet_name=='SITE Weekly') {
+alt_long[ , var_temp:=shift(variable)]
+alt_long[value=="Adults ( 15+)" , var_replace:=paste0(variable, value)]
+alt_long[value=="Children ( <15)" , var_replace:=paste0(var_temp, value)] }
+
+# create collapsed identifiers for sex stratified data 
+if (sheet_name!='SITE Weekly') {
+alt_long[ , var_temp:='p']
 for (v in unique(alt_long$variable)) {
  x = as.character(paste(alt_long[variable==v, unique(value)],
                         collapse = " "))
- alt_long[variable==v]$var_new = x }
+ alt_long[variable==v]$var_temp = x }}
 
 # --------------------
 # create the list of new variable names for the data set
 IDvars = c('region', 'district', 'facility','tier')
-new_names = c(IDvars, (unique(alt_long$var_new)))
+new_names = c(IDvars, (unique(alt_long$var_replace)))
 
 # rename the variables
 setnames(dt, new_names)
@@ -131,7 +139,8 @@ setnames(dt, new_names)
 # FORMAT THE DATA FOR UNIQUE ROWS
 
 # shape data long 
-dt = dt[-(1:3)]
+if (sheet_name=='SITE Weekly') dt = dt[-(1)] # drop only first row
+if (sheet_name!='SITE Weekly') dt = dt[-(1:3)]
 dt_long = melt(dt, id.vars = IDvars)
 dt_long[,variable:=trimws(variable, which = "both")] #ensure no excess white space
 
@@ -145,7 +154,6 @@ dt_long[grepl('Child', dt_long$variable)==T, age:='Children (<15)']
 dt_long[ , variable:=gsub('Children', 'Adults', dt_long$variable)] #split on 'adults'
 dt_long$variable = unlist(lapply(strsplit(dt_long$variable,
                                           "Adults"), "[", 1))
-
 # format the tier variable
 dt_long[ , tier:=gsub('Tiers', '', tier)]
 dt_long[ , tier:=as.numeric(as.character(tier))]
@@ -183,7 +191,7 @@ if (f==1) { full_data = dt_long } else {
 
 # save as rds
 
-
+View(full_data)
 
 
 View(full_data)
