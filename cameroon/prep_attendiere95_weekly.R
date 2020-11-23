@@ -172,6 +172,9 @@ dt_long[fiscal_yr==21,
 # add file name column for loop testing
 dt_long[ , file_name:=file_name]
 
+# trim white space from variable names in early weeks
+dt_long[ ,variable:=trimws(variable, "both")]
+
 # --------------------
 # create a data set that checks if the totals remain the same
 
@@ -196,6 +199,9 @@ full_data[region=='South', region:='Sud']
 # some rows have double totals - ensure 'all' is not included
 full_data = full_data[region!='ALL']
 
+# set first week to one
+full_data[week==53, week:=1]
+full_data[week==53, fiscal_yr:=21]
 # --------------------
 # arrange columns in an intuitive order
 

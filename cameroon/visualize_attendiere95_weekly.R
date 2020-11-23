@@ -26,6 +26,9 @@ library(RColorBrewer)
 # set the working directory to the cameroon data
 dir = 'C:/Users/ccarelli/Documents/data/'
 
+# set output director
+OutDir = paste0(dir, 'outputs/')
+
 # import the prepped data shaped long
 dt = readRDS(paste0(dir, 'prepped/cameroon_weekly_fy21.rds'))
 
@@ -68,7 +71,7 @@ dist_fac = dt[ , .(facilities = length(unique(facility))),
                by = .(district, region, tier)] 
 
 # Number of facilities by region, tier
-ggplot(reg_fac, aes(x=region, y=facilities, fill=tier)) + 
+p1 = ggplot(reg_fac, aes(x=region, y=facilities, fill=tier)) + 
   geom_bar(stat="identity") + 
   scale_fill_manual(name='Tier', values=ratio_colors) + theme_minimal() +
   labs(title = "Total number of health facilities by region, tier", 
@@ -76,7 +79,7 @@ ggplot(reg_fac, aes(x=region, y=facilities, fill=tier)) +
        caption="Source: Attendiere 95 weekly reporting")
 
 # Number of facilities by district, tier: Sud
-ggplot(dist_fac[region=='Sud'], aes(x=district, y=facilities, fill=tier)) + 
+p2 = ggplot(dist_fac[region=='Sud'], aes(x=district, y=facilities, fill=tier)) + 
   geom_bar(stat="identity") + 
   scale_fill_manual(name='Tier', values=reds) + theme_minimal() +
   labs(title = "Number of health facilities by district: Sud", 
@@ -84,7 +87,7 @@ ggplot(dist_fac[region=='Sud'], aes(x=district, y=facilities, fill=tier)) +
        caption="Source: Attendiere 95 weekly reporting")
 
 # Number of facilities by district, tier: Littoral
-ggplot(dist_fac[region=='Littoral'], aes(x=district, y=facilities, fill=tier)) + 
+p3 = ggplot(dist_fac[region=='Littoral'], aes(x=district, y=facilities, fill=tier)) + 
   geom_bar(stat="identity") + 
   scale_fill_manual(name='Tier', values=blues) + theme_minimal() +
   labs(title = "Number of health facilities by district: Littoral", 
@@ -92,33 +95,62 @@ ggplot(dist_fac[region=='Littoral'], aes(x=district, y=facilities, fill=tier)) +
        caption="Source: Attendiere 95 weekly reporting")
 
 
-
-
 # --------------------
-# loop by indicator
+# LOOPS BY INDICATOR
 
 
-
+# loop through all indicators by region
 reg_loop = dt[ , .(value = sum(value)),
          by = .(region, variable, date)]
-
 
 
 list_of_plots = NULL
 i=1
 
 for(v in unique(reg_loop$variable)) {
-
+  
   list_of_plots[[i]] = ggplot(reg_loop[variable==v], 
-    aes(x=date, y=value, color=factor(region), group=region)) + 
+                              aes(x=date, y=value, color=factor(region), group=region)) + 
     geom_point(size=0.5) + 
     geom_line(alpha=0.5) + 
-    facet_wrap(~variable, scales='free_y') +
+    scale_color_manual(values = c('#b2182b', '#2166ac'))+
+    facet_wrap(~region, scales='free_y') +
     labs(title=v, x="Date (weekly)", y="Count", color="Region") + theme_bw()
   
   i=i+1
-
+  
 }
+
+pdf(paste0(OutDir, 'regional_indicators.pdf'), width = 12, height = 9)
+p1
+p2
+p3
+list_of_plots
+dev.off()
+
+
+
+# --------------------
+list_of_plots2 = NULL
+i=1
+
+
+
+
+for(v in unique(reg_loop$variable)) {
+  
+  list_of_plots2[[i]] = ggplot(reg_loop[variable==v], 
+                              aes(x=date, y=value, color=factor(region), group=region)) + 
+    geom_point(size=0.5) + 
+    geom_line(alpha=0.5) + 
+    scale_color_manual(values = c('#b2182b', '#2166ac'))+
+    labs(title=v, x="Date (weekly)", y="Count", color="Region") + theme_bw()
+  
+  i=i+1
+  
+}
+
+
 
 
 
