@@ -107,7 +107,7 @@ alt[ ,row:=seq(1:nrow(alt))] # drop the rows with NA included
 if (sheet_name=='SITE Weekly') alt = alt[-(2:3)]
 
 # --------------------
-# create collapsed identifiers with indicator, age, sex for sex stratified data
+# create collapsed identifiers with indicator, age, sex 
 alt_long = melt(alt, id.vars = c('region',
           'district', 'facility', 'tier', 'row')) # shape data long to paste
 alt_long[ , variable:=as.character(variable)]
@@ -120,11 +120,11 @@ alt_long[value=="Children ( <15)" , var_replace:=paste0(var_temp, value)] }
 
 # create collapsed identifiers for sex stratified data 
 if (sheet_name!='SITE Weekly') {
-alt_long[ , var_temp:='p']
+alt_long[ , var_replace:='p']
 for (v in unique(alt_long$variable)) {
  x = as.character(paste(alt_long[variable==v, unique(value)],
                         collapse = " "))
- alt_long[variable==v]$var_temp = x }}
+ alt_long[variable==v]$var_replace = x }}
 
 # --------------------
 # create the list of new variable names for the data set
@@ -173,6 +173,9 @@ dt_long[fiscal_yr==21,
 dt_long[ , file_name:=file_name]
 
 # --------------------
+# create a data set that checks if the totals remain the same
+
+# --------------------
 # rbind the files together to create a complete data set
 if (f==1) { full_data = dt_long } else {
   full_data = rbind(full_data, dt_long)
@@ -188,14 +191,10 @@ if (f==1) { full_data = dt_long } else {
 
 
 # --------------------
-
 # save as rds
+saveRDS(full_data, paste0(dir, 'prepped/cameroon_weekly_fy21.rds'))
 
-View(full_data)
+# --------------------
 
-
-View(full_data)
-
-
-
+# ------------------------------------
 

@@ -22,6 +22,7 @@ install.packages('dplyr')
 install.packages('zoo')
 install.packages('stringr')
 install.packages('ggplot2')
+install.packages('RColorBrewer')
 
 # mapping packages
 install.packages('maptools')
