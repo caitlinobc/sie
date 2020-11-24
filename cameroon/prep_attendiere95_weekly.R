@@ -202,6 +202,12 @@ full_data = full_data[region!='ALL']
 # set first week to one
 full_data[week==53, week:=1]
 full_data[week==53, fiscal_yr:=21]
+
+# --------------------
+#create and export alist of variables to examine
+
+var_list = full_data[ ,unique(variable)]
+
 # --------------------
 # arrange columns in an intuitive order
 

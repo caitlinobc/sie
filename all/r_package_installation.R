@@ -25,8 +25,10 @@ install.packages('ggplot2')
 install.packages('RColorBrewer')
 
 # mapping packages
+install.packages('Rtools')
 install.packages('maptools')
 install.packages('raster')
+install.packages('rgdal')
 
 # webscrape packages
 install.packages('jsonlite')
