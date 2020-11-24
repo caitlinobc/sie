@@ -207,7 +207,10 @@ full_data[week==53, fiscal_yr:=21]
 #create and export alist of variables to examine
 
 var_list = full_data[ ,unique(variable)]
+write.csv(var_list, paste0(OutDir, 'variables.csv'))
 
+# read in the categories and merge
+cats = read.table(paste0(OutDir, 'variables.csv'))
 # --------------------
 # arrange columns in an intuitive order
 
@@ -215,7 +218,6 @@ var_list = full_data[ ,unique(variable)]
 # --------------------
 # save as rds
 saveRDS(full_data, paste0(OutDir, 'cameroon_weekly_fy21.rds'))
-
 # --------------------
 # source file to check totals
 

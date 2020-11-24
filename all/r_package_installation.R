@@ -29,6 +29,8 @@ install.packages('Rtools')
 install.packages('maptools')
 install.packages('raster')
 install.packages('rgdal')
+install.packages('rgeos')
+install.packages('broom')
 
 # webscrape packages
 install.packages('jsonlite')

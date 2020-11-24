@@ -66,9 +66,17 @@ single_red = '#bd0026'
 # --------------------
 # import shape file 
 
-dist_coord = shapefile('gadm36_CMR_3.shp')
+reg_coord =  readRDS('gadm36_CMR_2_sp.rds')
+shape_names = cbind(reg_coord@data$NAME_1, reg_coord@data$GID_1)
+reg_coord= fortify(reg_coord)
+
+
+
+
+dist_coord = shapefile('gadm36_CMR_2.shp')
 dist_coord = fortify(dist_coord)
 
+dist_coord$id
 
 # ----------------------------------------------
 # VISUALIZE THE DATA 
