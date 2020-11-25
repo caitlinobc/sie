@@ -23,6 +23,7 @@ install.packages('zoo')
 install.packages('stringr')
 install.packages('ggplot2')
 install.packages('RColorBrewer')
+install.packages('gridExtra')
 
 # mapping packages
 install.packages('Rtools')
@@ -31,6 +32,7 @@ install.packages('raster')
 install.packages('rgdal')
 install.packages('rgeos')
 install.packages('broom')
+install.packages('ggrepel')
 
 # webscrape packages
 install.packages('jsonlite')
