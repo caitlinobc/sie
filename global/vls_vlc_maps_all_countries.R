@@ -64,17 +64,35 @@ country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
 # --------------------
 # fortify the shape file
 
-coord = data.table(fortify(shape, region = 'GID_2')) 
+# lesotho and swaziland do not have regions, only districts (admin-1)
+if (country %in% c('LSO', 'SWZ', 'COD')) {region_code = 'GID_1'
+ } else region_code = 'GID_2'
+
+# fortify
+coord = data.table(fortify(shape, region = region_code)) 
 coord[ , country:=country] # label the country of the shape file 
 
 # --------------------
 # bind all of the shape files together into a mapping data set
 if (i == 1) full_shape = coord
-if (1 <= i) full_shape = rbind(full_shape, coord)
+if (1 < i) full_shape = rbind(full_shape, coord)
 i = i+1
-}
+} # end of rbind loop
 
 # --------------------
+
+# -----------------------------------
+# rename the countries
+
+# names are in alphabetical order; convert to factor
+full_shape$country = factor(full_shape$country, 
+     c('Cote d\'Ivoire', 'Cameroon', 'Kenya', 'Lesotho', 
+       'Mozambique', 'Malawi', 'Swaziland', 'Tanzania', 'Uganda'))
+
+# -----------------------------------
+
+# --------------------
+# format the data and merge
 
 
 
