@@ -2,8 +2,8 @@
 # Caitlin O'Brien-Carelli
 #
 # 11/30/20
-# Initial visualizations of Cameroon Attendiere 95 weekly data
-# For testing and data quality checks
+# Visualize vira load coverage and suppression
+# All SIE supported countries for 12/7 data review
 # ----------------------------------------------
 
 # --------------------
@@ -45,18 +45,34 @@ OutDir = paste0(dir, 'outputs/')
 # --------------------
 # import the shape file, check, and fortify
 
-f = 'gadm36_CMR_3_sp.rds'
+# list the shape files
+files = list.files(paste0(dir, 'shape_files'))
 
+# loop through each shape file, fortify, and rbind
+i = 1
+for (f in files) {
+  
 shape = readRDS(f) # regional level
 plot(shape)
 
 # list and keep the names
 names = data.table(cbind(district = shape@data$NAME_2,
                               id = shape@data$GID_2))
+# add the country
+country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
+
 # --------------------
 # fortify the shape file
 
-coord = data.table(fortify(shape, region = 'GID_2'))
+coord = data.table(fortify(shape, region = 'GID_2')) 
+coord[ , country:=country] # label the country of the shape file 
+
+# --------------------
+# bind all of the shape files together into a mapping data set
+if (i == 1) full_shape = coord
+if (1 <= i) full_shape = rbind(full_shape, coord)
+i = i+1
+}
 
 # --------------------
 
