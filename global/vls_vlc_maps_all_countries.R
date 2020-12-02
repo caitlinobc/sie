@@ -89,14 +89,14 @@ i = i+1
 # names are in alphabetical order; convert to factor
 # convert both the aggregate shape file and district names
 full_shape$country = factor(full_shape$country, 
-    c('CMR', 'CIV','COD', 'KEN', 'LSO', 'MOZ', 'MWI', 'SWZ', 'TZA', 'UGA'),                        
-     c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
-       'Mozambique', 'Malawi', 'Eswatini', 'Tanzania', 'Uganda'))
+    c('CMR', 'CIV','COD', 'SWZ', 'KEN', 'LSO', 'MOZ', 'MWI', 'TZA', 'UGA'),                        
+     c('Cameroon','Cote d\'Ivoire', 'DRC', 'Eswatini', 'Kenya', 'Lesotho', 
+       'Mozambique', 'Malawi', 'Tanzania', 'Uganda'))
 
 full_names$country = factor(full_names$country, 
-   c('CMR', 'CIV','COD', 'KEN', 'LSO', 'MOZ', 'MWI', 'SWZ', 'TZA', 'UGA'),                        
-    c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
-    'Mozambique', 'Malawi', 'Eswatini', 'Tanzania', 'Uganda'))
+       c('CMR', 'CIV','COD', 'SWZ', 'KEN', 'LSO', 'MOZ', 'MWI', 'TZA', 'UGA'),                        
+       c('Cameroon','Cote d\'Ivoire', 'DRC', 'Eswatini', 'Kenya', 'Lesotho', 
+        'Mozambique', 'Malawi', 'Tanzania', 'Uganda'))
 
 
 # -----------------------------------
