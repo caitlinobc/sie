@@ -27,7 +27,7 @@ library(gridExtra)
 dir = 'C:/Users/ccarelli/Documents/data/'
 
 # set the working directory for the shape file
-setwd('C:/Users/ccarelli/Documents/data/shape_files')
+setwd('C:/Users/ccarelli/Documents/data/shape_files/')
 
 # set output director
 OutDir = paste0(dir, 'outputs/')
@@ -51,7 +51,7 @@ plot(shape)
 country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
 
 # list and keep the names
-if (country %in% c('LSO', 'SWZ')) { 
+if (country %in% c('LSO')) { 
   names = data.table(cbind(district = shape@data$NAME_1,
             id = shape@data$GID_1))
   } else names = data.table(cbind(district = shape@data$NAME_2,
@@ -91,12 +91,12 @@ i = i+1
 full_shape$country = factor(full_shape$country, 
     c('CMR', 'CIV','COD', 'KEN', 'LSO', 'MOZ', 'MWI', 'SWZ', 'TZA', 'UGA'),                        
      c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
-       'Mozambique', 'Malawi', 'Swaziland', 'Tanzania', 'Uganda'))
+       'Mozambique', 'Malawi', 'Eswatini', 'Tanzania', 'Uganda'))
 
 full_names$country = factor(full_names$country, 
    c('CMR', 'CIV','COD', 'KEN', 'LSO', 'MOZ', 'MWI', 'SWZ', 'TZA', 'UGA'),                        
     c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
-    'Mozambique', 'Malawi', 'Swaziland', 'Tanzania', 'Uganda'))
+    'Mozambique', 'Malawi', 'Eswatini', 'Tanzania', 'Uganda'))
 
 
 # -----------------------------------
