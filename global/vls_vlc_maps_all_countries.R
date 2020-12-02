@@ -2,8 +2,7 @@
 # Caitlin O'Brien-Carelli
 #
 # 11/30/20
-# Visualize vira load coverage and suppression
-# All SIE supported countries for 12/7 data review
+# Format shape files at the district level for mapping
 # ----------------------------------------------
 
 # --------------------
@@ -34,15 +33,8 @@ setwd('C:/Users/ccarelli/Documents/data/shape_files')
 OutDir = paste0(dir, 'outputs/')
 
 # --------------------
-# import the data 
 
-# dt = data.table(read.csv(paste0(dir, 
-#                                 'eswatini_map_test/Eswatini Peds Viral Suppression and Coverage Rates.csv')))
-# 
-# # rename the columns
-# setnames(dt, c('country', 'region', 'district', 'vls', 'vlc'))
-
-# --------------------
+# -----------------------------------------
 # import the shape file, check, and fortify
 
 # list the shape files
@@ -55,17 +47,22 @@ for (f in files) {
 shape = readRDS(f) # regional level
 plot(shape)
 
-# list and keep the names
-names = data.table(cbind(district = shape@data$NAME_2,
-                              id = shape@data$GID_2))
 # add the country
 country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
+
+# list and keep the names
+if (country %in% c('LSO', 'SWZ')) { 
+  names = data.table(cbind(district = shape@data$NAME_1,
+            id = shape@data$GID_1))
+  } else names = data.table(cbind(district = shape@data$NAME_2,
+                              id = shape@data$GID_2))
+names[ ,country:=country]
 
 # --------------------
 # fortify the shape file
 
 # lesotho and swaziland do not have regions, only districts (admin-1)
-if (country %in% c('LSO', 'SWZ', 'COD')) {region_code = 'GID_1'
+if (country %in% c('LSO', 'SWZ')) {region_code = 'GID_1'
  } else region_code = 'GID_2'
 
 # fortify
@@ -76,6 +73,11 @@ coord[ , country:=country] # label the country of the shape file
 # bind all of the shape files together into a mapping data set
 if (i == 1) full_shape = coord
 if (1 < i) full_shape = rbind(full_shape, coord)
+
+# create a list of district names to accompany alphanumeric ids
+if (i == 1) full_names = names
+if (1 < i) full_names = rbind(full_names, names)
+
 i = i+1
 } # end of rbind loop
 
@@ -85,19 +87,27 @@ i = i+1
 # rename the countries
 
 # names are in alphabetical order; convert to factor
+# convert both the aggregate shape file and district names
 full_shape$country = factor(full_shape$country, 
-     c('Cote d\'Ivoire', 'Cameroon', 'Kenya', 'Lesotho', 
+    c('CMR', 'CIV','COD', 'KEN', 'LSO', 'MOZ', 'MWI', 'SWZ', 'TZA', 'UGA'),                        
+     c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
        'Mozambique', 'Malawi', 'Swaziland', 'Tanzania', 'Uganda'))
+
+full_names$country = factor(full_names$country, 
+   c('CMR', 'CIV','COD', 'KEN', 'LSO', 'MOZ', 'MWI', 'SWZ', 'TZA', 'UGA'),                        
+    c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
+    'Mozambique', 'Malawi', 'Swaziland', 'Tanzania', 'Uganda'))
+
 
 # -----------------------------------
 
 # --------------------
-# format the data and merge
+# export the district and country names
 
+saveRDS(full_names, paste0(dir,'prepped/district_names_ids.rds'))
 
+# export the combined shape fill
+saveRDS(full_shape, paste0(dir,'prepped/shape_files_all_countries.rds'))
 
-
-
-# merge in the names of the districts
-dist_coord = merge(dist_coord, dist_names, by = 'id', all.x = TRUE)
+# --------------------
 
