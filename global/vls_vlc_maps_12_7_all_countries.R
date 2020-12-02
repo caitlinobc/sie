@@ -65,6 +65,25 @@ dt[, vls_denom:=as.numeric(gsub(',', '', vls_denom))] #some counts have commas
 # --------------------
 # format the admin levels
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # add a label for the country level totals
 countries = c('Cameroon','Cote d\'Ivoire', 'DRC', 'Kenya', 'Lesotho', 
               'Mozambique', 'Malawi', 'Eswatini', 'Tanzania', 'Uganda')

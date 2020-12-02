@@ -98,7 +98,6 @@ full_names$country = factor(full_names$country,
        c('Cameroon','Cote d\'Ivoire', 'DRC', 'Eswatini', 'Kenya', 'Lesotho', 
         'Mozambique', 'Malawi', 'Tanzania', 'Uganda'))
 
-
 # -----------------------------------
 
 # --------------------
@@ -111,3 +110,4 @@ saveRDS(full_shape, paste0(dir,'prepped/shape_files_all_countries.rds'))
 
 # --------------------
 
+# -----------------------------------
