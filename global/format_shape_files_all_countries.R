@@ -33,6 +33,8 @@ setwd('C:/Users/ccarelli/Documents/data/shape_files/')
 OutDir = paste0(dir, 'outputs/')
 
 # --------------------
+# should you use the drc health zone level shape file?
+drc_patch = TRUE
 
 # -----------------------------------------
 # import the shape file, check, and fortify
@@ -43,7 +45,7 @@ files = list.files(paste0(dir, 'shape_files'))
 # loop through each shape file, fortify, and rbind
 i = 1
 for (f in files) {
-  
+
 shape = readRDS(f) # regional level
 plot(shape)
 
@@ -54,11 +56,11 @@ country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
 sort(unique(shape@data$NAME_2))
 
 # list and keep the names and add region code
-if (country %in% c('COD', 'LSO', 'MWI')) { 
+if (country %in% c('LSO', 'MWI')) { 
   names = data.table(cbind(district = shape@data$NAME_1,
             id = shape@data$GID_1))
-  region_code = 'GID_1'
-  } else if (country %in% c('SWZ', 'KEN', 'MOZ', 'TZA', 'UGA')) {
+            region_code = 'GID_1'
+  } else if (country %in% c('COD', 'SWZ', 'KEN', 'MOZ', 'TZA', 'UGA')) {
     names = data.table(cbind(district = shape@data$NAME_2,
             id = shape@data$GID_2))
             region_code = 'GID_2'} else {
@@ -96,6 +98,37 @@ if (1 < i) full_labels = rbind(full_labels, labels)
 i = i+1
 } # end of rbind loop
 
+# -----------------------------------------
+
+# --------------------
+# patch in the drc health zone level shape file
+
+if (drc_patch==TRUE) {
+  
+  # import the health zone level shape file
+  drc = shapefile(paste0(dir, 'drc_zones/RDC_Zones de santé.shp'))
+  drc_names = data.table(cbind(district = drc@data$Nom,
+              id = drc@data$Pcode))
+  drc_names[ , country:='DRC']
+
+  # create health zone labels
+  labels_drc = data.table(coordinates(drc))
+  setnames(labels_drc, c('long', 'lat'))
+  labels_drc = cbind(labels_drc,drc_names)
+  
+  # --------------------
+  # fortify the shape file
+  coord = data.table(fortify(shape, region = region_code)) 
+  coord[ , country:=country] # label the country of the shape file 
+  
+
+}
+
+
+
+sort(drc@data$Nom)
+
+
 # --------------------
 # collapse the names to a single value per district
 
@@ -130,6 +163,5 @@ saveRDS(full_shape, paste0(dir,'prepped/shape_files_all_countries.rds'))
 # export the labels
 saveRDS(full_labels, paste0(dir,'prepped/labels_all_countries.rds'))
 
-# --------------------
-
+# ---------------
 # -----------------------------------

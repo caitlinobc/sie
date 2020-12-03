@@ -101,7 +101,7 @@ dt[country=='Malawi', level_6:=trimws(gsub('District', '', level_6), 'both')]
 #---------------------
 # format the levels
 
-c = 'Eswatini'
+c = 'Kenya'
 
 dt_names = sort(dt[country==c & level=='district']$district)
 dist_names = fix_diacritics(sort(names[country==c]$district))
@@ -110,6 +110,25 @@ length(dt_names)
 dt_names[dt_names %in% dist_names]
 dt_names[!(dt_names %in% dist_names)]
 
+# cameroon
+names[country=='Cameroon' & district=='Ebolowa 1', district:='Ebolowa']
+names[country=='Cameroon' & district=='Ebolowa 2', district:='Ebolowa']
+names[country=='Cameroon' & district=='Edéa 1', district:='Edea']
+names[country=='Cameroon' & district=='Edéa 2', district:='Edea']
+names[country=='Cameroon' & district=='Kribi 2', district:='Kribi']
+names[country=='Cameroon' & district=='Kribi 2', district:='Kribi']
+names[country=='Cameroon' & district=='Nkongsamba 1', district:='Nkongsamba']
+names[country=='Cameroon' & district=='Nkongsamba 2', district:='Nkongsamba']
+
+# lesotho
+dt[country=='Lesotho', district:=region]
+dt[country=='Lesotho' & district=='Thaba Tseka', district:='Thaba-Tseka']
+
+# mozambique
+dt[country=='Mozambique' & district=='Chokwe', district:='Chokwc']
+dt[country=='Mozambique' & district=='Limpopo', district:='Massingir']
+dt[country=='Mozambique' & district=='Mandlakaze', district:='Mandlakazi']
+dt[country=='Mozambique' & district=='Vilankulo', district:='Vilanculos']
 
 # cote d'ivoire
 
@@ -123,12 +142,6 @@ dt[country=='Eswatini' & district=='Shiselweni 1', district:='Shiselweni']
 dt[country=='Eswatini' & district=='Timphisini', district:='Timpisini']
 names[country=='Eswatini' & district=="Matsanjeni North", district:='Matsanjeni']
 names[country=='Eswatini' & district=="Matsanjeni South", district:='Matsanjeni']
-
-
-dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
-dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
-dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
-dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
 
 # malawi - districts are one level down
 mal = dt[country=='Malawi' & !is.na(level_6), unique(level_6)]
