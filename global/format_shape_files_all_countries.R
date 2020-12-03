@@ -50,22 +50,27 @@ plot(shape)
 # add the country
 country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
 
-# list and keep the names
-if (country %in% c('LSO')) { 
+# test list of the admin level match
+sort(unique(shape@data$NAME_2))
+
+# list and keep the names and add region code
+if (country %in% c('COD', 'LSO', 'MWI')) { 
   names = data.table(cbind(district = shape@data$NAME_1,
             id = shape@data$GID_1))
-  } else names = data.table(cbind(district = shape@data$NAME_2,
-                              id = shape@data$GID_2))
-names[ ,country:=country]
+  region_code = 'GID_1'
+  } else if (country %in% c('SWZ', 'KEN', 'MOZ', 'TZA', 'UGA')) {
+    names = data.table(cbind(district = shape@data$NAME_2,
+            id = shape@data$GID_2))
+            region_code = 'GID_2'} else {
+    names = data.table(cbind(district = shape@data$NAME_3,
+            id = shape@data$GID_3))
+            region_code = 'GID_3'}
+
+# label with a country code
+names[ , country:=country]
 
 # --------------------
 # fortify the shape file
-
-# lesotho and swaziland do not have regions, only districts (admin-1)
-if (country %in% c('LSO', 'SWZ')) {region_code = 'GID_1'
- } else region_code = 'GID_2'
-
-# fortify
 coord = data.table(fortify(shape, region = region_code)) 
 coord[ , country:=country] # label the country of the shape file 
 
@@ -82,6 +87,10 @@ i = i+1
 } # end of rbind loop
 
 # --------------------
+# collapse the names to a single value per district
+
+full_names = full_names[ , .(district = unique(district)), 
+            by = .(id, country)]
 
 # -----------------------------------
 # rename the countries
