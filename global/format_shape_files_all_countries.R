@@ -138,7 +138,8 @@ if (drc_patch==TRUE) {
   full_labels = rbind(full_labels, drc_labels)
 }
 
-
+# -----------------------------------------
+# FINAL FORMATTING
 # --------------------
 # collapse the names to a single value per district
 
