@@ -101,7 +101,7 @@ dt[country=='Malawi', level_6:=trimws(gsub('District', '', level_6), 'both')]
 #---------------------
 # format the levels
 
-c = 'Malawi'
+c = 'Eswatini'
 
 dt_names = sort(dt[country==c & level=='district']$district)
 dist_names = fix_diacritics(sort(names[country==c]$district))
@@ -110,9 +110,46 @@ length(dt_names)
 dt_names[dt_names %in% dist_names]
 dt_names[!(dt_names %in% dist_names)]
 
+
+# cote d'ivoire
+
+
+# eswatini
+dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
+dt[country=='Eswatini' & district=='Maphalaleni', district:="Mphalaleni"]
+dt[country=='Eswatini' & district=='Motshane', district:='Motjane']
+dt[country=='Eswatini' & district=='Piggs Peak', district:='Pigg\'s Peak']
+dt[country=='Eswatini' & district=='Shiselweni 1', district:='Shiselweni']
+dt[country=='Eswatini' & district=='Timphisini', district:='Timpisini']
+names[country=='Eswatini' & district=="Matsanjeni North", district:='Matsanjeni']
+names[country=='Eswatini' & district=="Matsanjeni South", district:='Matsanjeni']
+
+
+dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
+dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
+dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
+dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
+
+# malawi - districts are one level down
 mal = dt[country=='Malawi' & !is.na(level_6), unique(level_6)]
 mal[mal %in% dist_names]
+mal[!(mal %in% dist_names)]
 
+# uganda
+dt[country=='Uganda'& district=='Kanungu', district:='Kinkiizi']
+dt[country=='Uganda'& district=='Rubirizi', district:='Bunyaruguru']
+# Bufumbira is a county in Rukungiri, along with Rubabo
+dt[country=='Uganda'& district=='Rukungiri', district:='Bufumbira']
+
+
+
+
+#---------------------
+
+# -------------------------------------
+
+# -------------------------------------
+# DATA MERGE
 
 # create a data set to merge to the shape files
 dt_merge = dt[(level=='district' & is.na(level_6)) | level=='level_6']
@@ -133,8 +170,7 @@ ggplot(shape[country=='Malawi'], aes(x=long, y=lat, group=group, fill=vls)) +
   geom_polygon() + 
   geom_path(size=0.01) + 
   scale_fill_gradientn(colors = brewer.pal(8, 'BuPu'), 
-                       na.value='#d9d9d9') + 
-  theme_void(base_size =16) +
+                       na.value='#d9d9d9') + theme_void(base_size =16) +
   labs(title="Viral suppression ratios by region, Eswatini", 
        fill="Percent suppressed (%)") +
   theme(plot.title=element_text(vjust=-1), 

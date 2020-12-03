@@ -70,6 +70,12 @@ if (country %in% c('COD', 'LSO', 'MWI')) {
 names[ , country:=country]
 
 # --------------------
+# district labels
+labels = data.table(coordinates(shape))
+setnames(labels, c('long', 'lat'))
+labels = cbind(labels, names)
+
+# --------------------
 # fortify the shape file
 coord = data.table(fortify(shape, region = region_code)) 
 coord[ , country:=country] # label the country of the shape file 
@@ -82,6 +88,10 @@ if (1 < i) full_shape = rbind(full_shape, coord)
 # create a list of district names to accompany alphanumeric ids
 if (i == 1) full_names = names
 if (1 < i) full_names = rbind(full_names, names)
+
+# create a list of labels for labelling maps
+if (i == 1) full_labels = labels
+if (1 < i) full_labels = rbind(full_labels, labels)
 
 i = i+1
 } # end of rbind loop
@@ -116,6 +126,9 @@ saveRDS(full_names, paste0(dir,'prepped/district_names_ids.rds'))
 
 # export the combined shape fill
 saveRDS(full_shape, paste0(dir,'prepped/shape_files_all_countries.rds'))
+
+# export the labels
+saveRDS(full_labels, paste0(dir,'prepped/labels_all_countries.rds'))
 
 # --------------------
 
