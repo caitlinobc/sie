@@ -376,6 +376,9 @@ for (c in countries) {
   country_name = as.character(c)
   if (country_name=='DRC') country_name = 'Kinshasa'
   
+  # set a minimum value for the legend
+  leg_min = shape_long[country==c & variable!='VL Test Results', min(value, na.rm = T)]
+  
   # plot the indicator in a list
   viral_plots[[i]] = ggplot(shape_long[country==c & variable!='VL Test Results'], 
       aes(x=long, y=lat, group=group, fill=value)) + 
@@ -384,20 +387,22 @@ for (c in countries) {
     geom_path(size=0.01) +
     facet_wrap(~variable) +
     scale_fill_gradientn(colors = brewer.pal(9, 'Blues'),
-                         na.value='#d9d9d9') + 
+                         na.value='#d9d9d9',
+                         limits = c(leg_min, 100)) + 
     theme_void(base_size = 14) +
-    labs(title = country_name, 
-         fill="") +
-    theme(plot.title = element_text(vjust=2), 
-          strip.text = element_text(vjust=1, size = 16),
-          text=element_text(size=16)) 
+    labs(caption = country_name, 
+         fill="Percent (%)") +
+    theme(legend.title = element_text(vjust = 1, size = 14),
+          plot.caption = element_text(vjust = 1, size = 18),
+          strip.text = element_text(size = 16),
+          text=element_text(size = 16)) 
   
   i =i+1} # reset the index
 
 #----------------------
 
 # pdf of total viral load results available (count)
-pdf(paste0(OutDir, 'vl_results_counts_f20_q4_all_countries.pdf'), width = 12, height = 9)
+pdf(paste0(OutDir, 'vlc_vls_f20_q4_all_countries.pdf'), width = 16, height = 9)
 viral_plots
 dev.off()
 #----------------------

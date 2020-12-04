@@ -353,8 +353,9 @@ g6 = ggplot(dist_long, aes(x=long, y=lat, group=group, fill=value)) +
   facet_wrap(~variable)+
   labs(fill="Percent (%)", 
        caption="Source: EGPAF monitoring data \n *Legend bounded at 100%") +
-  theme(plot.title=element_text(vjust=-1), 
+  theme(plot.title=element_text(vjust=1), 
         plot.caption=element_text(vjust=6), 
+        strip.text = element_text(size = 16),
         text=element_text(size=18)) 
 
 #---------------

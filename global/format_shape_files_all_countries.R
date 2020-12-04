@@ -179,9 +179,10 @@ full_names$country = factor(full_names$country,
 # --------------------
 # export the district and country names
 
+# export the list of names and ids
 saveRDS(full_names, paste0(dir,'prepped/district_names_ids.rds'))
 
-# export the combined shape fill
+# export the combined shape file
 saveRDS(full_shape, paste0(dir,'prepped/shape_files_all_countries.rds'))
 
 # export the labels
