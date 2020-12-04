@@ -55,6 +55,8 @@ shape = readRDS('shape_files_all_countries.rds')
 names = readRDS('district_names_ids.rds')
 dt = data.table(read.csv(paste0(dir, 'raw_data/vls_vlc_peds_q4_20_all_countries.csv')))
 
+# format the names to remove diacritical marks
+names[ , district:=fix_diacritics(district)]
 # ----------------------------------------
 # FORMAT THE DATA
 
@@ -96,19 +98,42 @@ dt[country=='Malawi', level_6:=trimws(gsub('District', '', level_6), 'both')]
 #---------------------
 
 # -------------------------------------
+# DRC DATA SWITCH
+
+# drop the provincial data and swap in the health zone level data
+dt = dt[country!='DRC']
+
+# rbind in the health zone data
+drc = data.table(read.csv(paste0(dir, 'raw_data/vls_vlc_pedsq4_20_drc_hz.csv')))
+
+# format to rbind
+drc = drc[-c(1:5)]
+setnames(drc, names(drc), c('district', 'vlc', 'vls', 'vls_denom'))
+drc = drc[-nrow(drc)] # drop the totals row
+
+# create identical columns with the main data set
+drc[ , country:='DRC']
+drc[district=='DRC', level:='country']
+drc[district!='DRC', level:='district']
+drc[district=='DRC', district:=NA]
+drc[ , region:=NA] # blank columns for the rbind
+drc[ , level_6:=NA]
+
+# drop the percentage signs and commas in counts
+drc[ , vlc:=as.numeric(gsub('%', '', vlc))]
+drc[ , vls:=as.numeric(gsub('%', '', vls))]
+drc[, vls_denom:=as.numeric(gsub(',', '', vls_denom))]
+
+# bind in the data 
+dt = rbind(dt, drc)
+
+# -------------------------------------
+
+# -------------------------------------
 # ADMIN LEVEL MATCH
 
 #---------------------
 # format the levels
-
-c = 'DRC'
-
-dt_names = sort(dt[country==c & level=='district']$district)
-dist_names = fix_diacritics(sort(names[country==c]$district))
-dt_names
-length(dt_names)
-dt_names[dt_names %in% dist_names]
-dt_names[!(dt_names %in% dist_names)]
 
 # cameroon
 names[country=='Cameroon' & district=='Ebolowa 1', district:='Ebolowa']
@@ -121,6 +146,9 @@ names[country=='Cameroon' & district=='Nkongsamba 1', district:='Nkongsamba']
 names[country=='Cameroon' & district=='Nkongsamba 2', district:='Nkongsamba']
 
 # cote d'ivoire - no districts can be mapped
+
+# drc
+names[district=='Masina II', district:='Masina 2']
 
 # eswatini
 dt[country=='Eswatini' & district=='Madlangampisi', district:='Madlangempisi']
@@ -135,23 +163,14 @@ names[country=='Eswatini' & district=="Matsanjeni South", district:='Matsanjeni'
 # kenya - 100% match
 
 # lesotho
-dt[country=='Lesotho', district:=region]
-dt[country=='Lesotho' & district=='Thaba Tseka', district:='Thaba-Tseka']
+dt[country=='Lesotho' & region=='Thaba Tseka', region:='Thaba-Tseka']
 
 # malawi - districts are one level down (level_6), but 100% match
 
-
 # mozambique
-dt[country=='Mozambique' & district=='Chokwe', district:='Chokwc']
-dt[country=='Mozambique' & district=='Limpopo', district:='Massingir']
+names[country=='Mozambique' & district=='Chokwc', district:='Chokwe']
 dt[country=='Mozambique' & district=='Mandlakaze', district:='Mandlakazi']
 dt[country=='Mozambique' & district=='Vilankulo', district:='Vilanculos']
-
-
-
-
-
-
 
 # uganda
 dt[country=='Uganda'& district=='Kanungu', district:='Kinkiizi']
@@ -159,45 +178,227 @@ dt[country=='Uganda'& district=='Rubirizi', district:='Bunyaruguru']
 # Bufumbira is a county in Rukungiri, along with Rubabo
 dt[country=='Uganda'& district=='Rukungiri', district:='Bufumbira']
 
-
-
-
-#---------------------
-
 # -------------------------------------
+# test code for district match
+
+# c = 'DRC'
+# dists = dt[country==c & !is.na(district), unique(district)]
+# dists
+# length(dists)
+# names[country == c & district %in% dists]
+# dists[!dists %in% names[country==c, district]]
+# 
+# # Tanzania uses regions, not districts (for now)
+# regs = dt[country=='Lesotho' & !is.na(region), unique(region)]
+# regs
+# length(regs)
+# names[country == 'Lesotho' & district %in% regs]
+# regs[!regs %in% names[country=='Lesotho', district]]
 
 # -------------------------------------
 # DATA MERGE
 
-# create a data set to merge to the shape files
-dt_merge = dt[(level=='district' & is.na(level_6)) | level=='level_6']
-dt_merge[country=='Malawi', district:=level_6]
-dt_merge = dt_merge[!is.na(district)]
-dt_merge[ ,c('region', 'level_6', 'level'):=NULL]
+#----------------------
+# mark the data that will be merged with the shape file
+odd_countries = c('Tanzania', 'Lesotho' , 'Malawi')
+dt[level=='district' & !(country %in% odd_countries), merge_row:=TRUE]
 
-# merge in the ids
-dt_merge = merge(dt_merge, names, by=c('country', 'district'), all.x = T)
-dt_merge[ , country:=NULL]
+dt[country=='Malawi'& level=='level_6', merge_row:=TRUE]
+# use regions for both tanzania and lesotho
+dt[country=='Tanzania' & level=='region', merge_row:=TRUE]
+dt[country=='Lesotho' & level=='region', merge_row:=TRUE]
+dt[is.na(merge_row), merge_row:=FALSE]
+
+# create a data set to merge to the shape files
+dt_merge = dt[merge_row==TRUE]
+dt_merge[country=='Malawi', district:=level_6]
+dt_merge[country=='Tanzania', district:=region]  
+dt_merge[country=='Lesotho', district:=region]  
+dt_merge[ , c('region', 'level_6', 'level', 'merge_row'):=NULL]
+
+# merge the data in the ids
+# some districts will duplicate because they are assigned to multiple polygons
+dt_merge = merge(dt_merge, names, by = c('country', 'district'), all.x=T)
+dt_merge[ , country:=NULL] # drop country so as not to duplicate shape
+
+#----------------------
+
+# -------------------------------------
+# FINAL PLOTS
 
 # merge in the shape file
 shape = merge(shape, dt_merge, by = 'id', all.x = T)
 
+# list of countries to loop through
+countries = c('Cameroon','Cote d\'Ivoire', 'DRC', 'Eswatini',
+             'Kenya', 'Lesotho', 'Mozambique', 'Malawi',
+             'Tanzania', 'Uganda')
 
-ggplot(shape[country=='Malawi'], aes(x=long, y=lat, group=group, fill=vls)) + 
+# shape the data long
+IDvars = c('country', 'district', 'id', 'long',
+           'lat', 'order', 'hole', 'piece', 'group')
+shape_long = melt(shape, id.vars = IDvars)
+
+# factor the variables for labelling
+shape_long$variable = factor(shape_long$variable, 
+            c('vlc', 'vls', 'vls_denom'), 
+            c('Viral Load Coverage', 'Viral Suppression', 'VL Test Results'))
+
+#----------------------
+# plot viral load testing coverage
+
+vlc_plots = NULL
+i=1
+
+for (c in countries) {
+  # set the country name for a subtitle
+  country_name = as.character(c)
+  if (country_name=='DRC') country_name = 'Kinshasa'
+  
+# plot the indicator in a list
+vlc_plots[[i]] = ggplot(shape[country==c], 
+      aes(x=long, y=lat, group=group, fill=vlc)) + 
   coord_fixed() +
   geom_polygon() + 
   geom_path(size=0.01) + 
-  scale_fill_gradientn(colors = brewer.pal(8, 'BuPu'), 
-                       na.value='#d9d9d9') + theme_void(base_size =16) +
-  labs(title="Viral suppression ratios by region, Eswatini", 
-       fill="Percent suppressed (%)") +
+  scale_fill_gradientn(colors = brewer.pal(9, 'BuPu'),
+    na.value='#d9d9d9') + 
+  theme_void(base_size = 14) +
+  labs(title="Viral load coverage",
+       subtitle = country_name,
+       fill="Percent (%)") +
   theme(plot.title=element_text(vjust=-1), 
+        legend.title = element_text(vjust=2),
         plot.caption=element_text(vjust=6), 
-        text=element_text(size=18))
+        text=element_text(size=16)) 
+
+i =i+1} # reset the index
+
+#----------------------
+
+#----------------------
+# plot viral suppression 
+
+vls_plots = NULL
+i=1
+
+for (c in countries) {
+  # set the country name for a subtitle
+  country_name = as.character(c)
+  if (country_name=='DRC') country_name = 'Kinshasa'
+  
+  # plot the indicator in a list
+  vls_plots[[i]] = ggplot(shape[country==c], 
+    aes(x=long, y=lat, group=group, fill=vls)) + 
+    coord_fixed() +
+    geom_polygon() + 
+    geom_path(size=0.01) + 
+    scale_fill_gradientn(colors = brewer.pal(9, 'Blues'),
+                         na.value='#d9d9d9') + 
+    theme_void(base_size = 14) +
+    labs(title="Viral suppression ratio",
+         subtitle = country_name,
+         fill="Percent (%)") +
+    theme(plot.title=element_text(vjust=-1), 
+          plot.caption=element_text(vjust=6),
+          legend.title = element_text(vjust=2),
+          text=element_text(size=16)) 
+  
+  i =i+1} # reset the index
+
+#----------------------
+
+#----------------------
+# plot viral load tests performed
+
+vls_denom_plots = NULL
+i=1
+
+for (c in countries) {
+  # set the country name for a subtitle
+  country_name = as.character(c)
+  if (country_name=='DRC') country_name = 'Kinshasa'
+  
+  # plot the indicator in a list
+  vls_denom_plots[[i]] = ggplot(shape[country==c], 
+                          aes(x=long, y=lat, group=group, fill=vls_denom)) + 
+    coord_fixed() +
+    geom_polygon() + 
+    geom_path(size=0.01) + 
+    scale_fill_gradientn(colors = brewer.pal(9, 'Greens'),
+                         na.value='#d9d9d9') + 
+    theme_void(base_size = 14) +
+    labs(title="Count of viral load tests performed",
+         subtitle = country_name,
+         fill="") +
+    theme(plot.title=element_text(vjust=-1), 
+          plot.caption=element_text(vjust=6), 
+          text=element_text(size=16)) 
+  
+  i =i+1} # reset the index
+
+#----------------------
 
 
+#-------------------------------------------
+# EXPORT THE PLOTS
 
+#----------------------
+# one page per country, indicator 
 
+# pdf of viral load testing coverage by country
+pdf(paste0(OutDir, 'vlc_f20_q4_all_countries.pdf'), width = 12, height = 9)
+vlc_plots
+dev.off()
 
+# pdf of viral suppression by country
+pdf(paste0(OutDir, 'vls_f20_q4_all_countries.pdf'), width = 12, height = 9)
+vls_plots
+dev.off()
 
+# pdf of total viral load results available (count)
+pdf(paste0(OutDir, 'vl_results_counts_f20_q4_all_countries.pdf'), width = 12, height = 9)
+vls_denom_plots
+dev.off()
+#----------------------
+
+#-------------------------------------------
+# FACET PLOTS
+
+#----------------------
+# plot viral load tests performed
+
+viral_plots = NULL
+i=1
+
+for (c in countries) {
+  # set the country name for a subtitle
+  country_name = as.character(c)
+  if (country_name=='DRC') country_name = 'Kinshasa'
+  
+  # plot the indicator in a list
+  viral_plots[[i]] = ggplot(shape_long[country==c & variable!='VL Test Results'], 
+      aes(x=long, y=lat, group=group, fill=value)) + 
+    coord_fixed() +
+    geom_polygon() + 
+    geom_path(size=0.01) +
+    facet_wrap(~variable) +
+    scale_fill_gradientn(colors = brewer.pal(9, 'Blues'),
+                         na.value='#d9d9d9') + 
+    theme_void(base_size = 14) +
+    labs(title = country_name, 
+         fill="") +
+    theme(plot.title = element_text(vjust=2), 
+          strip.text = element_text(vjust=1, size = 16),
+          text=element_text(size=16)) 
+  
+  i =i+1} # reset the index
+
+#----------------------
+
+# pdf of total viral load results available (count)
+pdf(paste0(OutDir, 'vl_results_counts_f20_q4_all_countries.pdf'), width = 12, height = 9)
+viral_plots
+dev.off()
+#----------------------
 

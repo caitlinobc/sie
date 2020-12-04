@@ -36,6 +36,8 @@ OutDir = paste0(dir, 'outputs/')
 # should you use the drc health zone level shape file?
 drc_patch = TRUE
 
+# subset the drc data to only kinshasa?
+kin_only = TRUE
 # -----------------------------------------
 # import the shape file, check, and fortify
 
@@ -53,14 +55,14 @@ plot(shape)
 country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
 
 # test list of the admin level match
-sort(unique(shape@data$NAME_2))
+sort(unique(shape@data$NAME_1))
 
 # list and keep the names and add region code
-if (country %in% c('LSO', 'MWI')) { 
+if (country %in% c('LSO', 'MWI', 'TZA')) { 
   names = data.table(cbind(district = shape@data$NAME_1,
             id = shape@data$GID_1))
             region_code = 'GID_1'
-  } else if (country %in% c('COD', 'SWZ', 'KEN', 'MOZ', 'TZA', 'UGA')) {
+  } else if (country %in% c('COD', 'SWZ', 'KEN', 'MOZ', 'UGA')) {
     names = data.table(cbind(district = shape@data$NAME_2,
             id = shape@data$GID_2))
             region_code = 'GID_2'} else {
@@ -110,20 +112,31 @@ if (drc_patch==TRUE) {
   drc = shapefile(paste0(dir, 'drc_zones/RDC_Zones de santé.shp'))
   drc_names = data.table(cbind(district = drc@data$Nom,
               id = drc@data$Pcode))
-  drc_names[ , country:='DRC']
+  drc_names[ , country:='COD']
 
   # create health zone labels
   drc_labels = data.table(coordinates(drc))
   setnames(drc_labels, c('long', 'lat'))
-  drc_labels = cbind(drc_labels,drc_names)
+  drc_labels = cbind(drc_labels, drc_names)
   
   # correct the topology intersection in the shape file
   drc2 = gBuffer(drc, byid=TRUE, width = 0)
   drc2$id = drc$Pcode
   
+  # list of health zones located within Kinshasa
+  kinshasa_ids = data.table(cbind(district = drc@data$Nom,
+                   id = drc@data$Pcode, 
+                   province = drc$Anc_provin))
+  kinshasa_ids = kinshasa_ids[province=='Kinshasa']
+  
   # fortify the shape file
   drc_coord = data.table(fortify(drc2, region='Pcode'))
   drc_coord[ , country:='COD'] 
+  
+  # subset the shape file to only kinshasa for display
+  drc_coord = drc_coord[id %in% kinshasa_ids$id]
+  
+  
   #--------------------
   
   #--------------------
