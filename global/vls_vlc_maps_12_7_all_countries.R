@@ -245,6 +245,14 @@ shape_long$variable = factor(shape_long$variable,
             c('Viral Load Coverage', 'Viral Suppression', 'VL Test Results'))
 
 #----------------------
+# set max values at 100 for mapping
+
+shape[100 < vls, vls:=100]
+shape[100 < vlc, vlc:=100]
+shape_long[100 < value & variable!='VL Test Results', value:=100]
+
+
+#----------------------
 # plot viral load testing coverage
 
 vlc_plots = NULL
