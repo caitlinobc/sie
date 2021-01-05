@@ -35,7 +35,7 @@ setwd('C:/Users/ccarelli/Documents/data/prepped/')
 OutDir = paste0(dir, 'outputs/')
 
 # ---------------------------------------
-# import data and subset
+# import data and subset to malawi and tanzania
 
 dt = data.table(read_xlsx(paste0(dir, 'data/global_facility_inventory.xlsx')))
 
@@ -50,27 +50,37 @@ dt = dt[country=='Tanzania' | country=='Malawi']
 # read in the shape file 
 
 shape = readRDS('shape_files_all_countries.rds')
-# shape = shape[country=='Malawi' |country=='Tanzania']
+shape = shape[country=='Malawi' |country=='Tanzania']
 
-shape = shape[country=='Malawi']
+# set map parameters
+c = 'Malawi'
+country_name = as.character(c)
 
-ggplot(shape[country==c], 
-       aes(x=long, y=lat, group=group, fill=vls)) + 
-  coord_fixed() +
+# --------------------
+# import a list of the facilities included in the study and subset
+
+
+
+# --------------------
+
+# ---------------------------------------
+# map the points
+
+# sample map - subset by country, sites
+ggplot(shape[country==c], aes(x=long, y=lat, group=group, fill = '#f0f0f0')) + 
+  coord_fixed() +                         
   geom_polygon() + 
-  geom_path(size=0.01) + 
-  scale_fill_gradientn(colors = brewer.pal(9, 'Blues'),
-                       na.value='#d9d9d9') + 
+  geom_path(size=0.01)+
+  geom_point(data = dt[country==c], aes(x = long, y =lat, group = country), 
+             size = 1)+
   theme_void(base_size = 14) +
-  labs(title="Viral suppression ratio",
-       subtitle = country_name,
-       fill="Percent (%)") +
+  labs(title="Health facilities included in the AHD Study",
+       subtitle = country_name) +
   theme(plot.title=element_text(vjust=-1), 
         plot.caption=element_text(vjust=6),
         legend.title = element_text(vjust=2),
         text=element_text(size=16)) 
 
-
-# facilities in the study
+# --------------------
 
 
