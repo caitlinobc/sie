@@ -52,10 +52,6 @@ dt = dt[country=='Tanzania' | country=='Malawi']
 shape = readRDS('shape_files_all_countries.rds')
 shape = shape[country=='Malawi' |country=='Tanzania']
 
-# set map parameters
-c = 'Malawi'
-country_name = as.character(c)
-
 # --------------------
 # import a list of the facilities included in the study and subset
 facs_dt = data.table(read.csv(paste0(dir, 'data/facility_list_ahd.csv')))
@@ -66,8 +62,8 @@ facs_dt[, facility:=(gsub('RRH', 'Regional Referral Hospital', facility))]
 # merge the facilities with their locations
 fac = facs_dt$facility
 
-
 # change names in the list of locations to match names in the data
+# originally - 19 facilities are in the data, 11 are missing
 dt[facility=='Nkinga Regional Referral Hospital', facility:='Nkinga Mission Hospital']
 dt[facility=='Singida Regional Referral Hospital', facility:='Singida Regional Hospital']
 dt[facility=='Mt. Meru Regional Referral Hospital', facility:='MT Meru']
@@ -76,32 +72,76 @@ dt[facility=='Bvumbwe Research Health Centre', facility:='Bvumbwe Health Centre'
 dt[facility=='Pirimiti Hospital', facility:='Pirimiti Rural Hospital']
 dt[facility=='Arusha Lutheran Centre Referral Hospital', facility:='ALMC']
 
+# after changes only 5 facilities are missing (of 30)
+fac[!(fac %in% dt$facility)] 
 
-# check if facilities have geo locations and search
-fac[!(fac %in% dt$facility)] # 19 facilities included, 11 missing
+# --------------------
+# subset the coordinates file and merge
+dt = dt[facility %in% fac]
 
+# drop excess information from sheets and merge
+facs_dt[ , c('country'):=NULL]
+dt[ , c('facility_type'):=NULL]
 
-dt[grepl('Arusha Lutheran', facility)]
+# merge the data 
+dt = merge(dt, facs_dt, all.y=TRUE, by = 'facility')
+         
+# rename and organize columns
+dt = dt[ ,. (facility, facility_type, level, owner, lat, long, 
+        region = admin1, district, country, ll_source)] 
 
+# --------------------
+# fill in the coordinates for the 5 missing facilities
 
+# coordinates easily found on google maps
+bil = c('Bilila Health Centre', -14.822695902838463, 34.85192442399777, 'Malawi')
+kcmc = c('KCMC', -3.319598579977617, 37.327466601969284, 'Tanzania')
+kibong = c('Kibong\'oto Hospital', -3.196300775208977, 37.10558461858568, 'Tanzania')
+lim = c('Limbe Health Centre', -15.793034358214141, 35.04985481655105, 'Malawi')
+
+# kapili hospital is missing a location
+# this represents the district hospital coordinates in Mchinji (where it is located)
+kap = c('Kapili Hospital',-13.8027173758062, 32.88847636531416, 'Malawi')
+
+# create a data table of the data for the missing facilities
+missing_facs = data.table(rbind(bil, kcmc, kap, kibong, lim))
+setnames(missing_facs, c('facility', 'lat1', 'long1', 'country1'))
+
+missing_facs[ ,ll_source1:='Google Earth']
+missing_facs[ , lat1:=as.numeric(lat1)] # convert lat/long to numeric for merge
+missing_facs[ , long1:=as.numeric(long1)]
+
+# merge in the additional data
+dt = merge(dt, missing_facs, by = 'facility', all = TRUE)
+
+# fill in missing variables - missing owner means not in original locations
+dt[is.na(owner), lat:=lat1]
+dt[is.na(owner), long:=long1]
+dt[is.na(owner), ll_source:=ll_source1]
+dt[is.na(owner), country:=country1]
+dt[ , c('lat1', 'long1', 'll_source1', 'country1'):=NULL]
 # --------------------
 
 # ---------------------------------------
-# map the points
+# map the points as a test
+
+# set map parameters
+c = 'Tanzania'
+country_name = as.character(c)
 
 # sample map - subset by country, sites
-ggplot(shape[country==c], aes(x=long, y=lat, group=group, fill = '#f0f0f0')) + 
-  coord_fixed() +                         
-  geom_polygon() + 
+ggplot(shape[country==c], aes(x=long, y=lat, group=group, fill=1)) + 
+  coord_fixed()+                         
+  geom_polygon()+ 
   geom_path(size=0.01)+
+  scale_fill_gradientn(colors = '#f7fbff')+
   geom_point(data = dt[country==c], aes(x = long, y =lat, group = country), 
-             size = 1)+
+             size = 2, colour = '#feb24c', alpha= 0.5)+
   theme_void(base_size = 14) +
   labs(title="Health facilities included in the AHD Study",
        subtitle = country_name) +
   theme(plot.title=element_text(vjust=-1), 
         plot.caption=element_text(vjust=6),
-        legend.title = element_text(vjust=2),
         text=element_text(size=16)) 
 
 # --------------------
