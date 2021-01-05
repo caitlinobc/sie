@@ -58,7 +58,30 @@ country_name = as.character(c)
 
 # --------------------
 # import a list of the facilities included in the study and subset
+facs_dt = data.table(read.csv(paste0(dir, 'data/facility_list_ahd.csv')))
 
+# change abbreviations for the merge
+facs_dt[, facility:=(gsub('RRH', 'Regional Referral Hospital', facility))]
+
+# merge the facilities with their locations
+fac = facs_dt$facility
+
+
+# change names in the list of locations to match names in the data
+dt[facility=='Nkinga Regional Referral Hospital', facility:='Nkinga Mission Hospital']
+dt[facility=='Singida Regional Referral Hospital', facility:='Singida Regional Hospital']
+dt[facility=='Mt. Meru Regional Referral Hospital', facility:='MT Meru']
+
+dt[facility=='Bvumbwe Research Health Centre', facility:='Bvumbwe Health Centre']
+dt[facility=='Pirimiti Hospital', facility:='Pirimiti Rural Hospital']
+dt[facility=='Arusha Lutheran Centre Referral Hospital', facility:='ALMC']
+
+
+# check if facilities have geo locations and search
+fac[!(fac %in% dt$facility)] # 19 facilities included, 11 missing
+
+
+dt[grepl('Arusha Lutheran', facility)]
 
 
 # --------------------
