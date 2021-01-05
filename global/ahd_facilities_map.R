@@ -2,7 +2,7 @@
 # Caitlin O'Brien-Carelli
 #
 # 1/4/21
-# Map health facilities in the AHD Study
+# Prep data to map health facilities in the AHD Study
 # ----------------------------------------------
 
 # --------------------
@@ -32,7 +32,7 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/AHD/'
 setwd('C:/Users/ccarelli/Documents/data/prepped/')
 
 # set output director
-OutDir = paste0(dir, 'outputs/')
+OutDir = paste0(dir, 'data/')
 
 # ---------------------------------------
 # import data and subset to malawi and tanzania
@@ -144,6 +144,15 @@ ggplot(shape[country==c], aes(x=long, y=lat, group=group, fill=1)) +
         plot.caption=element_text(vjust=6),
         text=element_text(size=16)) 
 
+# ---------------------------------------
+
 # --------------------
+# export the file with the locations 
+
+saveRDS(dt, paste0(OutDir, 'prepped_geolocations_ahd.rds'))
+
+# --------------------
+
+# ---------------------------------------
 
 
