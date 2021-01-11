@@ -3,6 +3,8 @@
 #
 # 11/19/20
 # List of packages to install to set up R
+# You will need all of these to run my code
+# This list should include every package you need
 # ----------------------------------------------
 
 # ------------------------
