@@ -19,7 +19,7 @@ library(tidyr)
 library(zoo)
 library(stringr)
 library(ggplot2)
-library(epitools)
+library(eeptools)
 # ------------------------
 
 # ------------------------
@@ -61,9 +61,24 @@ drop_names = data.table(names(dt))
 drop_names = drop_names[grepl('^x', drop_names$V1), V1]
 dt[ , c('dov', drop_names):=NULL] #dov also has no data 
 
+# ------------------------
 # calculate age
+dt[ , dob:=as.Date(dob)]
+dt[ , ahd_dt:=as.Date(ahd_dt)]
+dt[!is.na(ahd_dt), 
+   age:=(age_calc(dob, enddate = ahd_dt, units = "years", precise = TRUE))]
+dt[ , age:=floor(age)]
 
+# add a binary for under 5
+dt[age < 5, under5:=TRUE]
+dt[5 <= age, under5:=FALSE]
 
+# ------------------------
+# other date variables
+
+dt[ , dt_post:=as.Date(dt_pos)]
+
+# ------------------------
 # recode 1s and 0s as logicals
 # more logicals in the data set - add later
 dt[ , knwstat:=as.logical(knwstat)]
@@ -78,8 +93,6 @@ dt[ , sstest:=as.logical(sstest)]
 dt[ , gxtest:=as.logical(gxtest)]
 dt[ , tbtxstart:=as.logical(tbtxstart)]
 
-
-
 # -------------------------------------
 # data quality checks
 
@@ -87,22 +100,47 @@ dt[ , tbtxstart:=as.logical(tbtxstart)]
 dt[duplicated(dt)]
 dt[ , pid_test:=.N, by = pid]
 dt[1 < pid_test, .(pid, pid_test, dhisname), by = pid]
-dt = dt[pid_test==1]
 dt[ ,pid_test:=NULL]
 
 # check links with other data sets
-cd4[!(pid %in% dt$pid)] # all pids there, but one entry is a dupl
-i
-tb[(pid %in% dt$pid)]cate
+cd4[!(pid %in% dt$pid)] # all pids there, but one entry is a dup pid
+tb[!(pid %in% dt$pid), length(unique(pid))]
 
 # -------------------------------------
 
 
+# -------------------------------------
+# SUMMARIZE DATA 
+
+# -------------------------------------
+# summarize the eligibility data 
+
+# summarize age
+dt[, mean(age, na.rm=TRUE)]
+dt[, median(age, na.rm=TRUE)]
+dt[, range(age, na.rm=TRUE)]
+
+dt[under5==TRUE, mean(age, na.rm=TRUE)]
+dt[under5==TRUE, median(age, na.rm=TRUE)]
+dt[under5==TRUE, range(age, na.rm=TRUE)]
+dt[under5==TRUE & age < 1]
+
+# summarize hiv status
+dt[knwstat==F]
+dt[is.na(knwstat)]
+dt[dtpos < as.Date("2020-10-06 UTC")]
+dt[hivresult==TRUE]
+
+# study eligibility
+dt[ ,table(ahd_elig)]
+dt[ ,table(ahd_elig)/2464]
 
 
+dt[ ,table(whostage1_done)]
+dt[ ,table(whostage1st)]
+dt[ ,table(whostage1st)/2457]
 
-
-
+dt[ , table(tbsympscrn)]
 
 # -------------------------------------
 # summarize the cd4 data 
