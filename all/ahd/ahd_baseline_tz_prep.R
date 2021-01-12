@@ -50,13 +50,34 @@ cd4 = data.table(read_xlsx(paste0(dir,
     sheet = 'allCD4_flat(siteid,pid)', skip = 1))
 
 # -------------------------------------
-# summarize the eligibility and service provision data
+# prep the eligibility and service provision data
 
 # drop all the variables beginning with "x" (x1, x2, etc.)
 # these variables do not contain data - likely commodity missing
 drop_names = data.table(names(dt))
 drop_names = drop_names[grepl('^x', drop_names$V1), V1]
-dt[ , c(drop_names):=NULL]
+dt[ , c('dov', drop_names):=NULL] #dov also has no data 
+
+# calculate age
+
+
+# recode 1s and 0s as yeses and nos
+# in the future use lapply; for today mess around
+
+dt[ , knwstat:=as.logical(knwstat)]
+dt[ , hivtest:=as.logical(hivtest)]
+dt[ , hivresult:=as.logical(hivresult)]
+dt[ , cd4done_after_ahdelig:=as.logical(cd4done_after_ahdelig)]
+dt[ , whostage1_done:=as.logical(whostage1_done)]
+
+dt[ , tbsympscrn:=as.logical(tbsympscrn)]
+dt[ , tptstart:=as.logical(tptalready)]
+dt[ , sstest:=as.logical(sstest)]
+dt[ , gxtest:=as.logical(gxtest)]
+dt[ , tbtxstart:=as.logical(tbtxstart)]
+
+# more logicals in the data set - add later
+
 
 # -------------------------------------
 
@@ -118,11 +139,17 @@ cd4[!is.na(cd4result2), mean(as.numeric(cd4dt2 - cd4_after_ahdelig_dt1))]
 cd4[!is.na(cd4result2), median(as.numeric(cd4dt2 - cd4_after_ahdelig_dt1))]
 cd4[!is.na(cd4result2), range(as.numeric(cd4dt2 - cd4_after_ahdelig_dt1))]
 
+# more than six months from first to second test
 cd4[!is.na(cd4result2) & 180 < (as.numeric(cd4dt2 - cd4_after_ahdelig_dt1)), 
     length(unique(pid)) ]
+cd4[!is.na(cd4result2) & 183 < (as.numeric(cd4dt2 - cd4_after_ahdelig_dt1)), 
+    length(unique(pid)) ] # conservative - 6 months without february
 
 # -------------------------------------
 # summarize the tb data 
 
+
+# -------------------------------------
+# merge and save one large rds with data set listed
 
 
