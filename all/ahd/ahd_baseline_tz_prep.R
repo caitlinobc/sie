@@ -23,7 +23,7 @@ library(epitools)
 # ------------------------
 
 # --------------------
-# Files and directories
+# files and directories
 
 # set the working directory to the cameroon data
 #dir = 'C:/Users/ccarelli/Documents/data/raw_att95_weekly/'
@@ -31,7 +31,10 @@ library(epitools)
 dir = 'C:/Users/Caitlin/OneDrive/Documents/'
 setwd(dir)
 
-# load the patient study eligibility data 
+# --------------------
+# load the study data 
+
+# load the patient study eligibility and service provision data 
 dt = data.table(read_xlsx(paste0(dir,
     'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
      sheet = 'flat(leys_siteid,pid)', skip = 3))
@@ -46,11 +49,16 @@ cd4 = data.table(read_xlsx(paste0(dir,
     'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
     sheet = 'allCD4_flat(siteid,pid)', skip = 1))
 
+# -------------------------------------
+# summarize the eligibility and service provision data
 
+# drop all the variables beginning with "x" (x1, x2, etc.)
+# these variables do not contain data - likely commodity missing
+drop_names = data.table(names(dt))
+drop_names = drop_names[grepl('^x', drop_names$V1), V1]
+dt[ , c(drop_names):=NULL]
 
-
-
-# --------------------
+# -------------------------------------
 
 # -------------------------------------
 # summarize the cd4 data 
