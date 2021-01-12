@@ -22,7 +22,7 @@ library(ggplot2)
 library(epitools)
 # ------------------------
 
-# --------------------
+# ------------------------
 # files and directories
 
 # set the working directory to the cameroon data
@@ -31,7 +31,7 @@ library(epitools)
 dir = 'C:/Users/Caitlin/OneDrive/Documents/'
 setwd(dir)
 
-# --------------------
+# -------------------------------------
 # load the study data 
 
 # load the patient study eligibility and service provision data 
@@ -42,7 +42,7 @@ dt = data.table(read_xlsx(paste0(dir,
 # load the tb data 
 tb = data.table(read_xlsx(paste0(dir,
       'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
-       sheet = 'Tbvis_long (siteid,pid,dov)', skip = 1))
+       sheet = 'Tbvis_long (siteid,pid,dov)', skip = 2))
 
 # load the baseline data - CD4 testing
 cd4 = data.table(read_xlsx(paste0(dir,
@@ -50,7 +50,10 @@ cd4 = data.table(read_xlsx(paste0(dir,
     sheet = 'allCD4_flat(siteid,pid)', skip = 1))
 
 # -------------------------------------
-# prep the eligibility and service provision data
+# DATA PREP
+
+# ------------------------
+# prep the eligibility and service provision data 
 
 # drop all the variables beginning with "x" (x1, x2, etc.)
 # these variables do not contain data - likely commodity missing
@@ -61,9 +64,8 @@ dt[ , c('dov', drop_names):=NULL] #dov also has no data
 # calculate age
 
 
-# recode 1s and 0s as yeses and nos
-# in the future use lapply; for today mess around
-
+# recode 1s and 0s as logicals
+# more logicals in the data set - add later
 dt[ , knwstat:=as.logical(knwstat)]
 dt[ , hivtest:=as.logical(hivtest)]
 dt[ , hivresult:=as.logical(hivresult)]
@@ -76,10 +78,31 @@ dt[ , sstest:=as.logical(sstest)]
 dt[ , gxtest:=as.logical(gxtest)]
 dt[ , tbtxstart:=as.logical(tbtxstart)]
 
-# more logicals in the data set - add later
 
 
 # -------------------------------------
+# data quality checks
+
+# check for duplicate patient ids and duplicate entries
+dt[duplicated(dt)]
+dt[ , pid_test:=.N, by = pid]
+dt[1 < pid_test, .(pid, pid_test, dhisname), by = pid]
+dt = dt[pid_test==1]
+dt[ ,pid_test:=NULL]
+
+# check links with other data sets
+cd4[!(pid %in% dt$pid)] # all pids there, but one entry is a dupl
+i
+tb[(pid %in% dt$pid)]cate
+
+# -------------------------------------
+
+
+
+
+
+
+
 
 # -------------------------------------
 # summarize the cd4 data 
