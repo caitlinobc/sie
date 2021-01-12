@@ -31,14 +31,28 @@ library(epitools)
 dir = 'C:/Users/Caitlin/OneDrive/Documents/'
 setwd(dir)
 
-# load the baseline data - CD4 
+# load the patient study eligibility data 
+dt = data.table(read_xlsx(paste0(dir,
+    'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
+     sheet = 'flat(leys_siteid,pid)', skip = 3))
+
+# load the tb data 
+tb = data.table(read_xlsx(paste0(dir,
+      'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
+       sheet = 'Tbvis_long (siteid,pid,dov)', skip = 1))
+
+# load the baseline data - CD4 testing
 cd4 = data.table(read_xlsx(paste0(dir,
     'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
     sheet = 'allCD4_flat(siteid,pid)', skip = 1))
 
+
+
+
+
 # --------------------
 
-# ------------------------
+# -------------------------------------
 # summarize the cd4 data 
 
 # count of unique rows, sites, patients
@@ -91,17 +105,16 @@ cd4[!is.na(cd4result2) & cd4result2 < cd4_after_ahdelig_result1,
     median(cd4result2 - cd4_after_ahdelig_result1)]
 
 
+# number of days between the first and second test
+cd4[!is.na(cd4result2), mean(as.numeric(cd4dt2 - cd4_after_ahdelig_dt1))]
+cd4[!is.na(cd4result2), median(as.numeric(cd4dt2 - cd4_after_ahdelig_dt1))]
+cd4[!is.na(cd4result2), range(as.numeric(cd4dt2 - cd4_after_ahdelig_dt1))]
 
+cd4[!is.na(cd4result2) & 180 < (as.numeric(cd4dt2 - cd4_after_ahdelig_dt1)), 
+    length(unique(pid)) ]
 
-
-
-
-
-
-
-
-
-
+# -------------------------------------
+# summarize the tb data 
 
 
 
