@@ -15,12 +15,11 @@ library(readxl)
 library(data.table)
 library(lubridate)
 library(plyr)
-library(dplyr)
 library(tidyr)
 library(zoo)
 library(stringr)
 library(ggplot2)
-
+library(epitools)
 # ------------------------
 
 # --------------------
@@ -40,7 +39,65 @@ cd4 = data.table(read_xlsx(paste0(dir,
 # --------------------
 
 # ------------------------
-# munge the CD4 data
+# summarize the cd4 data 
+
+# count of unique rows, sites, patients
+nrow(cd4)
+cd4[, length(unique(siteid))]
+cd4[, length(unique(pid))]
+
+# add a variable for the number of cd4 tests received
+cd4[is.na(cd4_after_ahdelig_result1)] # everyone had a first cd4
+cd4[is.na(cd4result5) & is.na(cd4result4) & is.na(cd4result3) & is.na(cd4result2),
+    cd4_tests:=1]
+cd4[is.na(cd4result5) & is.na(cd4result4) & is.na(cd4result3) & !is.na(cd4result2),
+    cd4_tests:=2]
+cd4[is.na(cd4result5) & is.na(cd4result4) & !is.na(cd4result3) & !is.na(cd4result2),
+    cd4_tests:=3]
+cd4[is.na(cd4result5) & !is.na(cd4result4) & !is.na(cd4result3) & !is.na(cd4result2),
+    cd4_tests:=4]
+cd4[!is.na(cd4result5),
+    cd4_tests:=5]
+
+# number of patients who received each number of tests
+# divide by nrow for percentage 
+cd4[ , table(cd4_tests)]
+cd4[ , range(cd4_after_ahdelig_result1)]
+cd4[ , median(cd4_after_ahdelig_result1)]
+cd4[ , IQR(cd4_after_ahdelig_result1)]
+
+# counts below 200 and 500 and percentages
+cd4[cd4_after_ahdelig_result1 < 200, length(unique(pid))]
+cd4[cd4_after_ahdelig_result1 < 500,  length(unique(pid))]
+cd4[cd4_after_ahdelig_result1 < 200, length(unique(pid))/nrow(cd4)]
+cd4[cd4_after_ahdelig_result1 < 500,  length(unique(pid))/nrow(cd4)]
+
+# comparing second to  cd4 test
+cd4[!is.na(cd4result2), length(unique(pid))]
+cd4[!is.na(cd4result2) & cd4_after_ahdelig_result1 < cd4result2, 
+    length(unique(pid))]
+cd4[!is.na(cd4result2) & cd4result2 < cd4_after_ahdelig_result1, 
+    length(unique(pid))]
+
+# calculating mean and median differences between the two tests
+cd4[!is.na(cd4result2) & cd4_after_ahdelig_result1 < cd4result2, 
+    mean(cd4result2 - cd4_after_ahdelig_result1)]
+cd4[!is.na(cd4result2) & cd4_after_ahdelig_result1 < cd4result2, 
+    median(cd4result2 - cd4_after_ahdelig_result1)]
+
+cd4[!is.na(cd4result2) & cd4result2 < cd4_after_ahdelig_result1, 
+    mean(cd4result2 - cd4_after_ahdelig_result1)]
+cd4[!is.na(cd4result2) & cd4result2 < cd4_after_ahdelig_result1, 
+    median(cd4result2 - cd4_after_ahdelig_result1)]
+
+
+
+
+
+
+
+
+
 
 
 

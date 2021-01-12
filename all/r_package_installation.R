@@ -26,6 +26,7 @@ install.packages('stringr')
 install.packages('ggplot2')
 install.packages('RColorBrewer')
 install.packages('gridExtra')
+install.packages('epitools')
 
 # mapping packages
 install.packages('Rtools')
