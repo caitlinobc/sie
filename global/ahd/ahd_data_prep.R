@@ -17,12 +17,24 @@ library(ggplot2)
 library(RColorBrewer)
 library(readxl)
 library(lubridate)
+library(eeptools) 
 # --------------------
 # Files and directories
 
 # set the working directory to the cameroon data
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/AHD/'
 
+# set working directory to source other scripts
+setwd('C:/Users/ccarelli/Documents/GitHub/sie/all/ahd/')
+
+# --------------------
+# source additional code files 
+
+#run plots?
+run_plots = TRUE
+
+# run data quality checks? 
+dq_checks = TRUE
 #---------------------------------------
 # TANZANIA BASELINE DATA PREP
 
@@ -44,47 +56,12 @@ dt[ ,c(drop_names, 'dov', 'gxtest_dt', 'gxpos'):=NULL]
 # --------------------
 # convert dates to date types
 
-# all date names include dt except dob
-dates = c(names(dt)[ grepl("dt", names(dt))], 'dob')
+# all date names include dt except dob and firstvis
+dates = c(names(dt)[ grepl("dt", names(dt))], 'dob', 'firstvis')
 
-date_byVars = names(dt)[!(names(dt) %in% dates)]
+# convert the date variables to date type variables
+date_byVars = names(dt)[!(names(dt) %in% dates)] # list of not dates
 dt = dt[ , lapply(.SD, as.Date), by = date_byVars]
-
-
-
-
-# convert dates to date format
-dt[ , ahd_dt:=as.Date(ahd_dt)]
-dt[ , dob:=as.Date(dob)]
-dt[ , dtpos:=as.Date(dtpos)]
-dt[ , cd4_after_ahdelig_dt:=as.Date(cd4_after_ahdelig_dt)]
-dt[ , whostage1st_dt:=as.Date(whostage1st_dt)]
-
-dt[ , tptstart_dt:=as.Date(tptstart_dt)]
-dt[ , tptalready_dt:=as.Date(tptalready_dt)]
-dt[ , tptcplt_dt:=as.Date(tptcplt_dt)]
-
-dt[ , sstest_dt:=as.Date(sstest_dt)]
-dt[ , firstart_dt:=as.Date(firstart_dt)]
-dt[ , hvl6m_dt:=as.Date(hvl6m_dt)]
-
-dt[ , tbtxstart_dt:=as.Date(tbtxstart_dt)]
-dt[ , tbtxalready_dt:=as.Date(tbtxalready_dt)]
-dt[ , tptxcplt_dt:=as.Date(tptxcplt_dt)]
-
-dt[ , firstvis:=as.Date(firstvis)]
-dt[ , cd4_fvis_dt:=as.Date(cd4_fvis_dt)]
-
-dt[ , ahd_u5_dt:=as.Date(ahd_u5_dt)]
-dt[ , ahd_new_cd4_dt:=as.Date(ahd_new_cd4_dt)]
-dt[ , ahd_new_who_dt:=as.Date(ahd_new_who_dt)]
-dt[ , ahd_oclin_who_dt:=as.Date(ahd_oclin_who_dt)]
-
-dt[ , ahd_tb_dt:=as.Date(ahd_tb_dt)]
-dt[ , ahd_incwho_dt:=as.Date(ahd_incwho_dt)]
-dt[ , ahd_hvl_dt:=as.Date(ahd_hvl_dt)]
-dt[ , ahd_cd4u200_dt:=as.Date(ahd_cd4u200_dt)]
-
 
 # the following variable appears as POSIX CT but is an import error
 setnames(dt, 'ahd_whostage_incwho', 'ahd_whostage_incwho1' )
@@ -95,33 +72,45 @@ dt[ , ahd_whostage_incwho1:=NULL] #after this, should be no more POSIXCT in data
 # --------------------
 # convert1/0s to logicals
 
-byVars = c(dates, 'siteid')
+idVars = c('pid', 'siteid', 'dhisid', 'dhisname', 'region', 'district')
 
+# create a list of variables that should not be converted to logicals
+log_byVars = c(idVars, dates, 'ahd_elig', 'cd4_after_ahdelig_result', 
+            'whostage1st', 'hvl6mcat', 'hvl6mresult', 'whostage_fvis', 
+            'transferinid', 'cd4_fvis', 'ahd_new_cd4result', 'ahd_new_whostage', 
+            'ahd_oclin_whostage', 'ahd_hvlresult', 'ahd_hvlcat', 'ahd_cd4result')
 
-
-
-dt[ , knwstat:=as.logical(knwstat)]
-
-
-
-
-# variables with only one value...
-c('knwstat')
-
+#convert remaining variables to logicals
+dt = dt[ , lapply(.SD, as.logical), by = log_byVars]
 
 # --------------------
 # convert eligibility classification to a factor
 
-dt$ahd_elig = as.factor(dt$ahd_elig)
+dt$ahd_elig = factor(dt$ahd_elig, levels = c(1:6), labels = c('Newly diagnosed',
+      'LTFU and returned', 'On ART vir failure', 'On ART AIDS ill',
+      'Under 5', 'CD4 < 200'))
+# --------------------
+# calculate age 
 
+# age represents age at enrollment in the study
+# treat like an age - all ages rounded down to the closest year
+dt[!is.na(dob), age:=floor((age_calc(dob, enddate = ahd_dt, 
+             units = 'years', precise = TRUE)))]
 
-
-
+# if a patient is under 5, their eligibility reason should be under 5
+# priority ranking lists under 5 as top (if more than one eligibility)
+dt[age < 5, ahd_elig:='Under 5']
 
 # --------------------
 # add categories to subset while doing analysis
 
 
+#-------------------------------------------------
+
+
+if (run_plots==T) source('/ahd_diagnostic_plots.R')
+#-------------------------------------------------
+# DATA QUALITY
 
 # --------------------
 # examine the data quality challenges
