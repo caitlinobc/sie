@@ -38,7 +38,7 @@ OutDir = paste0(dir, 'att95_outputs/')
 
 dt = readRDS(paste0(dir, 'prepped/cameroon_weekly_fy21_no_sex.rds'))
 
-# drop unecessary variables (for now)
+# drop unnecessary variables (for now)
 dt [ , c('fiscal_yr', 'file_name'):=NULL]
 
 # ----------------------------------------------

@@ -219,24 +219,25 @@ if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week ski
 full_data[,length(unique(variable)), by = file_name]
 
 # --------------------
-# run the data checking file
-
-
-# --------------------
-# arrange columns in an intuitive order
+# run the data checking file, including checks against total rows
 
 
 # --------------------
 # save as rds file
 saveRDS(full_data, paste0(OutDir, 'prepped/cameroon_weekly_fy21_full.rds'))
 
-# save file aggregated across sex
+# save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
 full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
 saveRDS(full_data_no_sex, paste0(OutDir, 'prepped/cameroon_weekly_fy21_no_sex.rds'))
 
 # --------------------
-# source file to check totals
+# export a csv for use in power bi dashboards
+setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'Indicator',
+                  'Age Category', 'Week', 'Fiscal Year', 'Date', 'File Name', 'Value'))
+write.csv(full_data_no_sex, paste0(OutDir, 'prepped/cameroon_weekly_fy21_no_sex.csv'))
 
+# ------------------------------------
+# THE END
 # ------------------------------------
 
