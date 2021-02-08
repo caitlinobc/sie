@@ -1,9 +1,10 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 11/23/20
+# 2/8/21
 # Initial visualizations of Cameroon Attendiere 95 weekly data
 # For testing and data quality checks
+# Grapsh only
 # ----------------------------------------------
 
 # --------------------
@@ -22,24 +23,23 @@ library(RColorBrewer)
 library(raster)
 library(rgdal)
 # --------------------
+
+# --------------------
 # Files and directories
 
 # set the working directory to the cameroon data
-dir = 'C:/Users/ccarelli/Documents/data/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 
-# set the working directory for the shape file
-setwd('C:/Users/ccarelli/Documents/data/shape_files')
-
-# set output director
-OutDir = paste0(dir, 'outputs/')
-
-# import the prepped data shaped long
-dt = readRDS(paste0(dir, 'prepped/cameroon_weekly_fy21.rds'))
+# set the output directory
+OutDir = paste0(dir, 'att95_outputs/')
 
 # --------------------
-# prep the data set for visualization 
+# import the data 
 
-dt[ ,tier:=factor(tier)]
+dt = readRDS(paste0(dir, 'prepped/cameroon_weekly_fy21_no_sex.rds'))
+
+# drop unecessary variables (for now)
+dt [ , c('fiscal_yr', 'file_name'):=NULL]
 
 # ----------------------------------------------
 # color palettes for maps and plots
@@ -48,7 +48,6 @@ dt[ ,tier:=factor(tier)]
 ratio_colors = brewer.pal(8, 'Spectral')
 blues = brewer.pal(6, 'Blues')
 reds = brewer.pal(6, 'Reds')
-
 
 ladies = brewer.pal(11, 'RdYlBu')
 gents = brewer.pal(9, 'Purples')
@@ -65,24 +64,25 @@ single_red = '#bd0026'
 
 # --------------------
 # import shape file 
-
-reg_coord =  readRDS('gadm36_CMR_2_sp.rds')
-shape_names = cbind(reg_coord@data$NAME_1, reg_coord@data$GID_1)
-reg_coord= fortify(reg_coord)
-
-
-
-
-dist_coord = shapefile('gadm36_CMR_2.shp')
-dist_coord = fortify(dist_coord)
-
-dist_coord$id
+# 
+# reg_coord =  readRDS('gadm36_CMR_2_sp.rds')
+# shape_names = cbind(reg_coord@data$NAME_1, reg_coord@data$GID_1)
+# reg_coord= fortify(reg_coord)
+# 
+# dist_coord = shapefile('gadm36_CMR_2.shp')
+# dist_coord = fortify(dist_coord)
+# 
+# dist_coord$id
 
 # ----------------------------------------------
-# VISUALIZE THE DATA 
+# VISUALIZE THE DATA
+# ----------------------------------------------
 
 # --------------------
+# FACILITY COUNTS
+# --------------------
 # counts of facilities by geographic region 
+
 
 reg_fac = dt[ , .(facilities = length(unique(facility))), by = .(region, tier)] 
 

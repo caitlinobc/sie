@@ -18,7 +18,6 @@ library(dplyr)
 library(tidyr)
 library(zoo)
 library(stringr)
-library(ggplot2)
 
 # --------------------
 # Files and directories
@@ -28,13 +27,13 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/raw_att
 OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 setwd(dir)
 
+# --------------------
 # list the files to be prepped
 files = list.files('./', recursive=TRUE)
 length(files)
 
 # --------------------
 # set current week to check files against
-
 current_week = 18
 
 # --------------------
@@ -196,6 +195,7 @@ print(paste0("Processed week: ", start_week, "; region: ", dt_long$region[[1]]))
 # --------------------
 # shorten the indicator variable and alter to description
 full_data[ , value:=as.numeric(as.character(value))]
+full_data[ ,tier:=factor(tier)]
 
 # --------------------
 # in the first two weeks, South is translated
@@ -218,29 +218,8 @@ if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week ski
 # check that every sheet has the same number of variables
 full_data[,length(unique(variable)), by = file_name]
 
-
-var_list = full_data[ ,unique(variable), by= file_name]
-x2 = var_list[file_name=="littoral fy21_week02", .(indicator = unique(V1))]
-x3 = var_list[file_name=="littoral fy21_week03", .(indicator = unique(V1))]
-
-x2[!(x2$indicator %in% x3$indicator)]
-
-
 # --------------------
-#create and export a list of variables to examine
-
-var_list = full_data[ ,unique(variable)]
-write.csv(var_list, paste0(OutDir, 'prepped/variables.csv'))
-
-# read in the categories and merge
-cats = read.table(paste0(OutDir, 'prepped/variable_categories.csv'))
-
-# merge in the variable categories to subset the data 
-
-
-
-
-
+# run the data checking file
 
 
 # --------------------
@@ -248,8 +227,14 @@ cats = read.table(paste0(OutDir, 'prepped/variable_categories.csv'))
 
 
 # --------------------
-# save as rds
-saveRDS(full_data, paste0(OutDir, 'cameroon_weekly_fy21.rds'))
+# save as rds file
+saveRDS(full_data, paste0(OutDir, 'prepped/cameroon_weekly_fy21_full.rds'))
+
+# save file aggregated across sex
+sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
+full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
+saveRDS(full_data_no_sex, paste0(OutDir, 'prepped/cameroon_weekly_fy21_no_sex.rds'))
+
 # --------------------
 # source file to check totals
 
