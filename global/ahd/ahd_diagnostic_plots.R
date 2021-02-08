@@ -14,7 +14,11 @@ bar_colors = c('#d73027', '#f46d43', '#fdae61', '#74add1', '#4575b4')
 # histogram of age
 h1 = hist(dt$age)
 
-hist(dt$cd4_after_ahdelig_result)
+# histogram of first cd4 count
+h2 = hist(dt$cd4_after_ahdelig_result)
+
+# histogram of who stage upon enrollment
+h3 = hist(dt$whostage1st)
 
 # jittered scatter of age by enrollment classification
 g1 = ggplot(dt, aes(x = ahd_elig, y = age, color = ahd_elig))+
@@ -27,12 +31,12 @@ g2 = ggplot(dt, aes(x = ahd_elig, y = age))+
   theme_bw()
 
 # scatter of age by CD4 at enrollment
-ggplot(dt, aes(x = cd4_after_ahdelig_result, y = age))+
+g3 = ggplot(dt, aes(x = cd4_after_ahdelig_result, y = age))+
   geom_point()+
   theme_bw()
 
 # scatter of age by CD4 at enrollment with eligibility classification
-ggplot(dt, aes(x = cd4_after_ahdelig_result, y = age, color = ahd_elig))+
+g4 = ggplot(dt, aes(x = cd4_after_ahdelig_result, y = age, color = ahd_elig))+
   geom_point()+
   theme_bw()
 
@@ -75,13 +79,11 @@ dt_counts$category = factor(dt_counts$category, levels = c('Yes', 'No', 'Missing
                      labels = c('Yes', 'No', 'Missing'))
 
 #-------------------------
-# counts of eligibility by site
+# counts of ahd eligibility by site
 
+ahd_elig_counts = dt[, .(value=length(unique(pid))), by =.(ahd_elig, siteid)]
 
-counts = dt[, .(value=length(unique(pid))), by =.(ahd_elig, siteid)]
-
-
-ggplot(counts, aes(x=siteid, y=value, fill=ahd_elig)) +
+ga= ggplot(ahd_elig_counts, aes(x=siteid, y=value, fill=ahd_elig)) +
   geom_bar(position = 'dodge', stat = 'identity') +
   geom_text(position = position_dodge(width=0.9), aes(label=value), vjust=-0.5)+
   scale_fill_manual(values = bar_colors, na.value = '#bababa')+
@@ -90,6 +92,22 @@ ggplot(counts, aes(x=siteid, y=value, fill=ahd_elig)) +
        title = "AHD Study eligibility criterion, count of patients enrolled by site",
        subtitle = 'Tanzania Baseline Cohort',
        fill ='Reason for enrollment')
+
+
+#-------------------------
+# counts of who stage by site
+
+who_counts = dt[, .(value=length(unique(pid))), by =.(whostage1st, siteid)]
+
+gb = ggplot(who_counts, aes(x=siteid, y=value, fill=factor(whostage1st))) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), aes(label=value), vjust=-0.5)+
+  scale_fill_manual(values = rev(brewer.pal(5, 'Greens')), na.value = '#bababa')+
+  theme_bw()+
+  labs(x = 'Site ID', y = 'Number of patients',
+       title = "WHO Clinical Stage at enrollment by site",
+       subtitle = 'Tanzania Baseline Cohort',
+       fill ='WHO Clinical Stage')
 
 
 #-------------------------
@@ -118,9 +136,15 @@ i =i+1
 
 pdf(width=12, height = 9, paste0(dir, 'outputs/diagnostic_plots.pdf'))
 
+ga
+gb
 h1 
+h2
+h3
 g1
 g2
+g3
+g4
 test_plots
 
 dev.off()

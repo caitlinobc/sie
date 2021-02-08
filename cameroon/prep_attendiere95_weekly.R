@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 11/19/20
+# 2/8/21
 # Cleaning and prep file for Attendiere 95 weekly data 
 # Uses the weekly reporting tab at the site (facility) level
 # ----------------------------------------------
@@ -24,13 +24,18 @@ library(ggplot2)
 # Files and directories
 
 # set the working directory to the cameroon data
-dir = 'C:/Users/ccarelli/Documents/data/raw_att95_weekly/'
-OutDir = 'C:/Users/ccarelli/Documents/data/prepped/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/raw_att95_weekly/'
+OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 setwd(dir)
 
 # list the files to be prepped
 files = list.files('./', recursive=TRUE)
 length(files)
+
+# --------------------
+# set current week to check files against
+
+current_week = 18
 
 # --------------------
 # Create a prep function to be run on facility-level weekly data
@@ -45,6 +50,7 @@ file_name = files[f]
 
 #list the sheets to extract the tab by name
 sheets = excel_sheets(file_name)
+# the first two weeks have tabs named for the region - after that SITE WEEKLY
 if (any(grepl("Littoral_Report", sheets))==T) sheet_name = "Littoral_Report"
 if (any(grepl("SouthSite_Report", sheets))==T) sheet_name = "SouthSite_Report"
 if (any(grepl("SITE Weekly", sheets))==T) sheet_name = "SITE Weekly"
@@ -56,30 +62,29 @@ dt = data.table(read_excel(paste0(dir, file_name), sheet = sheet_name))
 # strip the date from the file name and save as a vector
 file_name = gsub("weekly report ", "", tolower(files[f]))
 file_name = gsub(".xlsx", "", file_name)
+file_name = sapply(strsplit(file_name,"/"), "[", 2)
 
-# the first week of this data set begins in fiscal year 20
-if (grepl("53fy", file_name)==TRUE) { fiscal_yr = 20
-  start_week = trimws(sapply(strsplit(file_name,"week"), "[", 2))
-  start_week = gsub("fy19","",start_week)
-  start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
-                                "", start_week, perl = TRUE)))
-  print(paste0("FY overlap week: FY", fiscal_yr, " Week ", start_week))
-   } else {fiscal_yr = 21 # refers to the fiscal year of the first day of the week
-  start_week = sapply(strsplit(file_name,"week"), "[", 2)
-  start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
+# the first weeks of the data are in FY20 and FY21
+# file names changed to solely reflect FY21 for just this week (both regions)
+start_week = sapply(strsplit(file_name,"week"), "[", 2)
+start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
                         "", start_week, perl = TRUE)))
-  } 
 
 # --------------------
 # rename the correctly named columns
 setnames(dt, 1:4,  c('region', 'district', 'facility', 'tier'))
 
-# drop the totals row and save for quality check (last row)
+# drop the totals row (last row in the sheet)
+# may include a "region = ALL" row which is dropped later
 tot_rows = dt[ ,.N]
-tot_check = dt[tot_rows]
 dt = dt[-tot_rows]
+
 # --------------------
 # replace values with preceding values in nested columns 
+# this takes the values of the top three rows: indicator, age, sex
+# aggregates them to a single variable name (e.g. HIV+ adolescent male)
+# then reshapes to create an age and sex column
+# and finally, shapes data long
 
 # create a data table that will only contain unique column names
 alt = dt[1:3]
@@ -161,56 +166,83 @@ dt_long[ , tier:=as.numeric(as.character(tier))]
 # --------------------
 # create a date using information stripped from the file name
 dt_long[ , week:=start_week]
-dt_long[ , fiscal_yr:=fiscal_yr]
+dt_long[ , fiscal_yr:=21] # change if ever using multi-year data
 
 # calculate dates as seven days from the first monday in fiscal year 21
 # in other words, monday, sept. 28 as october 1 was on thursday
-dt_long[fiscal_yr==20, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
-dt_long[fiscal_yr==21, 
-        date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*week)]
+dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
+dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))]
 
 # add file name column for loop testing
 dt_long[ , file_name:=file_name]
 
 # trim white space from variable names in early weeks
-dt_long[ ,variable:=trimws(variable, "both")]
+dt_long[ , variable:=trimws(variable, "both")]
 
 # --------------------
-# create a data set that checks if the totals remain the same
+# check the totals against tot_check
 
 # --------------------
 # rbind the files together to create a complete data set
 if (f==1) { full_data = dt_long } else {
   full_data = rbind(full_data, dt_long)
 }
+# --------------------
+# print a statement to show for loop progress
+print(paste0("Processed week: ", start_week, "; region: ", dt_long$region[[1]]))
 
-} # end of for loop
+} # END OF FOR LOOP
 
 # --------------------
 # shorten the indicator variable and alter to description
-
 full_data[ , value:=as.numeric(as.character(value))]
+
+# --------------------
+# in the first two weeks, South is translated
+full_data[region=='South', region:='Sud']
 
 # --------------------
 # fix minor data inconsistencies
 
-full_data[region=='South', region:='Sud']
-
 # some rows have double totals - ensure 'all' is not included
+# this has to be at the end - creates errors otherwise 
 full_data = full_data[region!='ALL']
 
-# set first week to one
-full_data[week==53, week:=1]
-full_data[week==53, fiscal_yr:=21]
+# --------------------
+# SIMPLE QUALITY CHECKS 
+
+# check that every week is counted
+for (r in unique(full_data$region)) {
+if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week skipped!") }
+
+# check that every sheet has the same number of variables
+full_data[,length(unique(variable)), by = file_name]
+
+
+var_list = full_data[ ,unique(variable), by= file_name]
+x2 = var_list[file_name=="littoral fy21_week02", .(indicator = unique(V1))]
+x3 = var_list[file_name=="littoral fy21_week03", .(indicator = unique(V1))]
+
+x2[!(x2$indicator %in% x3$indicator)]
+
 
 # --------------------
-#create and export alist of variables to examine
+#create and export a list of variables to examine
 
 var_list = full_data[ ,unique(variable)]
-write.csv(var_list, paste0(OutDir, 'variables.csv'))
+write.csv(var_list, paste0(OutDir, 'prepped/variables.csv'))
 
 # read in the categories and merge
-cats = read.table(paste0(OutDir, 'variables.csv'))
+cats = read.table(paste0(OutDir, 'prepped/variable_categories.csv'))
+
+# merge in the variable categories to subset the data 
+
+
+
+
+
+
+
 # --------------------
 # arrange columns in an intuitive order
 
