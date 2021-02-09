@@ -23,18 +23,23 @@ library(stringr)
 # Files and directories
 
 # set the working directory to the cameroon data
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/raw_att95_weekly/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/att95_weekly_raw/'
 OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 setwd(dir)
+
+# set current week to check files against
+current_week = 18
+
+# run the data checks to ensure no data entry errors?
+run_check = TRUE
+
+# ----------------------------------------------
+# PREP DATA 
 
 # --------------------
 # list the files to be prepped
 files = list.files('./', recursive=TRUE)
 length(files)
-
-# --------------------
-# set current week to check files against
-current_week = 18
 
 # --------------------
 # Create a prep function to be run on facility-level weekly data
@@ -215,27 +220,36 @@ full_data = full_data[region!='ALL']
 for (r in unique(full_data$region)) {
 if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week skipped!") }
 
-# check that every sheet has the same number of variables
-full_data[,length(unique(variable)), by = file_name]
+# --------------------
+# corrections based on initial quality check
+
+# correct facility names to match DATIM names
+# these also differ across weeks (some typos/lack of standardization)
+
+
 
 # --------------------
 # run the data checking file, including checks against total rows
 
+# reset working directory and run the file
+setwd()
+source()
+
 
 # --------------------
 # save as rds file
-saveRDS(full_data, paste0(OutDir, 'prepped/cameroon_weekly_fy21_full.rds'))
+saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_full.rds'))
 
 # save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
 full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
-saveRDS(full_data_no_sex, paste0(OutDir, 'prepped/cameroon_weekly_fy21_no_sex.rds'))
+saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex.rds'))
 
 # --------------------
 # export a csv for use in power bi dashboards
 setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'Indicator',
                   'Age Category', 'Week', 'Fiscal Year', 'Date', 'File Name', 'Value'))
-write.csv(full_data_no_sex, paste0(OutDir, 'prepped/cameroon_weekly_fy21_no_sex.csv'))
+write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex.csv'))
 
 # ------------------------------------
 # THE END

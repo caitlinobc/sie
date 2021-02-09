@@ -1,4 +1,63 @@
+#--------------------------
+# Run a series of checks on the weekly CDC Reporting
 # 
+# Caitlin O'Brien-Carelli
+# 2/9/21
+#--------------------------
+
+#--------------------------
+# check that every sheet has the same number of variables
+# weeks 1 and 2 have 34;weeks 3 - 18 have 30
+full_data[,length(unique(variable)), by = file_name]
+
+#--------------------------
+#print these lists to make sure they make sense
+
+full_data[ ,unique(sex)]
+full_data[ ,unique(region)]
+full_data[ ,unique(district)]
+full_data[ ,unique(facility)]
+
+# check lengths of the categories
+if (full_data[ ,length(unique(sex))]==3) {print ("Correct sex categories!")
+} else {print("Something is wrong with the sex categories.")}
+
+# if any of the data are missing a value these will print as incorrect
+if (full_data[ ,length(unique(age))]==2) {print ("Correct age categories!")
+} else {print("Something is wrong with the age categories.")}
+
+if (full_data[ ,length(unique(region))]==2) {print ("Correct regions!")
+} else {print("Something is wrong with the regions.")}
+
+if (full_data[ ,length(unique(facility))]==76) {print ("Correct districts!")
+} else {print("Something is wrong with the districts.")}
+
+if (full_data[ ,length(unique(sex))]==3) {print ("Correct sex categories!")
+} else {print("Something is wrong with the sex categories.")}
+
+if (full_data[ ,length(unique(sex))]==3) {print ("Correct sex categories!")
+} else {print("Something is wrong with the sex categories.")}
+
+
+
+
+
+# indicator mapping
+ind = full_data[ ,.(variable = unique(variable)), by = file_name]
+ind = dcast(ind, variable~file_name, value.var = 'variable')
+
+# export a list of indicators from each file
+write.csv(ind, paste0(OutDir, 'att95_prepped/variable_map.csv'))
+
+
+
+
+
+
+
+
+
+
 # var_list = full_data[ ,.(variable = unique(variable)), by= file_name]
 # 
 # x2 = var_list[file_name=="littoral fy21_week02", .(indicator = unique(variable))]
