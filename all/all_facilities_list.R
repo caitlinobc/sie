@@ -22,14 +22,18 @@ library(jsonlite)
 # --------------------
 # Files and directories
 
-# set the working directory to the cameroon data
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/facilities/'
+# set the working directory to the location of the raw data
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/facilities/raw_data/'
+setwd(dir)
+
+# set the output directory
+outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/facilities/prepped/'
 
 # --------------------
 # loop through and pull geographic information
 
 # country ids for all countries
-af =  fromJSON(paste0(dir, 'africa.json'))
+af =  fromJSON(paste0(dir, 'africa_ids.json'))
 af = data.table(af$children)
 
 # fill in the names of the countries by code
@@ -79,6 +83,44 @@ dt[level==5, type:='district']
 dt[level==6, type:='facility']
 
 # --------------------
+# add coordinates
+
+# create a data table of the coordinates
+geom_type = ll$organisationUnits$geometry[1]
+coords = ll$organisationUnits$geometry[2]
+geom = data.table(cbind(geom_type, coords))
+
+# fix the structure of the table and remove polygons
+geom[ , coord:=as.character(coordinates)]
+geom[type=='Polygon', coord:=NA]
+geom[ , c('type', 'coordinates'):=NULL]
+geom[coord=='NULL', coord:=NA]
+
+# convert to lat long
+geom[ , coord:=gsub("c\\(", "", coord)]
+geom[ , coord:=gsub("\\)", "", coord)]
+geom[ , lat:=sapply(strsplit(coord,","), "[", 1)]
+geom[ , long:=sapply(strsplit(coord,","), "[", 2)]
+geom[ , coord:=NULL]
+
+# --------------------
+# bind in latitude and longitude
+
+dt = cbind(dt, geom)
+
+# --------------------
+# export the file to combine late
+
+saveRDS(dt, paste0(outDir, 'interim_prep/esw_lat_long.rds'))
+
+# ----------------------------------------------
+
+
+
+
+
+
+
 
 
 
