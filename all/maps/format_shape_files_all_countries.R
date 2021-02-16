@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 11/30/20
+# 2/16/21
 # Format shape files at the district level for mapping
 # ----------------------------------------------
 
@@ -23,27 +23,57 @@ library(gridExtra)
 # --------------------
 # Files and directories
 
-# set the working directory to the cameroon data
-dir = 'C:/Users/ccarelli/Documents/data/'
+# set the working directory to the shape files
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
 
 # set the working directory for the shape file
-setwd('C:/Users/ccarelli/Documents/data/shape_files/')
+setwd(paste0(dir, 'shape/'))
 
-# set output director
-OutDir = paste0(dir, 'outputs/')
+# set output directory
+OutDir = paste0(dir)
 
 # --------------------
 # should you use the drc health zone level shape file?
-drc_patch = TRUE
+drc_patch = FALSE
 
 # subset the drc data to only kinshasa?
 kin_only = TRUE
+
+# choose which level to run the function at
+# options: country, region, district
+level = 'district'
+
 # -----------------------------------------
-# import the shape file, check, and fortify
+# import the shape files, check, and fortify
 
 # list the shape files
-files = list.files(paste0(dir, 'shape_files'))
+all_files = list.files(paste0(dir, 'shape/'))
 
+# --------------------
+# create function levels and choose which level to run the function 
+
+# the country level is always 0
+country_files = all_files[grepl("0", all_files)]
+
+# at the regional level, all files use 1 except Cameroon/CDI (2)
+# Cameroon and CDI have files at level 1 but 2 is more detailed
+# Lesotho only had regions, so use 1 for both region and district
+region_files = c(all_files[grepl("1", all_files)], "gadm36_CMR_2_sp.rds",
+                 "gadm36_CIV_2_sp.rds")
+region_files = region_files[!grepl("CIV_1", region_files) & !grepl('CMR_1', region_files)]
+
+# most countries have admin-2 as 2, a fewas 3 or 1 (Lesotho)
+district_files = c(all_files[grepl("_2", all_files)],"gadm36_CMR_3_sp.rds",
+                   "gadm36_CIV_3_sp.rds", "gadm36_LSO_1_sp.rds")
+district_files = district_files[!grepl("CIV_2", district_files) & !grepl('CMR_2', district_files)]
+
+# set the country level to run the function 
+if (level=='country') files = country_files
+if (level=='region') files = region_files
+if (level=='district') files = district_files
+# --------------------
+
+# -----------------------------------------
 # loop through each shape file, fortify, and rbind
 i = 1
 for (f in files) {
@@ -58,11 +88,11 @@ country = trimws(sapply(strsplit(f ,"_"), "[", 2), "both")
 sort(unique(shape@data$NAME_1))
 
 # list and keep the names and add region code
-if (country %in% c('LSO', 'MWI', 'TZA')) { 
+if (country %in% 'LSO') { 
   names = data.table(cbind(district = shape@data$NAME_1,
             id = shape@data$GID_1))
             region_code = 'GID_1'
-  } else if (country %in% c('COD', 'SWZ', 'KEN', 'MOZ', 'UGA')) {
+  } else if (country %in% c('COD', 'SWZ', 'KEN', 'MOZ', 'UGA', 'MWI', 'TZA')) {
     names = data.table(cbind(district = shape@data$NAME_2,
             id = shape@data$GID_2))
             region_code = 'GID_2'} else {
@@ -101,65 +131,20 @@ i = i+1
 } # end of rbind loop
 
 # -----------------------------------------
+# merge in the egpaf district name
 
-# --------------------
-# patch in the drc health zone level shape file
+write.csv(full_names, paste0(dir, 'shape_names/district_names_shape.csv'))
 
-if (drc_patch==TRUE) {
-  
-  #--------------------
-  # import the health zone level shape file
-  drc = shapefile(paste0(dir, 'drc_zones/RDC_Zones de santé.shp'))
-  drc_names = data.table(cbind(district = drc@data$Nom,
-              id = drc@data$Pcode))
-  drc_names[ , country:='COD']
 
-  # create health zone labels
-  drc_labels = data.table(coordinates(drc))
-  setnames(drc_labels, c('long', 'lat'))
-  drc_labels = cbind(drc_labels, drc_names)
-  
-  # correct the topology intersection in the shape file
-  drc2 = gBuffer(drc, byid=TRUE, width = 0)
-  drc2$id = drc$Pcode
-  
-  # list of health zones located within Kinshasa
-  kinshasa_ids = data.table(cbind(district = drc@data$Nom,
-                   id = drc@data$Pcode, 
-                   province = drc$Anc_provin))
-  kinshasa_ids = kinshasa_ids[province=='Kinshasa']
-  
-  # fortify the shape file
-  drc_coord = data.table(fortify(drc2, region='Pcode'))
-  drc_coord[ , country:='COD'] 
-  
-  # subset the shape file to only kinshasa for display
-  drc_coord = drc_coord[id %in% kinshasa_ids$id]
-  
-  
-  #--------------------
-  
-  #--------------------
-  # remove DRC from the main file and replace with health zone level
-  full_shape = full_shape[country!='COD']
-  full_shape = rbind(full_shape, drc_coord)
-  
-  full_names = full_names[country!='COD']
-  full_names = rbind(full_names, drc_names)
-  
-  full_labels = full_labels[country!='COD']
-  full_labels = rbind(full_labels, drc_labels)
-}
+
+# -----------------------------------------
+# substitute the DRC specific alternate shape file 
+
+if(drc_patch==TRUE) source('drc_shape_patch.R')
 
 # -----------------------------------------
 # FINAL FORMATTING
 # --------------------
-# collapse the names to a single value per district
-
-full_names = full_names[ , .(district = unique(district)), 
-            by = .(id, country)]
-
-# -----------------------------------
 # rename the countries
 
 # names are in alphabetical order; convert to factor
@@ -180,13 +165,13 @@ full_names$country = factor(full_names$country,
 # export the district and country names
 
 # export the list of names and ids
-saveRDS(full_names, paste0(dir,'prepped/district_names_ids.rds'))
+saveRDS(full_names, paste0(dir,'shape_names/district_names_ids.rds'))
 
 # export the combined shape file
-saveRDS(full_shape, paste0(dir,'prepped/shape_files_all_countries.rds'))
+saveRDS(full_shape, paste0(dir,'shape_names/shape_files_all_countries.rds'))
 
 # export the labels
-saveRDS(full_labels, paste0(dir,'prepped/labels_all_countries.rds'))
+saveRDS(full_labels, paste0(dir,'shape_names/labels_all_countries.rds'))
 
 # ---------------
 # -----------------------------------

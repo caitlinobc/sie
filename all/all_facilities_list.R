@@ -23,17 +23,17 @@ library(jsonlite)
 # Files and directories
 
 # set the working directory to the location of the raw data
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/facilities/raw_data/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/raw_data/'
 setwd(dir)
 
 # set the output directory
-outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/facilities/prepped/'
+outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/'
 
 # --------------------
-# loop through and pull geographic information
+# pull geographic information for each country
 
 # country ids for all countries
-af =  fromJSON(paste0(dir, 'africa_ids.json'))
+af =  fromJSON(paste0(dir, 'africa_country_ids.json'))
 af = data.table(af$children)
 
 # fill in the names of the countries by code
@@ -46,28 +46,34 @@ af[id=='bQQJe0cC1eD', country:='Cameroon']
 # 'https://www.datim.org/api/organisationUnits/bQQJe0cC1eD.json?includeDescendants=true&paging=false&fields=id,name,parent,level,geometry'
 
 # --------------------
-# read in the json file
 
 # ----------------------------------------------
 # JSON facilities and locations
 
 # --------------------
-# ESWATINI
+country = 'cdi'
 
-# import the file
-ll = fromJSON(paste0(dir, 'esw_lat_long.json'))
+ll = fromJSON(paste0(dir, country, '_lat_long.json'))
+
+# --------------------
+# import and format the data 
 
 # grab each row in the list and bind into a data table
 level = ll$organisationUnits[1]
 facility = ll$organisationUnits[2]
 id = ll$organisationUnits[3]
-parent_id = ll$organisationUnits[4]
-  
-dt = data.table(cbind(facility, level, id, parent_id))
-dt[ , country:='Eswatini']
 
+# grab the 'parent' (next org unit up) for each admin unit
+if (country %in% c('cdi', 'cmr')) parent_id = ll$organisationUnits[5]
+if (country=='esw') parent_id = ll$organisationUnits[4]
+
+# bind and create a data table
+dt = data.table(cbind(facility, level, id, parent_id))
+dt[ , country:=country]
 # --------------------
-# name the admin levels for eswatini
+
+# ----------------------------------------------
+# Name the admin levels: ESWATINI
 
 # eswatini country id: 'V0qMZH29CtN'
 dt[level==3, type:='country']
@@ -81,6 +87,29 @@ dt[level==5, type:='district']
 
 # level 6 in eswatini is facility - 466 facilities/sites
 dt[level==6, type:='facility']
+
+
+
+
+
+
+
+
+# --------------------
+# add districts to facilities using parenti Id for the health facility
+dist = dt[type=='district', .(district = name, parent = id, district_parent = parent)]
+dt = merge(dt, dist, by = 'parent', all.x = TRUE)
+
+# --------------------
+# add regions to facilities using district
+
+reg = dt[type=='region', .(region = name, district_parent = id)]
+dt = merge(dt, reg, by = 'district_parent', all.x = TRUE)
+
+# --------------------
+# drop unnecessary variables and format
+
+dt = dt[ ,.(name, level, type, id, parent, district, region, country)]
 
 # --------------------
 # add coordinates
@@ -104,14 +133,20 @@ geom[ , long:=sapply(strsplit(coord,","), "[", 2)]
 geom[ , coord:=NULL]
 
 # --------------------
-# bind in latitude and longitude
+# bind in latitude and longitude of health facilities
 
 dt = cbind(dt, geom)
 
 # --------------------
-# export the file to combine late
+# export the file with all administrative units
 
-saveRDS(dt, paste0(outDir, 'interim_prep/esw_lat_long.rds'))
+saveRDS(dt, paste0(outDir, 'full_admin_lists/esw_lat_long_full.rds'))
+
+# --------------------
+# export the file with health facilities only 
+
+dt_fac = dt[type=='facility']
+saveRDS(dt_fac, paste0(outDir, 'health_facility_lists/esw_lat_long.rds'))
 
 # ----------------------------------------------
 

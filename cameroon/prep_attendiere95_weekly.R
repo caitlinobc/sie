@@ -232,8 +232,8 @@ if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week ski
 # run the data checking file, including checks against total rows
 
 # reset working directory and run the file
-setwd()
-source()
+# setwd()
+# source()
 
 
 # --------------------
