@@ -50,13 +50,27 @@ af[id=='bQQJe0cC1eD', country:='Cameroon']
 # ----------------------------------------------
 # JSON facilities and locations
 
+#
 # --------------------
-country = 'cdi'
+# loop through files, import, and format
 
+# create a list of country coces
+countries = c('cmr', 'cdi', 'esw')
+
+# set the index
+i = 1
+
+# run the loop!
+for (c in countries) {
+
+# set the country name to import correctly
+country = c
+
+# import the data 
 ll = fromJSON(paste0(dir, country, '_lat_long.json'))
 
 # --------------------
-# import and format the data 
+# # NAME THE ADMIN LEVELS IN THE DATA SETS
 
 # grab each row in the list and bind into a data table
 level = ll$organisationUnits[1]
@@ -70,30 +84,44 @@ if (country=='esw') parent_id = ll$organisationUnits[4]
 # bind and create a data table
 dt = data.table(cbind(facility, level, id, parent_id))
 dt[ , country:=country]
+
+# --------------------
+# country and higher level region are the same for all countries
+dt[level==3, type:='country']
+dt[level==4,type:='region']
+
+# --------------------
+# COUNTRY SPECIfIC LEVELS
+
+# countries have different levels for distinct admin units
+if (country %in% c('cmr', 'esw')) {
+    dt[level==5, type:='district']
+    dt[level==6, type:='facility']
+    dt = dt[!(country=='cmr' & level==7)] # drop the one level 7 sub-facility
+} else { # cdi only right now
+  dt[level==5, type:='district']
+  dt[level==6, type:='sub-district']
+  dt[level==7, type:='facility']
+  
+}
+
+# change the "military" region "military" type
+dt[grepl('Military', name), type:='military']
+
+# --------------------
+# rbind all of the country-specific data sets together
+# creates a complete data set of pepfar org units
+if (i == 1) full_data = dt
+if (1 < i) full_data = rbind(full_data, dt)
+
+i = i+1 # reset the index each time the loops runs
+}
+
 # --------------------
 
+
 # ----------------------------------------------
-# Name the admin levels: ESWATINI
-
-# eswatini country id: 'V0qMZH29CtN'
-dt[level==3, type:='country']
-
-# level 4 in eswatini is region - 4 regions and one military zone
-dt[level==4 & name!='_Military Eswatini', type:='region']
-dt[name=='_Military Eswatini', type:='military']
-
-# level 5 in eswatini is district - 60 districts
-dt[level==5, type:='district']
-
-# level 6 in eswatini is facility - 466 facilities/sites
-dt[level==6, type:='facility']
-
-
-
-
-
-
-
+# format the data wide for ease of use 
 
 # --------------------
 # add districts to facilities using parenti Id for the health facility
