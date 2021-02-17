@@ -48,7 +48,7 @@ af[id=='bQQJe0cC1eD', country:='Cameroon']
 # --------------------
 
 # ----------------------------------------------
-# JSON facilities and locations
+# JSON facilities and locations - LOOP
 
 #
 # --------------------
@@ -109,35 +109,76 @@ if (country %in% c('cmr', 'esw')) {
 dt[grepl('Military', name), type:='military']
 
 # --------------------
+# add coordinates
+
+# create a data table of the coordinates
+geom_type = ll$organisationUnits$geometry[1]
+coords = ll$organisationUnits$geometry[2]
+geom = data.table(cbind(geom_type, coords))
+
+# fix the structure of the table and remove polygons
+geom[ , coord:=as.character(coordinates)]
+geom[type=='Polygon', coord:=NA]
+geom[ , c('type', 'coordinates'):=NULL]
+geom[coord=='NULL', coord:=NA]
+
+# convert to lat long
+geom[ , coord:=gsub("c\\(", "", coord)]
+geom[ , coord:=gsub("\\)", "", coord)]
+geom[ , lat:=sapply(strsplit(coord,","), "[", 1)]
+geom[ , long:=sapply(strsplit(coord,","), "[", 2)]
+geom[ , coord:=NULL]
+
+# --------------------
+
+
+
+
+# --------------------
 # rbind all of the country-specific data sets together
 # creates a complete data set of pepfar org units
-if (i == 1) full_data = dt
-if (1 < i) full_data = rbind(full_data, dt)
+if (i == 1) fd = dt
+if (1 < i) fd = rbind(fd, dt)
 
 i = i+1 # reset the index each time the loops runs
 }
 
 # --------------------
 
-
 # ----------------------------------------------
-# format the data wide for ease of use 
+# format the data wide for ease of use (puts data at the facility level
 
 # --------------------
-# add districts to facilities using parenti Id for the health facility
-dist = dt[type=='district', .(district = name, parent = id, district_parent = parent)]
-dt = merge(dt, dist, by = 'parent', all.x = TRUE)
+# add district names to associated facilities using the facility parent id
+
+# for countries with sub-districts, merge in sub-district names
+# these include: cdi
+sub_dist = fd[type=='sub-district', .(sub_dist = name, parent = id, 
+    sub_dist_parent = parent)]
+fd = merge(fd, sub_dist, by = 'parent', all.x = TRUE)
+
+# facilities with sub districts have sd parents ids
+# replace with district parent ids (the parent ids of the sds)
+fd[!is.na(sub_dist), parent:=sub_dist_parent] 
+fd[ , sub_dist_parent:=NULL]
+
+# add the names of the districts
+dist = fd[type=='district', .(district = name, parent = id, 
+          district_parent = parent)]
+fd = merge(fd, dist, by = 'parent', all.x = TRUE)
 
 # --------------------
 # add regions to facilities using district
 
-reg = dt[type=='region', .(region = name, district_parent = id)]
-dt = merge(dt, reg, by = 'district_parent', all.x = TRUE)
+reg = fd[type=='region', .(region = name, district_parent = id)]
+fd = merge(fd, reg, by = 'district_parent', all.x = TRUE)
 
 # --------------------
-# drop unnecessary variables and format
+# drop unnecessary variables and format the data set
 
-dt = dt[ ,.(name, level, type, id, parent, district, region, country)]
+fd = fd[ ,.(name, level, type, id, parent, sub_dist, 
+            district, region, country )]
+fd[ , country:=toupper(country)]
 
 # --------------------
 # add coordinates

@@ -20,6 +20,7 @@ library(maptools)
 library(broom)
 library(ggrepel)
 library(gridExtra)
+library(jsonlite)
 # --------------------
 # Files and directories
 
@@ -78,7 +79,7 @@ if (level=='district') files = district_files
 i = 1
 for (f in files) {
 
-shape = readRDS(f) # regional level
+shape = readRDS(f) 
 plot(shape)
 
 # add the country
@@ -131,10 +132,13 @@ i = i+1
 } # end of rbind loop
 
 # -----------------------------------------
-# merge in the egpaf district name
+# merge in the egpaf region and district names
 
-write.csv(full_names, paste0(dir, 'shape_names/district_names_shape.csv'))
+pepfar_list = 'pepfar_org_units/prepped/full_admin_lists/'
 
+list.files(paste0(dir, pepfar_list))
+f = files[[1]]
+readRDS(f)
 
 
 # -----------------------------------------
