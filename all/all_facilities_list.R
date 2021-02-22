@@ -19,6 +19,7 @@ library(tidyr)
 library(zoo)
 library(stringr)
 library(jsonlite)
+library(openxlsx)
 # --------------------
 # Files and directories
 
@@ -28,6 +29,13 @@ setwd(dir)
 
 # set the output directory
 outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/'
+
+# set the main directory where all files are located
+main_dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
+
+# --------------------
+# load the function that fixes diacritical marks
+source('C:/Users/ccarelli/Documents/GitHub/sie/all/fix_diacritics_function.r')
 
 # --------------------
 # pull geographic information for each country
@@ -97,7 +105,7 @@ dt[level==4,type:='region']
 if (country %in% c('cmr', 'esw')) {
     dt[level==5, type:='district']
     dt[level==6, type:='facility']
-    dt = dt[!(country=='cmr' & level==7)] # drop the one level 7 sub-facility
+    dt[country=='cmr' & level==7, type:='facility']
 } else { # cdi only right now
   dt[level==5, type:='district']
   dt[level==6, type:='sub-district']
@@ -125,14 +133,18 @@ geom[coord=='NULL', coord:=NA]
 # convert to lat long
 geom[ , coord:=gsub("c\\(", "", coord)]
 geom[ , coord:=gsub("\\)", "", coord)]
-geom[ , lat:=sapply(strsplit(coord,","), "[", 1)]
-geom[ , long:=sapply(strsplit(coord,","), "[", 2)]
+geom[ , long:=sapply(strsplit(coord,","), "[", 1)]
+geom[ , lat:=sapply(strsplit(coord,","), "[", 2)]
 geom[ , coord:=NULL]
 
 # --------------------
+# bind the coordinates for the facilities to the data
 
+# check that the lengths are the same
+if (nrow(geom) != nrow(dt)) print("Your lat long has a problem!")
 
-
+# bind in the facility coordinates
+dt = cbind(dt, geom)
 
 # --------------------
 # rbind all of the country-specific data sets together
@@ -168,61 +180,74 @@ dist = fd[type=='district', .(district = name, parent = id,
 fd = merge(fd, dist, by = 'parent', all.x = TRUE)
 
 # --------------------
-# add regions to facilities using district
+# add regions to facilities and districts using district parents
 
+# districts only have parents, not district parents (add)
+fd[type=='district', district_parent:=parent]
+
+# merge in theregions 
 reg = fd[type=='region', .(region = name, district_parent = id)]
 fd = merge(fd, reg, by = 'district_parent', all.x = TRUE)
 
 # --------------------
 # drop unnecessary variables and format the data set
+# drops district parents 
 
 fd = fd[ ,.(name, level, type, id, parent, sub_dist, 
-            district, region, country )]
+            district, region, country, lat, long )]
 fd[ , country:=toupper(country)]
 
-# --------------------
-# add coordinates
+# ----------------------------------------------
+# create a binary for egpaf health facility
 
-# create a data table of the coordinates
-geom_type = ll$organisationUnits$geometry[1]
-coords = ll$organisationUnits$geometry[2]
-geom = data.table(cbind(geom_type, coords))
+# list the facilities specific to egpaf 
+e_dt = data.table(read.csv(paste0(main_dir, 'pepfar_org_units/egpaf_facilities_list.csv')))
+setnames(e_dt, c('country','org_unit_id'), c('country_name', 'id'))
+e_dt[ , hts_tst:=NULL]
+e_dt[ , egpaf:=TRUE]
 
-# fix the structure of the table and remove polygons
-geom[ , coord:=as.character(coordinates)]
-geom[type=='Polygon', coord:=NA]
-geom[ , c('type', 'coordinates'):=NULL]
-geom[coord=='NULL', coord:=NA]
+# merge in the ids of the egpaf facilities; binary for 'is egpaf ip?'
+fd = merge(fd, e_dt, all.x=TRUE)
+fd[is.na(egpaf), egpaf:=FALSE]
 
-# convert to lat long
-geom[ , coord:=gsub("c\\(", "", coord)]
-geom[ , coord:=gsub("\\)", "", coord)]
-geom[ , lat:=sapply(strsplit(coord,","), "[", 1)]
-geom[ , long:=sapply(strsplit(coord,","), "[", 2)]
-geom[ , coord:=NULL]
-
-# --------------------
-# bind in latitude and longitude of health facilities
-
-dt = cbind(dt, geom)
+# check that the facilities matched in the correct countries
+fd[egpaf==TRUE, unique(country), by = country_name]
+fd[ , country_name:=NULL] # drop the country name check
 
 # --------------------
 # export the file with all administrative units
 
-saveRDS(dt, paste0(outDir, 'full_admin_lists/esw_lat_long_full.rds'))
+saveRDS(fd, paste0(outDir, 'all_datim_org_units.rds'))
 
 # --------------------
 # export the file with health facilities only 
 
-dt_fac = dt[type=='facility']
-saveRDS(dt_fac, paste0(outDir, 'health_facility_lists/esw_lat_long.rds'))
+fd_fac = fd[type=='facility']
+saveRDS(fd_fac, paste0(outDir, 'datim_health_facilities.rds'))
 
 # ----------------------------------------------
 
+# ----------------------------------------------
+# for each country, export a list of health facilities for use in PBI
 
+# fix the diacritical marks for facility names to export as csv
+fd_fac[ , name:=fix_diacritics(name)]
 
+# print a csv for each country with a list of facility names
+for (c in countries){
+  country_name = toupper(c)
+  print_dt = fd_fac[country==country_name]
+  
+  # add country names
+  print_dt[country=='cmr', country:='Cameroon']
+  print_dt[country=='esw', country:='Eswatini']
+  print_dt[country=='cdi', country:='Cote d\'Ivoire']
+  
+  # save a file for each country
+  write.csv(print_dt, paste0(outDir, c, '_health_facilities.csv'))
+}
 
-
+# ----------------------------------------------
 
 
 
