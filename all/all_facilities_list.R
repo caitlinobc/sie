@@ -239,9 +239,13 @@ for (c in countries){
   print_dt = fd_fac[country==country_name]
   
   # add country names
-  print_dt[country=='cmr', country:='Cameroon']
-  print_dt[country=='esw', country:='Eswatini']
-  print_dt[country=='cdi', country:='Cote d\'Ivoire']
+  print_dt[country=='CMR', country:='Cameroon']
+  print_dt[country=='ESW', country:='Eswatini']
+  print_dt[country=='CDI', country:='Cote d\'Ivoire']
+  
+  # change egpaf to y/n
+  print_dt[egpaf==TRUE, egpaf_facility:='Yes']
+  print_dt[egpaf==FALSE, egpaf_facility:='No']
   
   # save a file for each country
   write.csv(print_dt, paste0(outDir, c, '_health_facilities.csv'))

@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/8/21
+# 2/22/21
 # Cleaning and prep file for Attendiere 95 weekly data 
 # Uses the weekly reporting tab at the site (facility) level
 # ----------------------------------------------
@@ -28,7 +28,7 @@ OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 setwd(dir)
 
 # set current week to check files against
-current_week = 18
+current_week = 20
 
 # run the data checks to ensure no data entry errors?
 run_check = TRUE
@@ -170,12 +170,15 @@ dt_long[ , tier:=as.numeric(as.character(tier))]
 # --------------------
 # create a date using information stripped from the file name
 dt_long[ , week:=start_week]
-dt_long[ , fiscal_yr:=21] # change if ever using multi-year data
 
 # calculate dates as seven days from the first monday in fiscal year 21
 # in other words, monday, sept. 28 as october 1 was on thursday
 dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
 dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))]
+
+# add in fiscal year
+dt_long[year(date)==2020, fiscal_yr:=20] 
+dt_long[year(date)==2021, fiscal_yr:=21] 
 
 # add file name column for loop testing
 dt_long[ , file_name:=file_name]
@@ -213,20 +216,32 @@ full_data[region=='South', region:='Sud']
 # this has to be at the end - creates errors otherwise 
 full_data = full_data[region!='ALL']
 
+# replace indicators with abbreviations
+full_data[ , variable:=gsub("index case testing \\(ICT\\)", "ICT", full_data$variable)]
+full_data[ , variable:=gsub("enhanced adherence counseling \\(EAC\\)", "EAC", full_data$variable)]
+full_data[ , variable:=gsub("same day ART initiation \\(SDI\\)", "SDI", full_data$variable)]
+full_data$variable = gsub("community ART dispensations \\(CAD\\)", "CAD", full_data$variable)
+
 # --------------------
+# create a binary for the variables that occur in weeks 3 - 18
+later_vars = full_data[week==3, unique(variable)]
+full_data[variable %in% later_vars, current_var:=TRUE]
+full_data[!(variable %in% later_vars), current_var:=FALSE]
+
+# --------------------
+
+#-------------------------------------------------
 # SIMPLE QUALITY CHECKS 
 
 # check that every week is counted
 for (r in unique(full_data$region)) {
 if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week skipped!") }
 
-# --------------------
+# ------------------------------------------------
 # corrections based on initial quality check
 
 # correct facility names to match DATIM names
 # these also differ across weeks (some typos/lack of standardization)
-
-
 
 # --------------------
 # run the data checking file, including checks against total rows
@@ -235,10 +250,12 @@ if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week ski
 # setwd()
 # source()
 
-
 # --------------------
 # save as rds file
-saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_full.rds'))
+
+# label the last week uploaded - full data; all disaggregation
+saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_full_wk', 
+      current_week, '.rds'))
 
 # save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
@@ -246,10 +263,44 @@ full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
 saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex.rds'))
 
 # --------------------
+# PBI DATA 
+
+# add quarter year and month year for PBI
+
+# create a temporary month variable used for labeling
+full_data_no_sex[ ,month:=month(date)]
+
+# create pepfar quarter-year for visualization
+full_data_no_sex[month %in% c(1, 2, 3), qtr:=paste0('Q1 FY', fiscal_yr)]
+full_data_no_sex[month %in% c(4, 5, 6), qtr:=paste0('Q2 FY', fiscal_yr)]
+full_data_no_sex[month %in% c(7, 8, 9), qtr:=paste0('Q3 FY', fiscal_yr)]
+full_data_no_sex[month %in% c(10, 11, 12), qtr:=paste0('Q4 FY', fiscal_yr)]
+
+# create month-year for visualization
+full_data_no_sex[month==1, month_yr:=paste0('Jan ', fiscal_yr)]
+full_data_no_sex[month==2, month_yr:=paste0('Feb ', fiscal_yr)]
+full_data_no_sex[month==3, month_yr:=paste0('Mar ', fiscal_yr)]
+full_data_no_sex[month==4, month_yr:=paste0('Apr ', fiscal_yr)]
+full_data_no_sex[month==5, month_yr:=paste0('May ', fiscal_yr)]
+full_data_no_sex[month==6, month_yr:=paste0('June ', fiscal_yr)]
+
+full_data_no_sex[month==7, month_yr:=paste0('July ', fiscal_yr)]
+full_data_no_sex[month==8, month_yr:=paste0('Aug ', fiscal_yr)]
+full_data_no_sex[month==9, month_yr:=paste0('Sept ', fiscal_yr)]
+full_data_no_sex[month==10, month_yr:=paste0('Oct ', fiscal_yr)]
+full_data_no_sex[month==11, month_yr:=paste0('Nov ', fiscal_yr)]
+full_data_no_sex[month==12, month_yr:=paste0('Dec', fiscal_yr)]
+
+# drop month
+full_data_no_sex[ ,month:=NULL]
+
 # export a csv for use in power bi dashboards
 setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'Indicator',
-                  'Age Category', 'Week', 'Fiscal Year', 'Date', 'File Name', 'Value'))
-write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex.csv'))
+                  'Age Category', 'Week', 'Date', 'Fiscal Year', 'File Name', 
+                  'Current Indicator', 'Value', 'Quarter', 'Month Year'))
+
+write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex_wk_',
+                current_week, '.csv'))
 
 # ------------------------------------
 # THE END
