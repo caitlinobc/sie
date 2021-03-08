@@ -101,8 +101,6 @@ dt$district %in% labels$district
 # merge the data and the shape file and shape long
 
 shp = merge(shp, dt, by='district', all=T)
-shp_long = melt(shp, id.vars = c('district', 'id', 'long',
-                'lat', 'order', 'hole', 'piece', 'group', 'region'))
 
 # --------------------
 # MAPS
@@ -154,6 +152,9 @@ p3 = ggplot(shp, aes(x=long, y=lat, group=group, fill=yield)) +
         plot.caption=element_text(vjust=6), 
         text=element_text(size=14))
 
+# --------------------
+# includes douala 
+
 p4 = ggplot(shp, aes(x=long, y=lat, group=group, fill=hts_tst)) + 
   coord_fixed() +
   geom_polygon() + 
@@ -180,13 +181,12 @@ p5 = ggplot(shp, aes(x=long, y=lat, group=group, fill=hts_tst_pos)) +
         plot.caption=element_text(vjust=6), 
         text=element_text(size=14))
 
-
 # --------------------
 # douala alone
 
-
-shp_dou = shp[district!='Douala', hts_tst:=NA]
-shp_dou = shp[district!='Douala', hts_tst_pos:=NA]
+shp_dou = copy(shp)
+shp_dou[district!='Douala', hts_tst:=NA]
+shp_dou[district!='Douala', hts_tst_pos:=NA]
 
 p6 = ggplot(shp_dou, aes(x=long, y=lat, group=group, fill=hts_tst)) + 
   coord_fixed() +
@@ -215,7 +215,6 @@ p7 = ggplot(shp_dou, aes(x=long, y=lat, group=group, fill=hts_tst_pos)) +
         text=element_text(size=14))
 
 
-
 # --------------------
 # maps all on the same 
 
@@ -226,5 +225,6 @@ p3
 p4
 p5
 p6
+p7
 
 dev.off()
