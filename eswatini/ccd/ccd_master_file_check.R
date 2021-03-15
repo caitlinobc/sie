@@ -20,7 +20,7 @@ library(openxlsx)
 # --------------------
 
 # --------------------------------------------
-# import the data 
+# set directories and import the data
 
 # set the main directory
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/ccd/'
@@ -28,7 +28,10 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/ccd/'
 # get the sheets from the data 
 excel_sheets(paste0(dir, 'Reviewed DDD Reporting Template 29 Sept (20).xlsx'))
 
+# --------------------
+# import the data by sheet 
 
+# week 5, tb services
 dt = data.table(read.xlsx(paste0(dir, 'Reviewed DDD Reporting Template 29 Sept (20).xlsx'),
                sheet = 5))
 
@@ -113,9 +116,9 @@ dt[ , week:=sapply(strsplit(week,"Week"), "[", 2)]
 dt[,  week:=gsub("\\s", "", week)]
 dt[ , week:=as.numeric(week)]
 
-
-# fix week 3 of 2020
-dt[week==3, start_year:=2021]
+# fix week 3 of 2020 - should be 2021 - program did not exist Jan 2020
+dt[start_wk==2020-01-13, start_wk:=2021-01-13]
+dt[start_wk=='', start_wk:='']
 
 # drop extraneous variables
 dt[ ,c('start_date', 'end_date', 'start_year', 'end_year'):=NULL]
