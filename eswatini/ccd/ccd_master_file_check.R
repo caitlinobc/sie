@@ -1,8 +1,9 @@
 # --------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# Run descriptive statistics and data quality checks on CCD data
-
+# Clean CCD data and run data quality checks
+# uses the CCD Master File
+# 3/15/2021
 # --------------------------------------------
 
 # --------------------
@@ -28,13 +29,15 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/ccd/'
 # get the sheets from the data 
 excel_sheets(paste0(dir, 'Reviewed DDD Reporting Template 29 Sept (20).xlsx'))
 
+# output directory for pdfs
+pdf_out = paste0(dir, 'outputs/tb_services_diagnostic_plots.pdf')
+
 # --------------------
 # import the data by sheet 
 
 # week 5, tb services
 dt = data.table(read.xlsx(paste0(dir, 'Reviewed DDD Reporting Template 29 Sept (20).xlsx'),
                sheet = 5))
-
 # --------------------------------------------
 
 # --------------------------------------------
@@ -73,13 +76,16 @@ setnames(dt, original_names, c('region', 'facility', 'location',
 # --------------------
 # change column types for ease of manipulation
 
-# region is sometimes misspelled
+# region is sometimes misspelled; change other incongruous spellings
 dt[region=='hhohho', region:='Hhohho']
+dt[location=='church', location:='Church']
+dt[location=='Foot ball Pitch', location:='Football Pitch']
+dt[location=='Shops', location:='Shop']
 
 # facility and location OK
 # one week has incorrect formatting - drop from the data set
 # one week is formatted correctly but has no associated dates
-# these have associated values so ideally fix 
+# these entries have associated values so ideally fix 
 dt = dt[!is.na(week)]
 
 # one location listed as "No DDD Conducted" - drop? (values all 0)
@@ -87,6 +93,9 @@ dt = dt[location!='No DDD Conducted']
 
 # factor sex
 dt$sex = factor(dt$sex, c('M', 'F'), c('Male', 'Female'))
+
+# people seen mysteriously loads as a character - reformat
+dt[ , ppl_seen:=as.numeric(ppl_seen)]
 
 # --------------------
 #establish dates
@@ -117,15 +126,48 @@ dt[,  week:=gsub("\\s", "", week)]
 dt[ , week:=as.numeric(week)]
 
 # fix week 3 of 2020 - should be 2021 - program did not exist Jan 2020
-dt[start_wk==2020-01-13, start_wk:=2021-01-13]
-dt[start_wk=='', start_wk:='']
+dt[start_wk=='2020-01-13', start_wk:=as.Date('2021-01-18')]
+dt[end_wk=='2020-01-19', end_wk:=as.Date('2021-01-24')]
 
 # drop extraneous variables
 dt[ ,c('start_date', 'end_date', 'start_year', 'end_year'):=NULL]
 
-
+# add monthly date 
+dt[ , month:=paste0(year(start_wk), '-', month(start_wk), '-01')]
+dt[ , month:=as.Date(month, '%Y-%m-%d')]
 
 # add quarter
+dt[month(start_wk) %in% c(1:3), qtr:=1]
+dt[month(start_wk) %in% c(4:6), qtr:=2]
+dt[month(start_wk) %in% c(7:9), qtr:=3]
+dt[month(start_wk) %in% c(10:12), qtr:=4]
 
+# --------------------
+# logic checks
 
+dt[ppl_seen < on_tb_tx] # 4
+dt[ppl_seen < eligible_for_screening] # 4
+dt[ppl_seen < screened] # 3
+dt[ppl_seen < presumptive_tb] # 9
+
+# --------------------
+# organize the variables in a preferred order 
+
+# --------------------
+# shape the data long for visualization
+idVars = c('facility', 'location', 'region',
+           'sex', 'age', 'week', 'start_wk', 'end_wk',
+           'month', 'qtr')
+dt_long = melt(dt, id.vars = idVars)
+
+# factor the variable for display
+vars = dt_long[,unique(variable)]
+dt_long$variable = factor(dt_long$variable, vars,
+          c('People seen at the CCD', 'On TB treatment', "Eligible for screening",
+            'Screened', 'Presumptive TB', 'Presumptive TB - referred', 
+            'Samples collected', 'Samples sent to the lab', 'Lab results received',
+            'Bacteriologically confirmed', 'Confirmed and started treatment'))
+            
+            
+# --------------------
 
