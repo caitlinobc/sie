@@ -174,8 +174,7 @@ dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
 dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))]
 
 # add in fiscal year
-dt_long[year(date)==2020, fiscal_yr:=20] 
-dt_long[year(date)==2021, fiscal_yr:=21] 
+dt_long[ , year:=year(date)]
 
 # add file name column for loop testing
 dt_long[ , file_name:=file_name]
@@ -267,21 +266,27 @@ full_data[facility=='CSIU N???1', facility:='CSIU Number 1']
 full_data[grepl('Marguerite', facility), facility:='CSI Ste Marguerite de Nkolomang']
 full_data[grepl('CEBEC Bonaberie', facility), facility:='Hopital CEBEC  Bonaberie']
 full_data[grepl('AD LUCEM Bonabéri', facility), facility:='CS AD LUCEM Bonaberi']
+full_data[facility=='CM SAFACAM MBONGO', facility:='CM SAFACAM MBONGO (DIZANGUE)']
+full_data[facility=='CMA Ndogpassi III Centre', facility:='Ndogpassi III Centre']
 
-
-
+# ensure no facility dropped out
 full_data[!(facility %in% hf$name), unique(facility)] # 6 do not match
-
 
 # --------------------
 # run the data checking file, including checks against total rows
 
 # --------------------
+# export the list of facilities 
+write.csv(hf, paste0(OutDir, 'facilities/datim_facilities.csv'))
+
+# --------------------
+
 # save as rds file
 
 # label the last week uploaded - full data; all disaggregation
 saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
               most_recent_week, '_fy21_full.rds'))
+
 
 # save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
@@ -298,33 +303,33 @@ saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
 full_data_no_sex[ ,month:=month(date)]
 
 # create pepfar quarter-year for visualization
-full_data_no_sex[month %in% c(1, 2, 3), qtr:=paste0('Q1 FY', fiscal_yr)]
-full_data_no_sex[month %in% c(4, 5, 6), qtr:=paste0('Q2 FY', fiscal_yr)]
-full_data_no_sex[month %in% c(7, 8, 9), qtr:=paste0('Q3 FY', fiscal_yr)]
-full_data_no_sex[month %in% c(10, 11, 12), qtr:=paste0('Q4 FY', fiscal_yr)]
+full_data_no_sex[month %in% c(10, 11, 12), qtr:=paste0('Q1 FY21')]
+full_data_no_sex[month %in% c(1, 2, 3), qtr:=paste0('Q2 FY21')]
+full_data_no_sex[month %in% c(4, 5 , 6), qtr:=paste0('Q3 FY21')]
+full_data_no_sex[month %in% c(7, 8), qtr:=paste0('Q4 FY21')]
+# one October week in FY21 starts in September 2020
+full_data_no_sex[month==9 & year==2020, qtr:=paste0('Q1 FY21')]
+
 
 # create month-year for visualization
-full_data_no_sex[month==1, month_yr:=paste0('Jan ', fiscal_yr)]
-full_data_no_sex[month==2, month_yr:=paste0('Feb ', fiscal_yr)]
-full_data_no_sex[month==3, month_yr:=paste0('Mar ', fiscal_yr)]
-full_data_no_sex[month==4, month_yr:=paste0('Apr ', fiscal_yr)]
-full_data_no_sex[month==5, month_yr:=paste0('May ', fiscal_yr)]
-full_data_no_sex[month==6, month_yr:=paste0('June ', fiscal_yr)]
+full_data_no_sex[month==1, month_yr:=paste0('Jan ', year)]
+full_data_no_sex[month==2, month_yr:=paste0('Feb ', year)]
+full_data_no_sex[month==3, month_yr:=paste0('Mar ', year)]
+full_data_no_sex[month==4, month_yr:=paste0('Apr ', year)]
+full_data_no_sex[month==5, month_yr:=paste0('May ', year)]
+full_data_no_sex[month==6, month_yr:=paste0('June ', year)]
 
-full_data_no_sex[month==7, month_yr:=paste0('July ', fiscal_yr)]
-full_data_no_sex[month==8, month_yr:=paste0('Aug ', fiscal_yr)]
-full_data_no_sex[month==9, month_yr:=paste0('Sept ', fiscal_yr)]
-full_data_no_sex[month==10, month_yr:=paste0('Oct ', fiscal_yr)]
-full_data_no_sex[month==11, month_yr:=paste0('Nov ', fiscal_yr)]
-full_data_no_sex[month==12, month_yr:=paste0('Dec', fiscal_yr)]
-
-# drop month
-full_data_no_sex[ ,month:=NULL]
+full_data_no_sex[month==7, month_yr:=paste0('July ', year)]
+full_data_no_sex[month==8, month_yr:=paste0('Aug ', year)]
+full_data_no_sex[month==9, month_yr:=paste0('Sept ', year)]
+full_data_no_sex[month==10, month_yr:=paste0('Oct ', year)]
+full_data_no_sex[month==11, month_yr:=paste0('Nov ', year)]
+full_data_no_sex[month==12, month_yr:=paste0('Dec', year)]
 
 # export a csv for use in power bi dashboards
 setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'Indicator',
                   'Age Category', 'Week', 'Date', 'Fiscal Year', 'File Name', 
-                  'Current Indicator', 'Value', 'Quarter', 'Month Year'))
+                  'Current Indicator', 'Value', 'Month Number', 'Quarter', 'Month Year'))
 
 write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_',
               most_recent_week, '_pbi.csv'))
