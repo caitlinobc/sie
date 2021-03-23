@@ -219,12 +219,6 @@ full_data[ , variable:=gsub("same day ART initiation \\(SDI\\)", "SDI", full_dat
 full_data$variable = gsub("community ART dispensations \\(CAD\\)", "CAD", full_data$variable)
 
 # --------------------
-# create a binary for the variables that occur in weeks 3 - 18
-later_vars = full_data[week==3, unique(variable)]
-full_data[variable %in% later_vars, current_var:=TRUE]
-full_data[!(variable %in% later_vars), current_var:=FALSE]
-
-# --------------------
 
 #-------------------------------------------------
 # SIMPLE QUALITY CHECKS 
@@ -329,7 +323,7 @@ full_data_no_sex[month==12, month_yr:=paste0('Dec', year)]
 # export a csv for use in power bi dashboards
 setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'Indicator',
                   'Age Category', 'Week', 'Date', 'Fiscal Year', 'File Name', 
-                  'Current Indicator', 'Value', 'Month Number', 'Quarter', 'Month Year'))
+                  'Value', 'Month Number', 'Quarter', 'Month Year'))
 
 write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_',
               most_recent_week, '_pbi.csv'))
