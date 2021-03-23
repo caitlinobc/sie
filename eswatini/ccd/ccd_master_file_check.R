@@ -91,13 +91,13 @@ if (sheet==5) dt = dt[ , 1:17]
 original_names = names(dt)
 
 # art indicators - sheet 2
-setnames(dt, original_names, c('region', 'facility', 'location',
+if (sheet==2) setnames(dt, original_names, c('region', 'facility', 'location',
       'week', 'sex', 'age', 'tx_curr_art_clients_refill_due',
       'cum_clients_enrolled', 'offered_chcd', 'accepted_enrolled',
       'exited_chcd', 'opted_out', 'died', 'transferred', 'stopped_tx',
       'ltfu', 'chcd_clt_due_for_refill', 'received_arvs_chcd', 
       'received_3mos_arvs', 'received_6mos_arvs', 'missed_chcd_appt',
-      'missed_followed_up', 'missed_fu_reached', 'missed_fu)_reapp',
+      'missed_followed_up', 'missed_fu_reached', 'missed_fu_reapp',
       'missed_fu_reapp_received_arvs_chcd', 'missed_fu_reapp_received_arvs_facility',
       'vl_eligible', 'vl_chcd', 'vl_chcd_received_results'
 ))
@@ -144,6 +144,9 @@ dt[location=='under a Tree', location:='Under a Tree']
 # one week is formatted correctly but has no associated dates
 # these entries have associated values so ideally fix 
 dt = dt[!is.na(week)]
+
+# fix missing location in art indicators
+if (sheet==2) dt = dt[!is.na(facility)] # facility missing, no associated values
 
 # format and factor sex
 dt[ , sex:=trimws(sex)]
@@ -248,6 +251,7 @@ if (sheet==5) dt_long$variable = factor(dt_long$variable, vars,
 # --------------------------------------------
 # FACILITY NAME STANDARDIZATION
 
+# --------------------
 # import the list of datim health facilities
 hf = data.table(readRDS('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/datim_health_facilities.rds'))
 
@@ -257,47 +261,118 @@ hf = hf[country=='ESW' & egpaf==TRUE]
 # drop unecessary variables for PBI
 hf[ ,c('level', 'type', 'sub_dist', 'country', 'egpaf'):=NULL]
 
+# --------------------
+# facility names entered incorrectly in the CCD data 
+
+# create an original facility variable to track changes
+dt[ ,og_name:=facility]
+
+# alter the facility names to match DATIM names
 dt[ , facility:=gsub("Center", "Centre", facility)]
 dt[grepl("ane Nazarene", facility), facility:='Bhalekane Nazarene  Clinic']
 dt[facility=='EMKHUZWENI H C', facility:='Emkhuzweni Health Centre']
 dt[grepl("Ezulwini", facility), facility:='Ezulwini Satellite Clinic']
 dt[grepl("herefo", tolower(facility)), facility:='Herefords  Clinic']
+
 dt[grepl("Hhukw", facility), facility:='Hhukwini Clinic']
 dt[grepl("Horo", facility), facility:='Horo Clinic']
 dt[grepl("Hlathikhulu", facility) & grepl("Hospital", facility), facility:='Hlatikhulu Hospital']
+dt[grepl("Lobamba", facility), facility:='Lobamba Clinic']
+dt[grepl("mahwalala", tolower(facility)), facility:='Mahwalala Clinic']
 
+dt[grepl("mangweni", tolower(facility)), facility:='Mangweni Clinic']
 dt[grepl("mar", tolower(facility)) & grepl("st", tolower(facility)), facility:='St Mary\'S Clinic']
+dt[grepl("maguga", tolower(facility)), facility:='Maguga Clinic ']
+dt[grepl("malandzela", tolower(facility)), facility:='Malandzela Nazarine Clinic']
+dt[grepl("matsanjeni", tolower(facility)), facility:='Matsanjeni Health Center']
 
-# list of facilitiesin the data set
-ft = dt[ ,.(facility = unique(facility))]
-ft = ft[order(facility)]
+dt[grepl("mbabane", tolower(facility)) & grepl("gov", tolower(facility)),
+   facility:='Mbabane Government Hospital']
+dt[grepl("mbabane p", tolower(facility)), facility:='Mbabane PHU']
+dt[grepl("mgazini", tolower(facility)), facility:='Mgazini Nazarene clinic']
+dt[grepl("mhlosheni", tolower(facility)), facility:='Mhlosheni Clinic ']
+dt[grepl("moti", tolower(facility)), facility:='Moti Clinic']
 
-dt[facility %in% hf$name, .(facility = unique(facility))][order(facility)]
-dt[!(facility %in% hf$name), .(facility = unique(facility))][order(facility)]
+dt[facility=='Motshane ART Clinic', facility:='Motshane Clinic']
+dt[grepl('Mshingishin', facility), facility:='Mshingishingini Nazarine Clinic']
+dt[grepl('wabangen', facility), facility:='Ndvwabangeni Nazarine Clinic']
+dt[grepl('nkhaba', tolower(facility)), facility:='Nkaba Clinic']
+dt[facility=='Ndzingeni Clinic', facility:='Ndzingeni Nazarine Clinic']
 
-View(ft[,.(facility = unique(facility))])
-View(hf)
+dt[grepl('new haven', tolower(facility)), facility:='New Heaven Clinic']
+dt[grepl('nkwene', tolower(facility)), facility:='Nkwene Clinic']
+dt[grepl('ntjanini', tolower(facility)), facility:='Ntshanini Clinic']
+dt[grepl('ngowane', tolower(facility)), facility:='Ngowane Clinic']
 
+dt[grepl('nhletjeni', tolower(facility)), facility:='Nhletjeni Clinic']
+dt[facility=='Ntfonjeni clinic', facility:='Ntfonjeni Clinic']
+dt[facility=='Nyonyane clinic', facility:='Nyonyane Clinic']
+
+dt[grepl("olos", tolower(facility)), facility:='Our Lady of Sorrow (OLOs)  clinic']
+dt[facility=='Piggs Peak Hospital' | facility=='Pigg\'s Peak Hospital',
+   facility:='Pigg\'S Peak Hospital']
+dt[facility=='Piggs Peak PHU', facility:='Piggs Peak Public Health Unit']
+dt[facility=='Piggs Peak Correctional Clinic', facility:='Piggs Peak Correctional Services Clinic']
+dt[facility=='Piggs Peak Nazarene Clinic', facility:='Pigg\'S Peak Nazarine Clinic']
+
+dt[grepl("regina", tolower(facility)), facility:='Regina Mundi Clinic']
+dt[grepl("sidwash", tolower(facility)) & grepl("correct", tolower(facility)), 
+   facility:='Sidwashini Correctional Services Clinic']
+dt[grepl("sigang", tolower(facility)), facility:='Sigangeni Clinic']
+dt[grepl("silel", tolower(facility)), facility:='Silele Clinic']
+
+# A total of either 3 or 4 (two may be the same) sites not found in DATIM
+# Mkhuzweni HC is not in the DATIM list
+# Phunga Clinic and Phunga Nazarene are not in the DATIM list
+# Salvation Army Clinic not in the DATIM list
+
+# check that every facility matched
+dt[!(facility %in% hf$name), unique(facility)]
+
+# --------------------
+# list of facilities in the data set
+
+# export the list of facilities in the data
 write.csv(hf, paste0(outDir, 'datim_lat_long.csv'))
-
-
-
 
 # --------------------------------------------
 # reformat the export file for use in PBI
 
 # --------------------
-# put the variables in the desired order - TB SERVICES TAB
-# if (sheet==2) { dt_export = dt[ ,.(facility, location, region, sex, age, week, 
-#                                    month, qtr, year = year(start_wk),
-#                                    )]
-# 
-# # reset the variable names for PBI
-# setnames(dt_export, names(dt_export), c('Facility', 'Location',
-#        'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
-#        'Start Week', 'End Week', )
-# 
-# }
+# put the variables in the desired order - ART INDICATORS
+if (sheet==2) {
+  dt_export = dt[ ,.(facility, location, region, sex, age, week,
+                  month, qtr, year = year(start_wk), start_wk, end_wk,
+                  tx_curr_art_clients_refill_due, 
+                  cum_clients_enrolled, offered_chcd,                          
+                  accepted_enrolled, exited_chcd, opted_out,                           
+                  died, transferred, stopped_tx, ltfu, 
+                  chcd_clt_due_for_refill, received_arvs_chcd,                    
+                  received_3mos_arvs, received_6mos_arvs, missed_chcd_appt,                      
+                  missed_followed_up, missed_fu_reached, missed_fu_reapp,                      
+                  missed_fu_reapp_received_arvs_chcd, 
+                  missed_fu_reapp_received_arvs_facility, 
+                  vl_eligible, vl_chcd, vl_chcd_received_results)] 
+
+# reset the variable names for PBI
+setnames(dt_export, names(dt_export), c('Facility', 'Location',
+      'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
+      'Start Week', 'End Week', 'ART clients due for a refill (TX_CURR)',
+      'Cumulative clients enrolled', 'Clients offered CCD', 
+      'Accepted or enrolled in CCD', 'Exited CCD', 'Opted out',
+      'Deceased', 'Transferred out', 'Stopped treatment', 'LTFU',
+      'CCD client due for a refill', 'Received ARVs in the CCD',
+      'Received 3 mos of ARVs', 'Received 6 mos of ARVs', 'Missed CCD appt',
+      'Missed and followed up', 'Missed, followed up, and reached', 
+      'Missed, followed up, and re-appointed', 'Missed, re-appointed, received ARVs by CCD',
+      'Missed, re-appointed, received ARVs in the facility',
+      'Eligible for VL test', 'Clients who submitted a VL test via CCD',
+      'Clients ho submitted a VL test via CCD and received the results'))
+
+# export the file for PBI
+write.csv(dt_export, paste0(outDir, 'art_indicators_pbi.csv')) 
+
+}
 
 # --------------------
 # put the variables in the desired order - TB SERVICES TAB
@@ -311,13 +386,14 @@ if (sheet==5) { dt_export = dt[ ,.(facility, location, region, sex, age, week,
                                    bact_confirmed_started_tx)]
 
 # reset the variable names for PBI
-setnames(dt_export, names(dt_export), c('Facility', 'Location',
-                                        'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
-                                        'Start Week', 'End Week', 'People seen at the CCD', 
-                                        'On TB treatment', 'Eligible for screening',
-                                        'Screened', 'Presumptive TB', 'Presumptive TB - referred', 
-                                        'Samples collected', 'Samples sent to the lab', 'Lab results received',
-                                        'Bacteriologically confirmed', 'Confirmed and started treatment'))
+setnames(dt_export, names(dt_export),
+         c('Facility', 'Location',
+         'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
+          'Start Week', 'End Week', 'People seen at the CCD', 
+            'On TB treatment', 'Eligible for screening',
+              'Screened', 'Presumptive TB', 'Presumptive TB - referred', 
+                'Samples collected', 'Samples sent to the lab', 'Lab results received',
+                  'Bacteriologically confirmed', 'Confirmed and started treatment'))
 
 # export a csv of the data 
 write.csv(dt_export, paste0(outDir, 'tb_services_pbi.csv')) }

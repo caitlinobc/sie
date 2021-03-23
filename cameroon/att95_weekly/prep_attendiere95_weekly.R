@@ -27,9 +27,6 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/att95_w
 OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 setwd(dir)
 
-# set current week to check files against
-current_week = 20
-
 # run the data checks to ensure no data entry errors?
 run_check = TRUE
 
@@ -233,9 +230,12 @@ full_data[!(variable %in% later_vars), current_var:=FALSE]
 #-------------------------------------------------
 # SIMPLE QUALITY CHECKS 
 
+# determine the most recent week
+most_recent_week = max(full_data$week)
+
 # check that every week is counted
 for (r in unique(full_data$region)) {
-if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week skipped!") }
+if (all(full_data[, unique(week)] %in% c(1:most_recent_week))!=TRUE) print("Week skipped!") }
 
 # ------------------------------------------------
 # corrections based on initial quality check
@@ -243,24 +243,51 @@ if (all(full_data[, unique(week)] %in% c(1:current_week))!=TRUE) print("Week ski
 # correct facility names to match DATIM names
 # these also differ across weeks (some typos/lack of standardization)
 
+# subset to facility names to perform check 
+fac = full_data[,.(facility = unique(facility))][order(facility)]
+
+# import the list of datim health facilities
+hf = data.table(readRDS('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/datim_health_facilities.rds'))
+
+# subset to egpaf facilities in eswatini
+hf = hf[country=='CMR' & egpaf==TRUE]
+
+# drop unecessary variables for PBI
+hf[ ,c('level', 'type', 'sub_dist', 'country', 'egpaf'):=NULL]
+
+# are the facilities in DATIM?
+fac[facility %in% hf$name] # 70 match initially 
+
+# change one name in the DATIM list with failed special characters
+hf[name=='CSIU N???1', name:='CSIU Number 1']
+full_data[facility=='CSIU N°1', facility:='CSIU Number 1']
+full_data[facility=='CSIU N???1', facility:='CSIU Number 1']
+
+# change names in the data to standardized DATIM names
+full_data[grepl('Marguerite', facility), facility:='CSI Ste Marguerite de Nkolomang']
+full_data[grepl('CEBEC Bonaberie', facility), facility:='Hopital CEBEC  Bonaberie']
+full_data[grepl('AD LUCEM Bonabéri', facility), facility:='CS AD LUCEM Bonaberi']
+
+
+
+full_data[!(facility %in% hf$name), unique(facility)] # 6 do not match
+
+
 # --------------------
 # run the data checking file, including checks against total rows
-
-# reset working directory and run the file
-# setwd()
-# source()
 
 # --------------------
 # save as rds file
 
 # label the last week uploaded - full data; all disaggregation
-saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_full_wk', 
-      current_week, '.rds'))
+saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
+              most_recent_week, '_fy21_full.rds'))
 
 # save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
 full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
-saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex.rds'))
+saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
+            most_recent_week, 'fy21_no_sex.rds'))
 
 # --------------------
 # PBI DATA 
@@ -299,8 +326,8 @@ setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'I
                   'Age Category', 'Week', 'Date', 'Fiscal Year', 'File Name', 
                   'Current Indicator', 'Value', 'Quarter', 'Month Year'))
 
-write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_no_sex_wk_',
-                current_week, '.csv'))
+write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_',
+              most_recent_week, '_pbi.csv'))
 
 # ------------------------------------
 # THE END
