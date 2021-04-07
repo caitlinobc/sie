@@ -39,18 +39,39 @@ fac = data.table(fac)
 
 #  egpaf administered facilities
 fac = fac[egpaf==TRUE]
-fac [ ,c('X', 'country', 'egpaf', 'egpaf_facility'):=NULL]
+fac [ ,c('X', 'country', 'egpaf', 'egpaf_facility',
+         'level', 'type', 'district'):=NULL]
 
 # --------------------
 # check how many match
 
 dt[Site %in% fac$name] #44 in the list
 
+# fix the errant site names
+dt[grepl('Catherine', Site), Site:='Dispensaire Sour Catherine']
+
+# two sites continue not to match - ask CDI team
 dt[!(Site %in% fac$name)] 
 
+# --------------------
+# export the list of sites for the question
 
-# fix the errant site names
-dt[Site=='Dispensaire SÏur Catherine', Site:='Dispensaire Sour Catherine']
+write.csv(fac, paste0(dir, 'newsletter_q1/datim_site_list.csv'))
+
+# --------------------
+# format and combine the lists
+
+#format the names
+setnames(fac, c('orgUnit id', 'Site', 'Parent ID', 'Sub-District',
+                'Region', 'Latitude', 'Longitude'))
+
+# merge in the detailed metadata
+dt = merge(dt, fac, by='Site', all.x=TRUE)
+
+# --------------------
+
+
+
 
 
 
