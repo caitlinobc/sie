@@ -25,7 +25,7 @@ library(openxlsx)
 # set directories and import the data
 
 # set the main directory
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/ccd/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/eswatini/ccd/'
 
 # get the sheets from the data 
 excel_sheets(paste0(dir, 'master_file/Reviewed DDD Reporting Template 29 Sept (20).xlsx'))
@@ -33,19 +33,31 @@ excel_sheets(paste0(dir, 'master_file/Reviewed DDD Reporting Template 29 Sept (2
 # output directory for pdfs
 pdf_out = paste0(dir, 'outputs/tb_services_diagnostic_plots.pdf')
 
+# directory for longitude and latitude and shape files
+mapDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps/'
+
 # output directory for prepped data 
 outDir = paste0(dir, 'prepped/')
 
 # --------------------
 # set the argument for the sheet you want to import 
 
-sheet = 2
+# 1. "Indicators Data Sources" - not data 
+# 2. "ART Indicators"     
+# 3. "PrEP Indicators "      
+# 4. "TB Indicators "         
+# 5. "TB Screening"         
+# 6. "Commodities"           
+# 7. "Sheet2" - does not contain data; only clinic list from old template              
+
+# import sheets by number or by name
+sheet = 5
 
 # --------------------------------------------
 # import the data by sheet 
 
 dt = data.table(read.xlsx(paste0(dir,
-    'master_file/Reviewed DDD Reporting Template 29 Sept (20).xlsx'),
+    'master_file/Reviewed DDD Reporting Template 29 Sept.xlsx'),
      sheet = sheet))
 # --------------------------------------------
 
@@ -161,8 +173,8 @@ if(sheet==5) dt[ , ppl_seen:=as.numeric(ppl_seen)]
 # --------------------
 # fix typos in age categories and factor age
 
-dt[grepl('Child', age) | grepl('14', age), age:='Child (1 - 14)']
-dt[grepl('Adol', age) | grepl('15', age), age:='Adolescent (15 - 21)']
+dt[grepl('Child', age) | grepl('14', age), age:='Child (1-14)']
+dt[grepl('Adol', age) | grepl('15', age), age:='Adolescent (15-21)']
 dt[grepl('Adult', age) | grepl('22', age), age:='Adult (22+)']
 
 # --------------------
@@ -253,7 +265,7 @@ if (sheet==5) dt_long$variable = factor(dt_long$variable, vars,
 
 # --------------------
 # import the list of datim health facilities
-hf = data.table(readRDS('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/datim_health_facilities.rds'))
+hf = data.table(readRDS(paste0(mapDir, 'pepfar_org_units/prepped/datim_health_facilities.rds')))
 
 # subset to egpaf facilities in eswatini
 hf = hf[country=='ESW' & egpaf==TRUE]
@@ -265,7 +277,7 @@ hf[ ,c('level', 'type', 'sub_dist', 'country', 'egpaf'):=NULL]
 # facility names entered incorrectly in the CCD data 
 
 # create an original facility variable to track changes
-dt[ ,og_name:=facility]
+dt[ ,original_name:=facility]
 
 # alter the facility names to match DATIM names
 dt[ , facility:=gsub("Center", "Centre", facility)]
@@ -330,10 +342,20 @@ dt[grepl("silel", tolower(facility)), facility:='Silele Clinic']
 dt[!(facility %in% hf$name), unique(facility)]
 
 # --------------------
-# list of facilities in the data set
+# add orgUnitID to the data set match on ID in PBI
+
+ids = hf[ ,.(facility = name, id)]
+dt = merge(dt, ids, by = 'facility', all.x=TRUE)
+
+# --------------------
+# export a list of facilities with geographic data for use in PBI
+
+# alter the names to match the future data 
+setnames(hf, c('orgUnitID', 'Facility', 'Parent ID', 'District', 'Region',
+               'Latitude', 'Longitude'))
 
 # export the list of facilities in the data
-write.csv(hf, paste0(outDir, 'datim_lat_long.csv'))
+write.csv(hf, paste0(outDir, 'List of DATIM Sites.csv'))
 
 # --------------------------------------------
 # reformat the export file for use in PBI
@@ -341,7 +363,7 @@ write.csv(hf, paste0(outDir, 'datim_lat_long.csv'))
 # --------------------
 # put the variables in the desired order - ART INDICATORS
 if (sheet==2) {
-  dt_export = dt[ ,.(facility, location, region, sex, age, week,
+  dt_export = dt[ ,.(facility, id, location, region, sex, age, week,
                   month, qtr, year = year(start_wk), start_wk, end_wk,
                   tx_curr_art_clients_refill_due, 
                   cum_clients_enrolled, offered_chcd,                          
@@ -355,10 +377,10 @@ if (sheet==2) {
                   vl_eligible, vl_chcd, vl_chcd_received_results)] 
 
 # reset the variable names for PBI
-setnames(dt_export, names(dt_export), c('Facility', 'Location',
+setnames(dt_export, names(dt_export), c('Facility', 'orgUnitID', 'Location',
       'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
       'Start Week', 'End Week', 'ART clients due for a refill (TX_CURR)',
-      'Cumulative clients enrolled', 'Clients offered CCD', 
+      'Cumulative clients enrolled in CCD', 'Clients offered CCD', 
       'Accepted or enrolled in CCD', 'Exited CCD', 'Opted out',
       'Deceased', 'Transferred out', 'Stopped treatment', 'LTFU',
       'CCD client due for a refill', 'Received ARVs in the CCD',
@@ -367,16 +389,16 @@ setnames(dt_export, names(dt_export), c('Facility', 'Location',
       'Missed, followed up, and re-appointed', 'Missed, re-appointed, received ARVs by CCD',
       'Missed, re-appointed, received ARVs in the facility',
       'Eligible for VL test', 'Clients who submitted a VL test via CCD',
-      'Clients ho submitted a VL test via CCD and received the results'))
+      'Clients who submitted a VL test via CCD and received the results'))
 
 # export the file for PBI
-write.csv(dt_export, paste0(outDir, 'art_indicators_pbi.csv')) 
+write.csv(dt_export, paste0(outDir, 'ART Indicators.csv')) 
 
 }
 
 # --------------------
 # put the variables in the desired order - TB SERVICES TAB
-if (sheet==5) { dt_export = dt[ ,.(facility, location, region, sex, age, week, 
+if (sheet==5) { dt_export = dt[ ,.(facility, id, location, region, sex, age, week, 
                                    month, qtr, year = year(start_wk),
                                    start_wk, end_wk, ppl_seen, on_tb_tx,
                                    eligible_for_screening, screened, 
@@ -387,7 +409,7 @@ if (sheet==5) { dt_export = dt[ ,.(facility, location, region, sex, age, week,
 
 # reset the variable names for PBI
 setnames(dt_export, names(dt_export),
-         c('Facility', 'Location',
+         c('Facility', 'orgUnitID', 'Location',
          'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
           'Start Week', 'End Week', 'People seen at the CCD', 
             'On TB treatment', 'Eligible for screening',
@@ -396,7 +418,7 @@ setnames(dt_export, names(dt_export),
                   'Bacteriologically confirmed', 'Confirmed and started treatment'))
 
 # export a csv of the data 
-write.csv(dt_export, paste0(outDir, 'tb_services_pbi.csv')) }
+write.csv(dt_export, paste0(outDir, 'TB Indicators.csv')) }
 
 # --------------------
 

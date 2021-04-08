@@ -69,7 +69,12 @@ setnames(fac, c('orgUnit id', 'Site', 'Parent ID', 'Sub-District',
 dt = merge(dt, fac, by='Site', all.x=TRUE)
 
 # --------------------
+# export the combined list of sites with metadata 
 
+write.csv(fac, paste0(dir, 'newsletter_q1/high_impact_sites_final.csv'))
+
+
+# --------------------
 
 
 
