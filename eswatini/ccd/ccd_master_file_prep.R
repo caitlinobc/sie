@@ -224,10 +224,10 @@ dt[ , month:=paste0(year(start_wk), '-', month(start_wk), '-01')]
 dt[ , month:=as.Date(month, '%Y-%m-%d')]
 
 # add quarter
-dt[month(start_wk) %in% c(1:3), qtr:=1]
-dt[month(start_wk) %in% c(4:6), qtr:=2]
-dt[month(start_wk) %in% c(7:9), qtr:=3]
-dt[month(start_wk) %in% c(10:12), qtr:=4]
+dt[month(start_wk) %in% c(10:12), qtr:=1]
+dt[month(start_wk) %in% c(1:3), qtr:=2]
+dt[month(start_wk) %in% c(4:6), qtr:=3]
+dt[month(start_wk) %in% c(7:9), qtr:=4]
 
 # --------------------
 # logic checks
@@ -418,7 +418,7 @@ setnames(dt_export, names(dt_export),
                   'Bacteriologically confirmed', 'Confirmed and started treatment'))
 
 # export a csv of the data 
-write.csv(dt_export, paste0(outDir, 'TB Indicators.csv')) }
+write.csv(dt_export, paste0(outDir, 'TB Screening.csv')) }
 
 # --------------------
 
