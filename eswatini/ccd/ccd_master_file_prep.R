@@ -28,7 +28,7 @@ library(openxlsx)
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/eswatini/ccd/'
 
 # get the sheets from the data 
-excel_sheets(paste0(dir, 'master_file/Reviewed DDD Reporting Template 29 Sept (20).xlsx'))
+excel_sheets(paste0(dir, 'master_file/Reviewed DDD Reporting Template 29 Sept.xlsx'))
 
 # output directory for pdfs
 pdf_out = paste0(dir, 'outputs/tb_services_diagnostic_plots.pdf')
@@ -51,7 +51,7 @@ outDir = paste0(dir, 'prepped/')
 # 7. "Sheet2" - does not contain data; only clinic list from old template              
 
 # import sheets by number or by name
-sheet = 5
+sheet = 4
 
 # --------------------------------------------
 # import the data by sheet 
@@ -114,6 +114,13 @@ if (sheet==2) setnames(dt, original_names, c('region', 'facility', 'location',
       'vl_eligible', 'vl_chcd', 'vl_chcd_received_results'
 ))
 
+# tb indicators - sheet 4
+if (sheet==4) setnames(dt, original_names, c('region', 'facility', 'location',
+      'week', 'sex', 'age', 'tb_clients_enrolled_prev_mo', 'additional_offered_ccd',
+      'accepted_enrolled_mo', 'total_tb_pts_booked', 'tb_pts_refilled_tb_art_cdp',
+      'tb_pts_refilled_tb_only_cdp', 'tb_pts_missed_appts', 'opted_out', 'ltfu', 'death', 'back_to_facility_compl',
+      'back_to_facility_completed_tx', 'transferred', 'back_to_facility_monitoring',
+      'other'))
 
 # tb screening - sheet 5
 if (sheet==5) setnames(dt, original_names, c('region', 'facility', 'location',
@@ -122,6 +129,12 @@ if (sheet==5) setnames(dt, original_names, c('region', 'facility', 'location',
     'samples_sent_to_lab', 'results_received', 'bact_confirmed', 
     'bact_confirmed_started_tx'
 ))
+
+# commodities - sheet 6
+if (sheet==6) setnames(dt, original_names, c('region', 'facility', 'location',
+           'week', 'sex', 'age', 'ipt_initiations', 'ipt_refills',
+           'hivst', 'fp', 'condoms'))
+
 
 # --------------------
 # change column types for ease of manipulation
@@ -148,6 +161,7 @@ dt[ , location:=trimws(toTitleCase(tolower(location)))]
 # region is sometimes misspelled; change other incongruous spellings
 dt[location=='church', location:='Church']
 dt[location=='Foot ball Pitch', location:='Football Pitch']
+dt[location=='Foot Ball Pitch', location:='Football Pitch']
 dt[location=='Shops', location:='Shop']
 dt[location=='under a Tree', location:='Under a Tree']
 
@@ -212,7 +226,7 @@ dt[,  week:=gsub("\\s", "", week)]
 dt[ , week:=as.numeric(week)]
 
 # fix week 3 of 2020 - should be 2021 - program did not exist Jan 2020
-if (sheet==5) {
+if (sheet==5 | sheet==6) {
 dt[start_wk=='2020-01-13', start_wk:=as.Date('2021-01-18')]
 dt[end_wk=='2020-01-19', end_wk:=as.Date('2021-01-24')] }
 
@@ -397,7 +411,27 @@ write.csv(dt_export, paste0(outDir, 'ART Indicators.csv'))
 }
 
 # --------------------
-# put the variables in the desired order - TB SERVICES TAB
+# put the variables in the desired order - COMMODITIES TAB
+if (sheet==4) { dt_export = dt[ ,.(facility, id, location, region, sex, age, week, 
+         month, qtr, year = year(start_wk), start_wk, end_wk,
+         tb_clients_enrolled_prev_mo, additional_offered_ccd,
+         accepted_enrolled_mo, total_tb_pts_booked, tb_pts_refilled_tb_art_cdp,
+         tb_pts_refilled_tb_only_cdp, tb_pts_missed_appts, opted_out,
+          ltfu, death, back_to_facility_compl,
+          back_to_facility_completed_tx, transferred, 
+          back_to_facility_monitoring, other)]
+
+# reset the variable names for PBI
+setnames(dt_export, names(dt_export),
+         c('Facility', 'orgUnitID', 'Location',
+           'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
+           'Start Week', 'End Week', ))
+
+# export a csv of the data 
+write.csv(dt_export, paste0(outDir, 'TB Indicators.csv')) }
+
+# --------------------
+# put the variables in the desired order - TB SCREENING TAB
 if (sheet==5) { dt_export = dt[ ,.(facility, id, location, region, sex, age, week, 
                                    month, qtr, year = year(start_wk),
                                    start_wk, end_wk, ppl_seen, on_tb_tx,
@@ -421,4 +455,22 @@ setnames(dt_export, names(dt_export),
 write.csv(dt_export, paste0(outDir, 'TB Screening.csv')) }
 
 # --------------------
+# put the variables in the desired order - COMMODITIES TAB
+if (sheet==6) { dt_export = dt[ ,.(facility, id, location, region, sex, age, week, 
+                                   month, qtr, year = year(start_wk),
+                                   start_wk, end_wk, ipt_initiations, ipt_refills, 
+                                   hivst, fp, condoms)]
+
+# reset the variable names for PBI
+setnames(dt_export, names(dt_export),
+         c('Facility', 'orgUnitID', 'Location',
+           'Region', 'Sex', 'Age', 'Week', 'Month', 'Quarter', 'Year',
+           'Start Week', 'End Week', 'IPT Initiations', 'IPT Refills',
+           'HIVST', 'Family Planning', 'Condoms'))
+
+# export a csv of the data 
+write.csv(dt_export, paste0(outDir, 'Commodities.csv')) }
+
+# --------------------
+
 
