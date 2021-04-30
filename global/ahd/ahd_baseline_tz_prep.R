@@ -59,7 +59,15 @@ cd4 = data.table(read_xlsx(paste0(dir,
 
 # ------------------------
 # drop all the variables beginning with "x" (x1, x2, etc.)
-# these variables do not contain data - likely commodity missing
+# these variables do not contain data 
+
+# check that every variable beginning with x is missing
+x_names = names(dt)[grepl('^x', names(dt))]
+test_dt = melt(dt, id.vars=c('ahd_dt', 'pid', 'siteid')) # warning ok 
+test_dt = test_dt[variable %in% x_names]
+if (nrow(test_dt[all(is.na(value)),.(unique(variable))])==length(x_names)) print ("All x variables missing!")
+
+# drop out the variables with no associated values
 drop_names = data.table(names(dt))
 drop_names = drop_names[grepl('^x', drop_names$V1), V1]
 dt[ , c('dov', drop_names):=NULL] #dov also has no data 
