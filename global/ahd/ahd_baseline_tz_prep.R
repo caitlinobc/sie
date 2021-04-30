@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 1/11/2021
+# 4/30/2021
 # Tanzania Baseline Cohort Data
 # Import and clean the AHD study data
 # Run data quality checks to identify any issues with the extraction
@@ -27,10 +27,10 @@ library(eeptools)
 
 # set the working directory to the ahd data sets
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/data/'
-
-OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/data/prepped/'
-
 setwd(dir)
+
+# set the output directory for prepped data 
+OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/data/prepped/'
 
 # -------------------------------------
 # load the study data 
@@ -51,11 +51,13 @@ cd4 = data.table(read_xlsx(paste0(dir,
     sheet = 'allCD4_flat(siteid,pid)', skip = 1))
 
 # -------------------------------------
-# DATA PREP
+# DATA PREP AND BASIC QUALITY CHECKS
+# -------------------------------------
 
 # ------------------------
-# prep the eligibility and service provision data 
+# ELIGIBILITY AND INITIAL SERVICE PROVISION DATA 
 
+# ------------------------
 # drop all the variables beginning with "x" (x1, x2, etc.)
 # these variables do not contain data - likely commodity missing
 drop_names = data.table(names(dt))
@@ -63,7 +65,8 @@ drop_names = drop_names[grepl('^x', drop_names$V1), V1]
 dt[ , c('dov', drop_names):=NULL] #dov also has no data 
 
 # ------------------------
-# calculate age
+# calculate age from dob
+# this expresses the age at initial enrollment
 dt[ , dob:=as.Date(dob)]
 dt[ , ahd_dt:=as.Date(ahd_dt)]
 dt[!is.na(ahd_dt), 
@@ -74,14 +77,32 @@ dt[ , age:=floor(age)]
 dt[age < 5, under5:=TRUE]
 dt[5 <= age, under5:=FALSE]
 
+# check that under 5 and age have the same amount of missingness
+# currently 310 missing entries; check in meeting
+dt[is.na(age)]
+dt[is.na(under5)]
 # ------------------------
-# other date variables
+# additional date variables
 
-dt[ , dt_post:=as.Date(dtpos)]
+# format the date on which the patient was tested for hiv
+dt[ , dt_pos:=as.Date(dtpos)]
 
 # ------------------------
+# check the sites and site ids
+
+
+
+
+# ------------------------
+
 # recode 1s and 0s as logicals
 # more logicals in the data set - add later
+
+
+
+
+
+
 dt[ , knwstat:=as.logical(knwstat)]
 dt[ , hivtest:=as.logical(hivtest)]
 dt[ , hivresult:=as.logical(hivresult)]
