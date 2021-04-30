@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/22/21
+# 4/20/21
 # Cleaning and prep file for Attendiere 95 weekly data 
 # Uses the weekly reporting tab at the site (facility) level
 # ----------------------------------------------
@@ -18,17 +18,21 @@ library(dplyr)
 library(tidyr)
 library(zoo)
 library(stringr)
+library(Hmisc)
 
 # --------------------
 # Files and directories
 
-# set the working directory to the cameroon data
+# set the working directory to the Weekly CDC Reporting Data 
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/att95_weekly_raw/'
 OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
 setwd(dir)
 
 # run the data checks to ensure no data entry errors?
 run_check = TRUE
+
+# set the mapping directory
+mapDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps/pepfar_org_units/prepped/'
 
 # ----------------------------------------------
 # PREP DATA 
@@ -173,8 +177,8 @@ dt_long[ , week:=start_week]
 dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
 dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))]
 
-# add in fiscal year
-dt_long[ , year:=year(date)]
+# add in the year
+dt_long[ , year:=year(date)] 
 
 # add file name column for loop testing
 dt_long[ , file_name:=file_name]
@@ -194,16 +198,13 @@ if (f==1) { full_data = dt_long } else {
 # print a statement to show for loop progress
 print(paste0("Processed week: ", start_week, "; region: ", dt_long$region[[1]]))
 
+# create vector of start weeks and file names 
+x = c(week = as.numeric(start_week), region = dt_long$region[[1]])
+if (f==1) files_processed = x 
+if (f!=1) files_processed = rbind(files_processed, x)
 } # END OF FOR LOOP
 
-# --------------------
-# shorten the indicator variable and alter to description
-full_data[ , value:=as.numeric(as.character(value))]
-full_data[ ,tier:=factor(tier)]
-
-# --------------------
-# in the first two weeks, South is translated
-full_data[region=='South', region:='Sud']
+# --------------------------------------
 
 # --------------------
 # fix minor data inconsistencies
@@ -212,6 +213,15 @@ full_data[region=='South', region:='Sud']
 # this has to be at the end - creates errors otherwise 
 full_data = full_data[region!='ALL']
 
+# in the first two weeks, South is translated
+full_data[region=='South', region:='Sud']
+
+# --------------------
+# shorten the indicator variable and alter to description
+full_data[ , value:=as.numeric(as.character(value))]
+full_data[ ,tier:=factor(tier)]
+
+# --------------------
 # replace indicators with abbreviations
 full_data[ , variable:=gsub("index case testing \\(ICT\\)", "ICT", full_data$variable)]
 full_data[ , variable:=gsub("enhanced adherence counseling \\(EAC\\)", "EAC", full_data$variable)]
@@ -230,8 +240,17 @@ most_recent_week = max(full_data$week)
 for (r in unique(full_data$region)) {
 if (all(full_data[, unique(week)] %in% c(1:most_recent_week))!=TRUE) print("Week skipped!") }
 
+# double check that every file was processed
+list_weeks = seq(1:most_recent_week)
+files_processed = data.table(files_processed)
+
+sud_weeks = files_processed[region=='Sud' | region=='South', list_weeks %in% week]
+lit_weeks = files_processed[region=='Littoral', list_weeks %in% week]
+if (!all(sud_weeks==TRUE)) print("Missing a week in Sud!")
+if (!all(lit_weeks==TRUE)) print("Missing a week in Littoral!")
+
 # ------------------------------------------------
-# corrections based on initial quality check
+# FACILITY NAME CORRECTIONS
 
 # correct facility names to match DATIM names
 # these also differ across weeks (some typos/lack of standardization)
@@ -240,9 +259,9 @@ if (all(full_data[, unique(week)] %in% c(1:most_recent_week))!=TRUE) print("Week
 fac = full_data[,.(facility = unique(facility))][order(facility)]
 
 # import the list of datim health facilities
-hf = data.table(readRDS('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/datim_health_facilities.rds'))
+hf = data.table(readRDS(paste0(mapDir, 'datim_health_facilities.rds')))
 
-# subset to egpaf facilities in eswatini
+# subset to egpaf facilities in cameroon
 hf = hf[country=='CMR' & egpaf==TRUE]
 
 # drop unecessary variables for PBI
@@ -252,83 +271,107 @@ hf[ ,c('level', 'type', 'sub_dist', 'country', 'egpaf'):=NULL]
 fac[facility %in% hf$name] # 70 match initially 
 
 # change one name in the DATIM list with failed special characters
-hf[name=='CSIU N???1', name:='CSIU Number 1']
-full_data[facility=='CSIU N°1', facility:='CSIU Number 1']
-full_data[facility=='CSIU N???1', facility:='CSIU Number 1']
+full_data[grepl('CSIU', facility), facility:='CSIU Number 1']
 
 # change names in the data to standardized DATIM names
 full_data[grepl('Marguerite', facility), facility:='CSI Ste Marguerite de Nkolomang']
 full_data[grepl('CEBEC Bonaberie', facility), facility:='Hopital CEBEC  Bonaberie']
 full_data[grepl('AD LUCEM Bonabéri', facility), facility:='CS AD LUCEM Bonaberi']
 full_data[facility=='CM SAFACAM MBONGO', facility:='CM SAFACAM MBONGO (DIZANGUE)']
-full_data[facility=='CMA Ndogpassi III Centre', facility:='Ndogpassi III Centre']
+full_data[grepl("Ndogpassi", facility), facility:='CMA  Ndogpassi III Centre']
 
 # ensure no facility dropped out
-full_data[!(facility %in% hf$name), unique(facility)] # 6 do not match
+full_data[!(facility %in% hf$name), unique(facility)] # 1 does not match
 
 # --------------------
-# run the data checking file, including checks against total rows
+# merge in org unit ids
+ids = hf[ , .(id, facility = name)]
+full_data = merge(full_data, ids, by = 'facility', all.x=T)
+
+# one facility does not merge
+full_data[facility=='CSIU Number 1', id:='nXrhnc7vTDj']
+
+# change the name of this facility in DATIM so it appears correctly in PBI
+hf[id=='nXrhnc7vTDj', name:='CSIU Number 1']
+
+# --------------------
+# reset the names of the hf file for pbi
+setnames(hf, c('orgUnit ID', 'Health Facility', 'Parent ID', 'District',
+               'Region', 'Latitude', 'Longitude'))
 
 # --------------------
 # export the list of facilities 
-write.csv(hf, paste0(OutDir, 'facilities/datim_facilities.csv'))
+write.csv(hf, paste0(OutDir, 'facilities/List of DATIM sites.csv'))
 
 # --------------------
-
-# save as rds file
+# save as rds file - shaped long for R analysis
 
 # label the last week uploaded - full data; all disaggregation
+# major difference: this sheet includes sex for weeks 1 - 3
 saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
               most_recent_week, '_fy21_full.rds'))
-
+full_data[ ,length(unique(week)), by = region]
 
 # save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
+
 full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
 saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
-            most_recent_week, 'fy21_no_sex.rds'))
+            most_recent_week, '_fy21_no_sex.rds'))
+full_data_no_sex[ ,length(unique(week)), by = region]
 
-# --------------------
+# -----------------------------------------------
 # PBI DATA 
 
+# --------------------
 # add quarter year and month year for PBI
 
 # create a temporary month variable used for labeling
-full_data_no_sex[ ,month:=month(date)]
+full_data_no_sex[ , month:=as.Date(paste0('01-', month(date), '-', year), '%d-%m-%Y')]
 
 # create pepfar quarter-year for visualization
-full_data_no_sex[month %in% c(10, 11, 12), qtr:=paste0('Q1 FY21')]
-full_data_no_sex[month %in% c(1, 2, 3), qtr:=paste0('Q2 FY21')]
-full_data_no_sex[month %in% c(4, 5 , 6), qtr:=paste0('Q3 FY21')]
-full_data_no_sex[month %in% c(7, 8), qtr:=paste0('Q4 FY21')]
+full_data_no_sex[month(month) %in% c(10, 11, 12), qtr:=paste0('Q1 FY21')]
+full_data_no_sex[month(month) %in% c(1, 2, 3), qtr:=paste0('Q2 FY21')]
+full_data_no_sex[month(month) %in% c(4, 5 , 6), qtr:=paste0('Q3 FY21')]
+full_data_no_sex[month(month) %in% c(7, 8, 9), qtr:=paste0('Q4 FY21')]
 # one October week in FY21 starts in September 2020
-full_data_no_sex[month==9 & year==2020, qtr:=paste0('Q1 FY21')]
+full_data_no_sex[month(month)==9 & year==2020, qtr:=paste0('Q1 FY21')]
 
+#--------------------
+# convert year to fiscal year
+full_data_no_sex[ , year:=2021]
 
-# create month-year for visualization
-full_data_no_sex[month==1, month_yr:=paste0('Jan ', year)]
-full_data_no_sex[month==2, month_yr:=paste0('Feb ', year)]
-full_data_no_sex[month==3, month_yr:=paste0('Mar ', year)]
-full_data_no_sex[month==4, month_yr:=paste0('Apr ', year)]
-full_data_no_sex[month==5, month_yr:=paste0('May ', year)]
-full_data_no_sex[month==6, month_yr:=paste0('June ', year)]
+# --------------------
+# drop out the first two weeks of data until the mapping
+full_data_no_sex = full_data_no_sex[week!=1 & week!=2]
 
-full_data_no_sex[month==7, month_yr:=paste0('July ', year)]
-full_data_no_sex[month==8, month_yr:=paste0('Aug ', year)]
-full_data_no_sex[month==9, month_yr:=paste0('Sept ', year)]
-full_data_no_sex[month==10, month_yr:=paste0('Oct ', year)]
-full_data_no_sex[month==11, month_yr:=paste0('Nov ', year)]
-full_data_no_sex[month==12, month_yr:=paste0('Dec', year)]
+# --------------------
+# remove "# of" from variable names to shorten the names 
+full_data_no_sex[ , variable:=trimws(gsub("# of", "", variable))]
+full_data_no_sex[ , variable:=capitalize(variable)]
 
+# --------------------
+# reshape wide for power bi
+full_data_no_sex = dcast(full_data_no_sex, file_name+id+facility+tier+district+region+age+date+week+month+qtr+year~variable, value.var='value')
+
+# -----------------
 # export a csv for use in power bi dashboards
-setnames(full_data_no_sex, c('Region', 'District', 'Health Facility', 'Tier', 'Indicator',
-                  'Age Category', 'Week', 'Date', 'Fiscal Year', 'File Name', 
-                  'Value', 'Month Number', 'Quarter', 'Month Year'))
+setnames(full_data_no_sex, c('file_name', 'id', 'facility', 'tier', 
+              'district', 'region', 'age', 'date', 
+              'week', 'month', 'qtr', 'year'),
+              c('File Name', 'orgUnit ID', 'Health Facility', 'Tier',
+               'District', 'Region', 'Age Category', 
+                'Date', 'Week', 'Month', 'Quarter', 'Fiscal Year'))
 
-write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_',
-              most_recent_week, '_pbi.csv'))
+write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_master_pbi.csv'))
 
 # ------------------------------------
 # THE END
 # ------------------------------------
+
+
+
+
+
+
 

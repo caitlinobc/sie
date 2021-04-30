@@ -2,9 +2,9 @@
 # Caitlin O'Brien-Carelli
 #
 # 1/11/2021
+# Tanzania Baseline Cohort Data
 # Import and clean the AHD study data
-# For now: only Tanzania Baseline Cohort Data
-# Run descriptive statistics, including account of missingness
+# Run data quality checks to identify any issues with the extraction
 # ----------------------------------------------
 
 # ------------------------
@@ -25,10 +25,11 @@ library(eeptools)
 # ------------------------
 # files and directories
 
-# set the working directory to the cameroon data
-#dir = 'C:/Users/ccarelli/Documents/data/raw_att95_weekly/'
-#OutDir = 'C:/Users/ccarelli/Documents/data/prepped/'
-dir = 'C:/Users/Caitlin/OneDrive/Documents/'
+# set the working directory to the ahd data sets
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/data/'
+
+OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/data/prepped/'
+
 setwd(dir)
 
 # -------------------------------------
@@ -76,7 +77,7 @@ dt[5 <= age, under5:=FALSE]
 # ------------------------
 # other date variables
 
-dt[ , dt_post:=as.Date(dt_pos)]
+dt[ , dt_post:=as.Date(dtpos)]
 
 # ------------------------
 # recode 1s and 0s as logicals
@@ -97,7 +98,7 @@ dt[ , tbtxstart:=as.logical(tbtxstart)]
 # data quality checks
 
 # check for duplicate patient ids and duplicate entries
-dt[duplicated(dt)]
+dt[duplicated(dt)] # no duplicate entries
 dt[ , pid_test:=.N, by = pid]
 dt[1 < pid_test, .(pid, pid_test, dhisname), by = pid]
 dt[ ,pid_test:=NULL]
@@ -105,6 +106,17 @@ dt[ ,pid_test:=NULL]
 # check links with other data sets
 cd4[!(pid %in% dt$pid)] # all pids there, but one entry is a dup pid
 tb[!(pid %in% dt$pid), length(unique(pid))]
+
+
+
+
+
+
+
+
+
+
+
 
 # -------------------------------------
 

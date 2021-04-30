@@ -27,6 +27,7 @@ install.packages('ggplot2')
 install.packages('RColorBrewer')
 install.packages('gridExtra')
 install.packages('epitools')
+install.packages('Hmisc')
 
 # mapping packages
 install.packages('Rtools')
