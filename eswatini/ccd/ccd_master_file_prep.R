@@ -42,16 +42,16 @@ outDir = paste0(dir, 'prepped/')
 # --------------------
 # set the argument for the sheet you want to import 
 
-# 1. "Indicators Data Sources" - not data 
+# 1. "Indicators Data Sources" - data dictionary; not data
 # 2. "ART Indicators"     
-# 3. "PrEP Indicators "      
+# 3. "PrEP Indicators " #no current data   
 # 4. "TB Indicators "         
 # 5. "TB Screening"         
 # 6. "Commodities"           
 # 7. "Sheet2" - does not contain data; only clinic list from old template              
 
 # import sheets by number or by name
-sheet = 4
+sheet = 2
 
 # --------------------------------------------
 # import the data by sheet 
@@ -253,26 +253,6 @@ dt[ppl_seen < screened] # 3
 dt[ppl_seen < presumptive_tb] # 9 
 }
 
-# --------------------
-# organize the variables in a preferred order 
-
-# --------------------
-# shape the data long for visualization
-idVars = c('facility', 'location', 'region',
-           'sex', 'age', 'week', 'start_wk', 'end_wk',
-           'month', 'qtr')
-dt_long = melt(dt, id.vars = idVars)
-
-# factor the variable for display
-vars = dt_long[, unique(variable)]
-
-if (sheet==5) dt_long$variable = factor(dt_long$variable, vars,
-            c('People seen at the CCD', 'On TB treatment', 'Eligible for screening',
-            'Screened', 'Presumptive TB', 'Presumptive TB - referred', 
-            'Samples collected', 'Samples sent to the lab', 'Lab results received',
-            'Bacteriologically confirmed', 'Confirmed and started treatment')) 
-
-# --------------------
     
 # --------------------------------------------
 # FACILITY NAME STANDARDIZATION
@@ -477,4 +457,39 @@ write.csv(dt_export, paste0(outDir, 'Commodities.csv')) }
 
 # --------------------
 
+# --------------------------------------------
+# CREATE DATA SETS FOR R
+#
+# dt is preserved, as PBI files are formatted on dt_export
+
+# --------------------
+# organize the variables in a preferred order 
+
+# --------------------
+# shape the data long for visualization
+
+# create the list of id variables
+idVars = c('original_name','facility', 'id', 'region', 
+           'sex', 'age', 'location', 'week', 'start_wk', 'end_wk',
+           'month', 'qtr')
+
+# shape the data long using the id variables
+dt_long = melt(dt, id.vars = idVars)
+
+# use a set name in case you combine the data sets
+if (sheet==2) set = 'art'
+if (sheet==3) set = 'prep'
+if (sheet==4) set = 'tb_indic'
+if (sheet==5) set = 'tb_screening'
+if (sheet==6) set = 'commodities'
+
+dt_long[ , set:=set]
+
+# --------------------
+# export the data
+
+saveRDS(dt_long, paste0(outDir, 'r_files/', set, '.rds'))
+
+# --------------------
+# --------------------------------------------
 

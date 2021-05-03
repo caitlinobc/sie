@@ -87,41 +87,67 @@ dt[5 <= age, under5:=FALSE]
 
 # check that under 5 and age have the same amount of missingness
 # currently 310 missing entries; check in meeting
-dt[is.na(age)]
-dt[is.na(under5)]
+length(dt[is.na(age)])
+length(dt[is.na(under5)])
 # ------------------------
 # additional date variables
 
-# format the date on which the patient was tested for hiv
-dt[ , dt_pos:=as.Date(dtpos)]
+# format the date of variables imported as POSIXct
+dt[ , dtpos:=as.Date(dtpos)]
+
+dt[ , cd4_after_ahdelig_dt:=as.Date(cd4_after_ahdelig_dt)]
+dt[ , whostage1st_dt:=as.Date(whostage1st_dt)]
+dt[ , tptstart_dt:=as.Date(tptstart_dt)]
+dt[ , tptalready_dt:=as.Date(tptalready_dt)]
+
+dt[ , tptcplt_dt:=as.Date(tptcplt_dt)]
+dt[ , sstest_dt:=as.Date(sstest_dt)]
+dt[ , firstart_dt:=as.Date(firstart_dt)]
+dt[ , hvl6m_dt:=as.Date(hvl6m_dt)]
+dt[ , tbtxstart_dt:=as.Date(tbtxstart_dt)]
+
+dt[ , tbtxalready_dt:=as.Date(tbtxalready_dt)]
+dt[ , tptcplt_dt:=as.Date(tptcplt_dt)]
+dt[ , tbtxcplt_dt:=as.Date(tbtxcplt_dt)]
+dt[ , firstvis:=as.Date(firstvis)]
+dt[ , cd4_fvis_dt:=as.Date(cd4_fvis_dt)]
+
+dt[ , ahd_u5_dt:=as.Date(ahd_u5_dt)]
+dt[ , ahd_new_cd4_dt:=as.Date(ahd_new_cd4_dt)]
+dt[ , ahd_oclin_who_dt:=as.Date(ahd_oclin_who_dt)]
+dt[ , ahd_incwho_dt:=as.Date(ahd_incwho_dt )]
+dt[ , ahd_whostage_incwho:=as.Date(ahd_whostage_incwho)]
+
+dt[ , ahd_hvl_dt:=as.Date(ahd_hvl_dt)]
+dt[ , ahd_cd4u200_dt:=as.Date(ahd_cd4u200_dt)]
+# ------------------------
+# check the sites and site ids against the study protocols
+ids = dt[ ,.(siteid = unique(siteid)), by = .(dhisid, dhisname)]
+write.csv(ids, paste0(OutDir, 'facilities_in_data.csv'))
+
+# correct number of sites represented
+# outstanding question: is selian lutheran hospital the same as arusha lutheran medical centre?
 
 # ------------------------
-# check the sites and site ids
-
-
-
-
-# ------------------------
-
 # recode 1s and 0s as logicals
-# more logicals in the data set - add later
-
-
-
-
-
-
 dt[ , knwstat:=as.logical(knwstat)]
 dt[ , hivtest:=as.logical(hivtest)]
 dt[ , hivresult:=as.logical(hivresult)]
 dt[ , cd4done_after_ahdelig:=as.logical(cd4done_after_ahdelig)]
 dt[ , whostage1_done:=as.logical(whostage1_done)]
 
+dt[ , tptalready:=as.logical(tptalready)]
+dt[ , tptcplt:=as.logical(tptcplt)]
+dt[ , ahd_cd4u200:=as.logical(ahd_cd4u200)]
+
 dt[ , tbsympscrn:=as.logical(tbsympscrn)]
 dt[ , tptstart:=as.logical(tptalready)]
 dt[ , sstest:=as.logical(sstest)]
 dt[ , gxtest:=as.logical(gxtest)]
 dt[ , tbtxstart:=as.logical(tbtxstart)]
+
+
+dt[ ,unique( ahd_cd4u200)]
 
 # -------------------------------------
 # data quality checks
