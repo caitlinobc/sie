@@ -51,7 +51,7 @@ outDir = paste0(dir, 'prepped/')
 # 7. "Sheet2" - does not contain data; only clinic list from old template              
 
 # import sheets by number or by name
-sheet = 2
+sheet = 6
 
 # --------------------------------------------
 # import the data by sheet 
@@ -491,5 +491,6 @@ dt_long[ , set:=set]
 saveRDS(dt_long, paste0(outDir, 'r_files/', set, '.rds'))
 
 # --------------------
-# --------------------------------------------
+# -------------------------------------------
+
 
