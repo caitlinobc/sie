@@ -1,14 +1,14 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 4/20/21
+# 6/22/21
 # Cleaning and prep file for Attendiere 95 weekly data 
+# Includes if statements for monthly data 
 # Uses the weekly reporting tab at the site (facility) level
 # ----------------------------------------------
 
 # --------------------
 # Set up R
-
 rm(list=ls()) # clear the workspace
 library(readxl)
 library(data.table)
@@ -23,10 +23,20 @@ library(Hmisc)
 # --------------------
 # Files and directories
 
+# set frequency - 'Weekly' or 'Monthly'
+freq = 'Monthly'
+
 # set the working directory to the Weekly CDC Reporting Data 
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/att95_weekly_raw/'
-OutDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Cameroon/data/'
+mainDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/cameroon/cdc_reporting/'
+if (freq == 'Weekly') dir = paste0(mainDir, 'weekly_raw/')
+if (freq == 'Monthly') dir = paste0(mainDir,'monthly_raw/')
 setwd(dir)
+
+# set the output directory
+outDir = paste0(mainDir, 'outputs/')
+
+# set the output directory for prepped data
+prepDir = paste0(mainDir, 'prepped/')
 
 # run the data checks to ensure no data entry errors?
 run_check = TRUE
@@ -59,21 +69,28 @@ sheets = excel_sheets(file_name)
 if (any(grepl("Littoral_Report", sheets))==T) sheet_name = "Littoral_Report"
 if (any(grepl("SouthSite_Report", sheets))==T) sheet_name = "SouthSite_Report"
 if (any(grepl("SITE Weekly", sheets))==T) sheet_name = "SITE Weekly"
+if (any(grepl("SITE Monthly", sheets))==T) sheet_name = "SITE Monthly"
 
 # import the correct facility level sheet by name
 dt = data.table(read_excel(paste0(dir, file_name), sheet = sheet_name))
 
 # --------------------
-# strip the date from the file name and save as a vector
-file_name = gsub("weekly report ", "", tolower(files[f]))
+# use the information in the file name 
+
+# drop unnecessary pieces of the file name
 file_name = gsub(".xlsx", "", file_name)
 file_name = sapply(strsplit(file_name,"/"), "[", 2)
 
+# strip the date from the file name and save as a vector
+if (freq == "Weekly") file_name = gsub("weekly report ", "", tolower(file_name))
+if (freq == "Monthly") file_name = gsub("monthly report ", "", tolower(file_name))
+
 # the first weeks of the data are in FY20 and FY21
 # file names changed to solely reflect FY21 for just this week (both regions)
-start_week = sapply(strsplit(file_name,"week"), "[", 2)
+if (freq == 'Weekly') { start_week = sapply(strsplit(file_name,"week"), "[", 2)
 start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
-                        "", start_week, perl = TRUE)))
+                        "", start_week, perl = TRUE))) } else {
+              month_name = trimws(sapply(strsplit(file_name,"_"), "[", 2))}
 
 # --------------------
 # rename the correctly named columns
@@ -84,6 +101,10 @@ setnames(dt, 1:4,  c('region', 'district', 'facility', 'tier'))
 tot_rows = dt[ ,.N]
 dt = dt[-tot_rows]
 
+# check that the last row does not include total
+dt = dt[!grepl("Total", region)]
+dt = dt[!grepl("ALL", region)]
+
 # --------------------
 # replace values with preceding values in nested columns 
 # this takes the values of the top three rows: indicator, age, sex
@@ -93,9 +114,11 @@ dt = dt[-tot_rows]
 
 # create a data table that will only contain unique column names
 alt = dt[1:3]
+if (freq == 'Monthly') alt = dt[1:2]
 alt[ , region:= 'region']
 alt[ , district:= 'district']
 alt[ , facility:= 'facility']
+alt[ , tier:=as.character(tier)]
 alt[ , tier:= 'tier']
 
 for (s in seq(1:3)) {
@@ -109,27 +132,33 @@ vec[ , placehold:=seq(from = 1, to = nrow(vec))]
 # shape the data wide to attach to the data set and subset to filled rows
 vec_wide = dcast(vec,region+district+facility+tier~placehold, value.var = 'value')
 alt = rbind(alt, vec_wide, use.names = F) }
+
+if (freq == 'Weekly') {
 alt = alt[-(1:3)]
 alt[ ,row:=seq(1:nrow(alt))] # drop the rows with NA included
+} else { alt = alt[-(2:5)] }
 
 # --------------------
 # for data that are not sex stratified, drop additional rows
 if (sheet_name=='SITE Weekly') alt = alt[-(2:3)]
 
 # --------------------
-# create collapsed identifiers with indicator, age, sex 
-alt_long = melt(alt, id.vars = c('region',
-          'district', 'facility', 'tier', 'row')) # shape data long to paste
+# create collapsed identifiers with indicator, age, sex
+# shape data long to paste
+if (freq=='Weekly') {alt_long = melt(alt, id.vars = c('region',
+          'district', 'facility', 'tier', 'row')) } else {
+            alt_long = melt(alt, id.vars = c('region',
+            'district', 'facility', 'tier'))}
 alt_long[ , variable:=as.character(variable)]
 
 # for data that are not sex stratified, create collapsed identifiers
-if (sheet_name=='SITE Weekly') {
+if (sheet_name=='SITE Weekly' | sheet_name =='SITE Monthly') {
 alt_long[ , var_temp:=shift(variable)]
 alt_long[value=="Adults ( 15+)" , var_replace:=paste0(variable, value)]
 alt_long[value=="Children ( <15)" , var_replace:=paste0(var_temp, value)] }
 
 # create collapsed identifiers for sex stratified data 
-if (sheet_name!='SITE Weekly') {
+if (freq=='Weekly' & sheet_name!='SITE Weekly') {
 alt_long[ , var_replace:='p']
 for (v in unique(alt_long$variable)) {
  x = as.character(paste(alt_long[variable==v, unique(value)],
@@ -149,8 +178,8 @@ setnames(dt, new_names)
 # FORMAT THE DATA FOR UNIQUE ROWS
 
 # shape data long 
-if (sheet_name=='SITE Weekly') dt = dt[-(1)] # drop only first row
-if (sheet_name!='SITE Weekly') dt = dt[-(1:3)]
+if (sheet_name=='SITE Weekly' | sheet_name=='SITE Monthly') dt = dt[-(1)] # drop only first row
+if (freq=='Weekly' | sheet_name!='SITE Weekly') dt = dt[-(1:3)]
 dt_long = melt(dt, id.vars = IDvars)
 dt_long[,variable:=trimws(variable, which = "both")] #ensure no excess white space
 
@@ -170,13 +199,38 @@ dt_long[ , tier:=as.numeric(as.character(tier))]
 
 # --------------------
 # create a date using information stripped from the file name
-dt_long[ , week:=start_week]
+if(freq=='Weekly') dt_long[ , week:=start_week]
+if(freq=='Monthly') dt_long[ , month_name:=month_name]
+
+# --------------------
+# set up monthly dates 
+if(freq=='Monthly') {
+  
+dt_long[month_name=='jan', month:='01']
+dt_long[month_name=='feb', month:='02']
+dt_long[month_name=='march', month:='03']
+dt_long[month_name=='april', month:='04']
+dt_long[month_name=='may', month:='05']
+dt_long[month_name=='june', month:='06']
+
+dt_long[month_name=='july', month:='07']
+dt_long[month_name=='aug', month:='08']
+dt_long[month_name=='sept', month:='09']
+dt_long[month_name=='oct', month:='10']
+dt_long[month_name=='nov', month:='11']
+dt_long[month_name=='dec', month:='12']}
+
+# --------------------
 
 # calculate dates as seven days from the first monday in fiscal year 21
 # in other words, monday, sept. 28 as october 1 was on thursday
-dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
-dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))]
+if(freq=='Weekly') { dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
+dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))] }
 
+if(freq=='Monthly') dt_long[, date:=as.Date(paste0("2021-", month, "-01" , "%Y-%m-%d"))]
+if(freq=='Monthly') dt_long[ , week:=date]
+dt_long[ ,month_name:=NULL]
+  
 # add in the year
 dt_long[ , year:=year(date)] 
 
@@ -196,19 +250,25 @@ if (f==1) { full_data = dt_long } else {
 }
 # --------------------
 # print a statement to show for loop progress
+if (freq=='Monthly') start_week = dt_long[, unique(date)]
 print(paste0("Processed week: ", start_week, "; region: ", dt_long$region[[1]]))
 
-# create vector of start weeks and file names 
-x = c(week = as.numeric(start_week), region = dt_long$region[[1]])
-if (f==1) files_processed = x 
+# create vector of start weeks and file names
+if(freq=='Weekly') x = c(week = as.numeric(start_week), region = dt_long$region[[1]])
+if(freq=='Monthly') x = c(month = month_name, region = dt_long$region[[1]])
+if (f==1) files_processed = x
 if (f!=1) files_processed = rbind(files_processed, x)
 } # END OF FOR LOOP
 
+# print the files processed to check
+files_processed
+
 # --------------------------------------
 
-# --------------------
-# fix minor data inconsistencies
+# --------------------------------------
+# FORMAT THE AGGREGATE DATA 
 
+# --------------------------------------
 # some rows have double totals - ensure 'all' is not included
 # this has to be at the end - creates errors otherwise 
 full_data = full_data[region!='ALL']

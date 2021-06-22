@@ -27,6 +27,9 @@ library(openxlsx)
 # set the main directory
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/eswatini/ccd/'
 
+# set the directory for the prospective data if not using the master file
+prospective_dir = paste0(dir, 'prepped/prospective_data/')
+
 # get the sheets from the data 
 excel_sheets(paste0(dir, 'master_file/Reviewed DDD Reporting Template 29 Sept.xlsx'))
 
@@ -51,13 +54,27 @@ outDir = paste0(dir, 'prepped/')
 # 7. "Sheet2" - does not contain data; only clinic list from old template              
 
 # import sheets by number or by name
-sheet = 5
+sheet = 2
 
 # do you want to aggregate all of the csvs into a single file?
 create_master = TRUE
 
+# run this code on weekly, prospective data?
+weekly_automate = TRUE
+
+# --------------------------------------------
+if(weekly_automate==TRUE) {
+  
+  if(sheet==2) dt = data.table(read.csv(paste0(prospective_dir, 'ART Indicators.csv')))
+  
+  # drop excess column names from imported CSVs                                                                                   
+  dt[ ,c('X','folder', 'file_name'):=NULL]
+}
+
+
 # --------------------------------------------
 # import the data by sheet 
+if (weekly_automate==FALSE) {
 
 dt = data.table(read.xlsx(paste0(dir,
     'master_file/Reviewed DDD Reporting Template 29 Sept.xlsx'),
@@ -157,6 +174,8 @@ if (sheet==6) setnames(dt, c('region', 'facility', 'location',
 # check that the names match
 check_names = cbind(original_names$og, dt_names = names(dt))
 # View(check_names) # to ensure the new names match the old
+
+}
 
 # --------------------
 # change column types for ease of manipulation
@@ -403,8 +422,12 @@ dt[!(facility %in% hf$name), unique(facility)]
 # --------------------
 # add orgUnitID to the data set match on ID in PBI
 
-ids = hf[ ,.(facility = name, id)]
+ids = hf[ ,.(facility = name, id, official_region = region)]
 dt = merge(dt, ids, by = 'facility', all.x=TRUE)
+
+# replace regions with official DATIM regions
+dt[is.na(region), region:=official_region]
+dt[ ,official_region:=NULL]
 
 # --------------------
 # export a list of facilities with geographic data for use in PBI
@@ -423,11 +446,15 @@ write.csv(hf, paste0(outDir, 'List of DATIM Sites.csv'))
 
 dt = dt[!duplicated(dt)]
 
+# in master file:
 # 2 - 7 rows dropped
 # 3 - 48 rows dropped
 # 4 - 8 rows dropped
 # 5 - 1 rows drop9ed
 # 6 - 18 rows dropped
+
+# in prospective data:
+# 2 - 22 rows dropped
 
 # --------------------------------------------
 
@@ -466,8 +493,8 @@ setnames(dt_export, names(dt_export), c('Facility', 'orgUnitID', 'Location',
       'Clients who submitted a VL test via CCD and received the results'))
 
 # export the file for PBI
-write.csv(dt_export, paste0(outDir, 'ART Indicators.csv'), na = "") 
-
+if (weekly_automate==FALSE) write.csv(dt_export, paste0(outDir, 'ART Indicators.csv'), na = "") 
+if (weekly_automate==TRUE) write.csv(dt_export, paste0(outDir, 'prospective_data/ART Indicators_prepped.csv'), na = "") 
 }
 
 # --------------------
