@@ -90,7 +90,8 @@ if (freq == "Monthly") file_name = gsub("monthly report ", "", tolower(file_name
 if (freq == 'Weekly') { start_week = sapply(strsplit(file_name,"week"), "[", 2)
 start_week = as.numeric(as.character(gsub("(?<![0-9])0+",
                         "", start_week, perl = TRUE))) } else {
-              month_name = trimws(sapply(strsplit(file_name,"_"), "[", 2))}
+              month_name = trimws(sapply(strsplit(file_name,"_"), "[", 2))
+              year = trimws(sapply(strsplit(file_name,"_"), "[", 3))}
 
 # --------------------
 # rename the correctly named columns
@@ -227,7 +228,7 @@ dt_long[month_name=='dec', month:='12']}
 if(freq=='Weekly') { dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
 dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))] }
 
-if(freq=='Monthly') dt_long[, date:=as.Date(paste0("2021-", month, "-01" , "%Y-%m-%d"))]
+if(freq=='Monthly') dt_long[, date:=as.Date(paste0(year, '-', month, "-01" , "%Y-%m-%d"))]
 if(freq=='Monthly') dt_long[ , week:=date]
 dt_long[ ,month_name:=NULL]
   
@@ -293,10 +294,11 @@ full_data$variable = gsub("community ART dispensations \\(CAD\\)", "CAD", full_d
 #-------------------------------------------------
 # SIMPLE QUALITY CHECKS 
 
-# determine the most recent week
+# for the weekly data, check all weeks are included 
+if(freq=='Weekly') {
+  
 most_recent_week = max(full_data$week)
-
-# check that every week is counted
+# check that every week is counted - counts each week or month up to most recent
 for (r in unique(full_data$region)) {
 if (all(full_data[, unique(week)] %in% c(1:most_recent_week))!=TRUE) print("Week skipped!") }
 
@@ -307,7 +309,7 @@ files_processed = data.table(files_processed)
 sud_weeks = files_processed[region=='Sud' | region=='South', list_weeks %in% week]
 lit_weeks = files_processed[region=='Littoral', list_weeks %in% week]
 if (!all(sud_weeks==TRUE)) print("Missing a week in Sud!")
-if (!all(lit_weeks==TRUE)) print("Missing a week in Littoral!")
+if (!all(lit_weeks==TRUE)) print("Missing a week in Littoral!")}
 
 # ------------------------------------------------
 # FACILITY NAME CORRECTIONS
@@ -361,7 +363,7 @@ setnames(hf, c('orgUnit ID', 'Health Facility', 'Parent ID', 'District',
 
 # --------------------
 # export the list of facilities 
-write.csv(hf, paste0(OutDir, 'facilities/List of DATIM sites.csv'))
+write.csv(hf, paste0(prepDir, 'List of DATIM sites.csv'))
 
 # --------------------
 # save as rds file - shaped long for R analysis
