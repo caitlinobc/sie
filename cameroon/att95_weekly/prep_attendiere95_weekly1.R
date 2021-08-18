@@ -24,12 +24,12 @@ library(Hmisc)
 # Files and directories
 
 # set frequency - 'Weekly' or 'Monthly'
-freq = 'Monthly'
+freq = 'Weekly'
 
-# set the working directory to the Weekly CDC Reporting Data 
+# set the working directory to the Weekly or Monthly raw CDC Reporting Data 
 mainDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/cameroon/cdc_reporting/'
-if (freq == 'Weekly') dir = paste0(mainDir, 'weekly_raw/')
-if (freq == 'Monthly') dir = paste0(mainDir,'monthly_raw/')
+if (freq == 'Weekly') dir = paste0(mainDir, 'raw/weekly/')
+if (freq == 'Monthly') dir = paste0(mainDir,'raw/monthly/')
 setwd(dir)
 
 # set the output directory
@@ -223,13 +223,12 @@ dt_long[month_name=='dec', month:='12']}
 
 # --------------------
 
-# calculate dates as seven days from the first monday in fiscal year 21
-# in other words, monday, sept. 28 as october 1 was on thursday
-if(freq=='Weekly') { dt_long[week==1, date:= as.Date("2020-09-28" , "%Y-%m-%d")]
-dt_long[week!=1, date:= (as.Date("2020-09-28" , "%Y-%m-%d"))+(7*(week-1))] }
+# calculate dates as seven days from the first friday in fiscal year 21
+# in other words, friday, october 2nd
+if(freq=='Weekly') { dt_long[week==1, date:= as.Date("2020-10-02" , "%Y-%m-%d")]
+dt_long[week!=1, date:= (as.Date("2020-10-02" , "%Y-%m-%d"))+(7*(week-1))] }
 
 if(freq=='Monthly') dt_long[, date:=as.Date(paste0(year, '-', month, "-01" , "%Y-%m-%d"))]
-if(freq=='Monthly') dt_long[ , week:=date]
 dt_long[ ,month_name:=NULL]
   
 # add in the year
@@ -242,26 +241,27 @@ dt_long[ , file_name:=file_name]
 dt_long[ , variable:=trimws(variable, "both")]
 
 # --------------------
-# check the totals against tot_check
-
-# --------------------
 # rbind the files together to create a complete data set
 if (f==1) { full_data = dt_long } else {
   full_data = rbind(full_data, dt_long)
 }
 # --------------------
 # print a statement to show for loop progress
-if (freq=='Monthly') start_week = dt_long[, unique(date)]
-print(paste0("Processed week: ", start_week, "; region: ", dt_long$region[[1]]))
+file_date = dt_long[, unique(date)]
+print(paste0("Processed period: ", file_date, "; region: ", dt_long$region[[1]]))
 
+# --------------------
 # create vector of start weeks and file names
 if(freq=='Weekly') x = c(week = as.numeric(start_week), region = dt_long$region[[1]])
 if(freq=='Monthly') x = c(month = month_name, region = dt_long$region[[1]])
 if (f==1) files_processed = x
 if (f!=1) files_processed = rbind(files_processed, x)
-} # END OF FOR LOOP
+} 
 
-# print the files processed to check
+# END OF FOR LOOP!!!!!!!!!!!!
+
+# --------------------
+# print the files processed for a visual check
 files_processed
 
 # --------------------------------------
@@ -310,6 +310,7 @@ sud_weeks = files_processed[region=='Sud' | region=='South', list_weeks %in% wee
 lit_weeks = files_processed[region=='Littoral', list_weeks %in% week]
 if (!all(sud_weeks==TRUE)) print("Missing a week in Sud!")
 if (!all(lit_weeks==TRUE)) print("Missing a week in Littoral!")}
+# ------------------------------------------------
 
 # ------------------------------------------------
 # FACILITY NAME CORRECTIONS
@@ -343,7 +344,7 @@ full_data[facility=='CM SAFACAM MBONGO', facility:='CM SAFACAM MBONGO (DIZANGUE)
 full_data[grepl("Ndogpassi", facility), facility:='CMA  Ndogpassi III Centre']
 
 # ensure no facility dropped out
-full_data[!(facility %in% hf$name), unique(facility)] # 1 does not match
+# full_data[!(facility %in% hf$name), unique(facility)] # 1 does not match
 
 # --------------------
 # merge in org unit ids
@@ -357,33 +358,37 @@ full_data[facility=='CSIU Number 1', id:='nXrhnc7vTDj']
 hf[id=='nXrhnc7vTDj', name:='CSIU Number 1']
 
 # --------------------
-# reset the names of the hf file for pbi
-setnames(hf, c('orgUnit ID', 'Health Facility', 'Parent ID', 'District',
-               'Region', 'Latitude', 'Longitude'))
 
-# --------------------
-# export the list of facilities 
-write.csv(hf, paste0(prepDir, 'List of DATIM sites.csv'))
+# -----------------------------------------------
+
+# -----------------------------------------------
+# EXPORT DATA FOR USE IN R
 
 # --------------------
 # save as rds file - shaped long for R analysis
 
-# label the last week uploaded - full data; all disaggregation
-# major difference: this sheet includes sex for weeks 1 - 3
-saveRDS(full_data, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
-              most_recent_week, '_fy21_full.rds'))
-full_data[ ,length(unique(week)), by = region]
-
 # save file aggregated across sex (data are not sex stratified after week 2)
 sum_vars = names(full_data)[names(full_data)!="sex" & names(full_data)!="value"]
 
+# sum value by all variables except sex
 full_data_no_sex = full_data[,.(value = sum(value)), by = sum_vars]
-saveRDS(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_',
-            most_recent_week, '_fy21_no_sex.rds'))
-full_data_no_sex[ ,length(unique(week)), by = region]
+
+# SAVE AN RDS FILE 
+saveRDS(full_data_no_sex, 
+        paste0(prepDir, 'full_data_', tolower(freq), '_fy21.rds'))
 
 # -----------------------------------------------
 # PBI DATA 
+
+# --------------------
+# Export the list of facilities to merge in PBI
+
+# reset the names of the variables for pbi
+setnames(hf, c('orgUnit ID', 'Health Facility', 'Parent ID', 'District',
+               'Region', 'Latitude', 'Longitude'))
+
+# export the list of facilities 
+write.csv(hf, paste0(prepDir, 'List of DATIM sites.csv'))
 
 # --------------------
 # add quarter year and month year for PBI
@@ -392,20 +397,21 @@ full_data_no_sex[ ,length(unique(week)), by = region]
 full_data_no_sex[ , month:=as.Date(paste0('01-', month(date), '-', year), '%d-%m-%Y')]
 
 # create pepfar quarter-year for visualization
-full_data_no_sex[month(month) %in% c(10, 11, 12), qtr:=paste0('Q1 FY21')]
-full_data_no_sex[month(month) %in% c(1, 2, 3), qtr:=paste0('Q2 FY21')]
-full_data_no_sex[month(month) %in% c(4, 5 , 6), qtr:=paste0('Q3 FY21')]
-full_data_no_sex[month(month) %in% c(7, 8, 9), qtr:=paste0('Q4 FY21')]
+full_data_no_sex[month(month) %in% c(10, 11, 12) & year==2020, qtr:=paste0('Q1 FY21')]
+full_data_no_sex[month(month) %in% c(1, 2, 3) & year==2021, qtr:=paste0('Q2 FY21')]
+full_data_no_sex[month(month) %in% c(4, 5 , 6) & year==2021, qtr:=paste0('Q3 FY21')]
+full_data_no_sex[month(month) %in% c(7, 8, 9) & year==2021, qtr:=paste0('Q4 FY21')]
+
 # one October week in FY21 starts in September 2020
 full_data_no_sex[month(month)==9 & year==2020, qtr:=paste0('Q1 FY21')]
 
 #--------------------
 # convert year to fiscal year
-full_data_no_sex[ , year:=2021]
+full_data_no_sex[ , fiscal_year:=2021]
 
 # --------------------
 # drop out the first two weeks of data until the mapping
-full_data_no_sex = full_data_no_sex[week!=1 & week!=2]
+if (freq=='Weekly') full_data_no_sex = full_data_no_sex[week!=1 & week!=2]
 
 # --------------------
 # remove "# of" from variable names to shorten the names 
@@ -414,18 +420,31 @@ full_data_no_sex[ , variable:=capitalize(variable)]
 
 # --------------------
 # reshape wide for power bi
-full_data_no_sex = dcast(full_data_no_sex, file_name+id+facility+tier+district+region+age+date+week+month+qtr+year~variable, value.var='value')
+if (freq=='Weekly') { full_data_no_sex = dcast(full_data_no_sex, 
+      file_name+id+facility+tier+district+region+age+date+week+month+qtr+fiscal_year~variable, value.var='value') } else {
+        full_data_no_sex = dcast(full_data_no_sex, 
+        file_name+id+facility+tier+district+region+age+date+month+qtr+fiscal_year~variable, value.var='value') # no week variable
+      }
 
 # -----------------
-# export a csv for use in power bi dashboards
-setnames(full_data_no_sex, c('file_name', 'id', 'facility', 'tier', 
-              'district', 'region', 'age', 'date', 
-              'week', 'month', 'qtr', 'year'),
-              c('File Name', 'orgUnit ID', 'Health Facility', 'Tier',
-               'District', 'Region', 'Age Category', 
-                'Date', 'Week', 'Month', 'Quarter', 'Fiscal Year'))
+# export a final csv for use in power bi dashboards
 
-write.csv(full_data_no_sex, paste0(OutDir, 'att95_prepped/cameroon_weekly_fy21_master_pbi.csv'))
+if (freq=='Weekly') {setnames(full_data_no_sex, 
+   c('file_name', 'id', 'facility', 'tier', 
+    'district', 'region', 'age', 'date', 
+     'week', 'month', 'qtr', 'fiscal_year'),
+    c('File Name', 'orgUnit ID', 'Health Facility', 'Tier',
+       'District', 'Region', 'Age Category', 
+        'Date', 'Week', 'Month', 'Quarter', 'Fiscal Year')) } else {setnames(full_data_no_sex, 
+          c('file_name', 'id', 'facility', 'tier', 
+            'district', 'region', 'age', 'date', 
+            'month', 'qtr', 'fiscal_year'),
+          c('File Name', 'orgUnit ID', 'Health Facility', 'Tier',
+            'District', 'Region', 'Age Category', 
+            'Date', 'Month', 'Quarter', 'Fiscal Year'))}
+
+# export the file as a csv
+write.csv(full_data_no_sex, paste0(prepDir, tolower(freq), '_fy21_master_pbi.csv'))
 
 # ------------------------------------
 # THE END
