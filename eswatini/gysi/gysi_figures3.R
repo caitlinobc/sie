@@ -1,4 +1,26 @@
 
+# --------------------------------------------------
+# visualize the data
+
+# sum to the national level
+
+# national - all variables
+dt_nat_all = dt[ , .(value = sum(value, na.rm = T)),
+                      by = .(age, sex, variable, fq)]
+
+# national - sex disaggregation only
+dt_nat_sex = dt[ , .(value = sum(value, na.rm = T)),
+                 by = .(sex, variable, fq)]
+
+# national - sex disaggregation only
+dt_nat_age= dt[ , .(value = sum(value, na.rm = T)),
+                by = .(age, variable, fq)]
+
+# national - sex disaggregation only
+dt_nat_all= dt[ , .(value = sum(value, na.rm = T)),
+                by = .( variable, fq)]
+
+
 
 # --------------------
 # bar charts over time by age and sex
@@ -6,6 +28,9 @@ i = 1
 natl_sex_plots = NULL
 
 for (v in unique(dt_nat_sex$variable)) {
+  
+  
+  
   
   var_name = toupper(v) 
   
@@ -59,8 +84,7 @@ for (v in unique(dt_nat_sex$variable)) {
   var_name = toupper(v) 
   
   natl_all_plots[[i]] = ggplot(dt_nat_all[variable==v], 
-                               aes(x=fq, y=value, color = age, group = age)) +
-    facet_wrap(~sex)+
+                               aes(x=fq, y=value)) +
     geom_point()+
     geom_line()+
     scale_color_manual(values = twelve_colors) +

@@ -123,17 +123,44 @@ dt_all = dt[grepl('20', fq), .(value = sum(value, na.rm = T)),
 # --------------------
 # Descriptive statistics
 
+# --------------------
 # HIV testing disparities
 test_tot = dt_all[variable=='hts_tst', sum(value)]
 dt_all[variable=='hts_tst' & sex=='Male', sum(value)/test_tot]
 dt_all[variable=='hts_tst' & sex=='Female', sum(value)/test_tot]
 
+dt_all[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19", "20-24"),
+       sum(value)]
+dt_all[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19"),
+       sum(value)]
+dt_all[variable=='hts_tst' & sex=='Female' & age %in% c("20-24"),
+       sum(value)]
 
+dt_all[variable=='hts_tst' & sex=='Male' & age %in% c("10-14", "15-19", "20-24"),
+       sum(value)]
+
+# --------------------
+# test positivity
+
+pos = dt_all[(variable=='hts_tst' | variable=='hts_tst_pos') & age %in% c("10-14", "15-19", "20-24"),
+      .(value = sum(value)), by = .(sex, variable)]
+pos = dcast(pos, sex~variable)
+pos[ , rate:=hts_tst_pos/hts_tst]
+
+# --------------------
+# newly enrolled on ART
+
+dt_all[variable=='hts_tst_pos' & age %in% c("10-14", "15-19", "20-24"),
+       .(sum(value)), by = sex]
 
 # ----------------------------------------------
 
+# --------------------
+# Figures specifically for the write-up
+
 pdf(paste0(dir, 'writeup_figures.pdf'), height = 9, width = 16 )
 
+# testing by sex, age over time - hts_tst
 ggplot(dt_all[variable=='hts_tst'], 
        aes(x=age, y=value, fill = sex)) +
   geom_bar(position = 'dodge', stat = 'identity') +
@@ -142,9 +169,45 @@ ggplot(dt_all[variable=='hts_tst'],
   scale_fill_manual(values = c('#b2182b', '#fdae61')) +
   theme_bw()+
   labs(x = 'Age Category', y = 'Tested for HIV',
-       # title = ('Clients tested for HIV by sex and age category, FY20'), 
        fill ='Sex') +
-  theme(text = element_text(size=20)) 
+  theme(text = element_text(size=24)) 
+
+# tested HIV+ by sex, age over time - hts_tst_pos
+ggplot(dt_all[variable=='hts_tst'], 
+       aes(x=age, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5)+
+  scale_fill_manual(values = c('#d6604d', '#92c5de')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'Tested HIV+',
+       fill ='Sex') +
+  theme(text = element_text(size=24)) 
+
+# enrolled on ART by sex, age, over time
+ggplot(dt_all[variable=='tx_curr'], 
+       aes(x=age, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5)+
+  scale_fill_manual(values = c('#4575b4', '#a6dba0')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'On ART',
+       fill ='Sex') +
+  theme(text = element_text(size=24)) 
+
+# newly enrolled on ART by sex, age over time
+ggplot(dt_all[variable=='tx_new'], 
+       aes(x=age, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5)+
+  scale_fill_manual(values = c('#35978f', '#c2a5cf')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'Newly Enrolled on ART',
+       fill ='Sex') +
+  theme(text = element_text(size=24)) 
+
 
 dev.off()
-
+# --------------------

@@ -20,10 +20,15 @@ tab1 = tab1[, .(age, sex, prep_curr, prep_new, hts_tst,
 # reshape for variable, sex
 tab1 = melt(tab1, id.vars = c("age", "sex"))
 
+#-----------------------------
 # create a totals row and merge
 tab1_total = tab1[ ,.(age = 'Total', value = sum(value)),
                    by = .(variable, sex)]
+tab1_total = tab1_total[variable!='hts_yield' & variable!='vls_ratio']
+tab1 = rbind(tab1, tab1_total)
 
+#-----------------------------
+# reshape the table into a key format
 
 tab1[ , variable:=paste0(toupper(variable), " ")]
 tab1 = dcast(tab1, age~variable+sex)
@@ -35,4 +40,4 @@ setnames(tab1, 'age', 'Age Category')
 # export the file
 write.xlsx(tab1, paste0(dir, 'table1_all_indicators_age_sex.xlsx'))
 
-
+#------------------------------------------------------
