@@ -11,25 +11,31 @@ rm(list=ls()) # clear the workspace
 library(readxl)
 library(data.table)
 library(lubridate)
-library(plyr)
 library(dplyr)
 library(tidyr)
 library(zoo)
 library(stringr)
 library(openxlsx)
+library(ggplot2)
 library(RColorBrewer)
 # --------------------
+
+# ----------------------------------------------
 # Files and directories
 
 # set the home directory
 dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/eswatini/gysi/'
 setwd(dir)
 
-# read in the data 
-dt = data.table(read.csv(paste0(dir, 'data.csv')))
-# --------------------
+# set the output directory
+outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Eswatini/GYSI/'
 
-# --------------------------------------------------
+# read in the data 
+dt = data.table(read.csv(paste0(dir, 'gysi_indicators.csv')))
+
+# ----------------------------------------------
+
+# ----------------------------------------------
 # format the data set for analysis
 
 # --------------------
@@ -48,18 +54,11 @@ dt[is.na(hts_tst) & is.na(hts_tst_pos) & is.na(tx_curr) & is.na(tx_new) & is.na(
 # reshape the data long and replace NAs with 0s
 dt = melt(dt, 
     id.vars = c('age', 'sex', 'country', 'region', 'district', 'site', 'fq'))
-dt[is.na(value) & !grepl('prep', variable), value:=0]
+dt[is.na(value) & !grepl('prep', variable), value:=0] # only prep indicators missing
 
-# --------------------
-# format the prep data
+# drop the missing values for prep (e.g. no pediatric enrollments)
+dt = dt[!is.na(value)] # prep should now be semi-annual in FY20
 
-# in FY20, prep data are reported semi-annually
-# both values should be 0
-dt[grepl('prep', variable) & fq == 'FY20 Q1' & !is.na(value)]
-dt[grepl('prep', variable) & fq == 'FY20 Q3' & !is.na(value)]
-
-# replace the missing values in quarters reported with 0
-dt[grepl('prep', variable) & is.na(value) & !(fq == 'FY20 Q2' | fq == 'FY20 Q4'), value:=0]
 # --------------------
 
 # --------------------
@@ -102,23 +101,31 @@ dt$caya = factor(dt$caya, c('Child', 'Adolescent', 'Youth', 'Adult'),
                 c('Child', 'Adolescent', 'Youth', 'Adult'))
 
 # --------------------
-# sum to the national level
+# sum to the national level and export the data 
+
+# national - all variables 
+dt_all = dt[ , .(value = sum(value, na.rm = T)),
+            by = .(fq, sex, age, cya, caya, variable)]
+
 
 # national - all variables - subset to just fy20
-dt_all = dt[grepl('20', fq), .(value = sum(value, na.rm = T)),
+dt_all_fy20 = dt[grepl('20', fq), .(value = sum(value, na.rm = T)),
                       by = .(sex, age, cya, caya, variable)]
 
-
+# export the data 
+write.csv(dt_all, paste0(dir, 'dt_all.csv'))
+write.csv(dt_all_fy20, paste0(dir, 'dt_all_fy20_no_fq.csv'))
 
 # ----------------------------------------------
 # source tables and visualizations
 
-
+# 
 
 # ----------------------------------------------
 
 
 
+# ----------------------------------------------
 
 # --------------------
 # Descriptive statistics
@@ -126,23 +133,22 @@ dt_all = dt[grepl('20', fq), .(value = sum(value, na.rm = T)),
 # --------------------
 # HIV testing disparities
 test_tot = dt_all[variable=='hts_tst', sum(value)]
-dt_all[variable=='hts_tst' & sex=='Male', sum(value)/test_tot]
-dt_all[variable=='hts_tst' & sex=='Female', sum(value)/test_tot]
+dt_all_fy20[variable=='hts_tst' & sex=='Male', sum(value)/test_tot]
+dt_all_fy20[variable=='hts_tst' & sex=='Female', sum(value)/test_tot]
 
-dt_all[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19", "20-24"),
+dt_all_fy20[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19", "20-24"),
        sum(value)]
-dt_all[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19"),
+dt_all_fy20[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19"),
        sum(value)]
-dt_all[variable=='hts_tst' & sex=='Female' & age %in% c("20-24"),
+dt_all_fy20[variable=='hts_tst' & sex=='Female' & age %in% c("20-24"),
        sum(value)]
-
-dt_all[variable=='hts_tst' & sex=='Male' & age %in% c("10-14", "15-19", "20-24"),
+dt_all_fy20[variable=='hts_tst' & sex=='Male' & age %in% c("10-14", "15-19", "20-24"),
        sum(value)]
 
 # --------------------
 # test positivity
 
-pos = dt_all[(variable=='hts_tst' | variable=='hts_tst_pos') & age %in% c("10-14", "15-19", "20-24"),
+pos = dt_all_fy20[(variable=='hts_tst' | variable=='hts_tst_pos') & age %in% c("10-14", "15-19", "20-24"),
       .(value = sum(value)), by = .(sex, variable)]
 pos = dcast(pos, sex~variable)
 pos[ , rate:=hts_tst_pos/hts_tst]
@@ -150,64 +156,7 @@ pos[ , rate:=hts_tst_pos/hts_tst]
 # --------------------
 # newly enrolled on ART
 
-dt_all[variable=='hts_tst_pos' & age %in% c("10-14", "15-19", "20-24"),
+dt_all_fy20[variable=='hts_tst_pos' & age %in% c("10-14", "15-19", "20-24"),
        .(sum(value)), by = sex]
 
 # ----------------------------------------------
-
-# --------------------
-# Figures specifically for the write-up
-
-pdf(paste0(dir, 'writeup_figures.pdf'), height = 9, width = 16 )
-
-# testing by sex, age over time - hts_tst
-ggplot(dt_all[variable=='hts_tst'], 
-       aes(x=age, y=value, fill = sex)) +
-  geom_bar(position = 'dodge', stat = 'identity') +
-  geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
-  scale_fill_manual(values = c('#b2182b', '#fdae61')) +
-  theme_bw()+
-  labs(x = 'Age Category', y = 'Tested for HIV',
-       fill ='Sex') +
-  theme(text = element_text(size=24)) 
-
-# tested HIV+ by sex, age over time - hts_tst_pos
-ggplot(dt_all[variable=='hts_tst'], 
-       aes(x=age, y=value, fill = sex)) +
-  geom_bar(position = 'dodge', stat = 'identity') +
-  geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
-  scale_fill_manual(values = c('#d6604d', '#92c5de')) +
-  theme_bw()+
-  labs(x = 'Age Category', y = 'Tested HIV+',
-       fill ='Sex') +
-  theme(text = element_text(size=24)) 
-
-# enrolled on ART by sex, age, over time
-ggplot(dt_all[variable=='tx_curr'], 
-       aes(x=age, y=value, fill = sex)) +
-  geom_bar(position = 'dodge', stat = 'identity') +
-  geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
-  scale_fill_manual(values = c('#4575b4', '#a6dba0')) +
-  theme_bw()+
-  labs(x = 'Age Category', y = 'On ART',
-       fill ='Sex') +
-  theme(text = element_text(size=24)) 
-
-# newly enrolled on ART by sex, age over time
-ggplot(dt_all[variable=='tx_new'], 
-       aes(x=age, y=value, fill = sex)) +
-  geom_bar(position = 'dodge', stat = 'identity') +
-  geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
-  scale_fill_manual(values = c('#35978f', '#c2a5cf')) +
-  theme_bw()+
-  labs(x = 'Age Category', y = 'Newly Enrolled on ART',
-       fill ='Sex') +
-  theme(text = element_text(size=24)) 
-
-
-dev.off()
-# --------------------
