@@ -5,72 +5,258 @@
 # Visuals sources by gysi_prep1.R
 # ----------------------------------------------
 
+# --------------------
+# color palettes
 
-
-
+twelve_colors = c(brewer.pal(11, 'RdYlBu'), '#80cdc1')
 
 # --------------------
 # Figures specifically for the write-up
 
-pdf(paste0(dir, 'writeup_figures.pdf'), height = 9, width = 16)
+# --------------------
+ # pdf(paste0(outDir, 'writeup_figures.pdf'), height = 9, width = 16)
 
-# testing by sex, age over time - hts_tst
-ggplot(dt_all[variable=='hts_tst'], 
+# --------------------
+# PREP ENROLLMENT
+
+# current prep enrollment - sex, age
+ggplot(df[variable=='prep_curr'], 
+       aes(x=age, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#73afb6', '#a6bddb')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'Enrolled on PrEP',
+       fill ='') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank()) 
+
+# new prep enrollment - sex, age
+ggplot(df[variable=='prep_new'], 
+       aes(x=age, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#94D0CC', '#c2a5cf')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'Newly Enrolled on PrEP',
+       fill ='Sex') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank())
+
+# hiv testing - sex, age
+ggplot(df[variable=='hts_tst'], 
+       aes(x=age, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 5)+
+  scale_fill_manual(values = c('#d6604d', '#92c5de')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'Tested for HIV',
+       fill ='Sex') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank()) 
+
+# tested HIV+ - sex, age
+ggplot(df[variable=='hts_tst_pos'], 
        aes(x=age, y=value, fill = sex)) +
   geom_bar(position = 'dodge', stat = 'identity') +
   geom_text(position = position_dodge(width=0.9), 
             aes(label=value), vjust=-0.5)+
   scale_fill_manual(values = c('#b2182b', '#fdae61')) +
   theme_bw()+
-  labs(x = 'Age Category', y = 'Tested for HIV',
-       fill ='Sex') +
-  theme(text = element_text(size=24)) 
-
-# tested HIV+ by sex, age over time - hts_tst_pos
-ggplot(dt_all[variable=='hts_tst'], 
-       aes(x=age, y=value, fill = sex)) +
-  geom_bar(position = 'dodge', stat = 'identity') +
-  geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
-  scale_fill_manual(values = c('#d6604d', '#92c5de')) +
-  theme_bw()+
   labs(x = 'Age Category', y = 'Tested HIV+',
        fill ='Sex') +
-  theme(text = element_text(size=24)) 
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank()) 
 
-# enrolled on ART by sex, age, over time
-ggplot(dt_all[variable=='tx_curr'], 
+# enrolled on ART - sex, age
+ggplot(df[variable=='tx_curr'], 
        aes(x=age, y=value, fill = sex)) +
   geom_bar(position = 'dodge', stat = 'identity') +
   geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
+            aes(label=value), vjust=-0.5, size = 7)+
   scale_fill_manual(values = c('#4575b4', '#a6dba0')) +
   theme_bw()+
   labs(x = 'Age Category', y = 'On ART',
        fill ='Sex') +
-  theme(text = element_text(size=24)) 
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank()) 
 
-# newly enrolled on ART by sex, age over time
-ggplot(dt_all[variable=='tx_new'], 
+# newly enrolled on ART - sex, age
+ggplot(df[variable=='tx_new'], 
        aes(x=age, y=value, fill = sex)) +
   geom_bar(position = 'dodge', stat = 'identity') +
   geom_text(position = position_dodge(width=0.9), 
-            aes(label=value), vjust=-0.5)+
-  scale_fill_manual(values = c('#35978f', '#c2a5cf')) +
+            aes(label=value), vjust=-0.5, size = 6)+
+  scale_fill_manual(values = c('#94D0CC', '#c2a5cf')) +
   theme_bw()+
   labs(x = 'Age Category', y = 'Newly Enrolled on ART',
+       fill ='') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank()) 
+
+#-------------------
+# create a vls table and shape long to plot
+vl = tab1[ , c(1, 20:21)]
+setnames(vl, c('age', 'Female', 'Male'))
+vl = vl[!is.na(Female)]
+vl = melt(vl, id.vars = 'age')
+
+#-------------------
+
+# VLS - sex, age 
+ggplot(vl, aes(x=age, y=value, fill = variable)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5)+
+  scale_fill_manual(values = c('#94D0CC', '#c2a5cf')) +
+  theme_bw()+
+  labs(x = 'Age Category', y = 'Newly Enrolled on ART',
+       fill ='') +
+  theme(text = element_text(size=20),
+        legend.position = "top", 
+        legend.title = element_blank()) 
+
+
+
+dev.off()
+# --------------------
+
+# --------------------
+# Youth-specific figures
+
+# sum the table to children, adolescents, youth, and adults
+yt = dt[ ,.(value = sum(value)), by = .(sex, caya, variable)]
+
+# --------------------
+pdf(paste0(outDir, 'youth_figures.pdf'), height = 9, width = 16)
+
+# --------------------
+# PREP ENROLLMENT
+
+# current prep enrollment - sex, age
+ggplot(yt[variable=='prep_curr'], 
+       aes(x=caya, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#73afb6', '#a6bddb')) +
+  theme_bw()+
+  labs(y = 'Enrolled on PrEP',
+       fill ='') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) 
+
+# new prep enrollment - sex, age
+ggplot(yt[variable=='prep_new'], 
+       aes(x=caya, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#f03b20', '#feb24c')) +
+  theme_bw()+
+  labs( y = 'Newly Enrolled on PrEP',
        fill ='Sex') +
-  theme(text = element_text(size=24)) 
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+
+# hiv testing - sex, age
+ggplot(yt[variable=='hts_tst'], 
+       aes(x=caya, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 5)+
+  scale_fill_manual(values = c('#d6604d', '#92c5de')) +
+  theme_bw()+
+  labs(y = 'Tested for HIV',
+       fill ='Sex') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) 
+
+# tested HIV+ - sex, age
+ggplot(yt[variable=='hts_tst_pos'], 
+       aes(x=caya, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#74a9cf', '#a6bddb')) +
+  theme_bw()+
+  labs(y = 'Tested HIV+',
+       fill ='Sex') +
+  theme(text = element_text(size=26),
+        legend.position = "top", 
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) 
+
+# enrolled on ART - sex, age
+ggplot(yt[variable=='tx_curr'], 
+       aes(x=caya, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#4575b4', '#a6dba0')) +
+  theme_bw()+
+  labs(y = 'On ART',
+       fill ='Sex') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+
+# newly enrolled on ART - sex, age
+ggplot(yt[variable=='tx_new'], 
+       aes(x=caya, y=value, fill = sex)) +
+  geom_bar(position = 'dodge', stat = 'identity') +
+  geom_text(position = position_dodge(width=0.9), 
+            aes(label=value), vjust=-0.5, size = 7)+
+  scale_fill_manual(values = c('#94D0CC', '#c2a5cf')) +
+  theme_bw()+
+  labs(y = 'Newly Enrolled on ART',
+       fill ='') +
+  theme(text = element_text(size=28),
+        legend.position = "top", 
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) 
 
 
 dev.off()
 # --------------------
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # --------------------------------------------------
 # visualize the data
 
-twelve_colors = c(brewer.pal(11, 'RdYlBu'), '#80cdc1')
+
 
 # sum to the national level
 

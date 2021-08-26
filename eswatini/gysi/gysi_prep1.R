@@ -103,18 +103,41 @@ dt$caya = factor(dt$caya, c('Child', 'Adolescent', 'Youth', 'Adult'),
 # --------------------
 # sum to the national level and export the data 
 
-# national - all variables 
+# national - all variables (include fiscal quarter)
 dt_all = dt[ , .(value = sum(value, na.rm = T)),
             by = .(fq, sex, age, cya, caya, variable)]
 
 
 # national - all variables - subset to just fy20
-dt_all_fy20 = dt[grepl('20', fq), .(value = sum(value, na.rm = T)),
+dt_all_fy20 = dt[grepl('20', fq)]
+
+# drop cumulative indicators (include only Q4 for annual total)
+dt_all_fy20 = dt_all_fy20[!(variable=='prep_curr' & grepl('Q2', fq))] 
+dt_all_fy20 = dt_all_fy20[!(variable=='tx_curr' & fq %in% c('FY20 Q1', 'FY20 Q2',
+                                                           'FY20 Q3'))] 
+dt_all_fy20 = dt_all_fy20[!(variable=='tx_pvls_n' & fq %in% c('FY20 Q1', 'FY20 Q2',
+                                                            'FY20 Q3'))] 
+dt_all_fy20 = dt_all_fy20[!(variable=='tx_pvls_d' & fq %in% c('FY20 Q1', 'FY20 Q2',
+                                                            'FY20 Q3'))] 
+
+# sum it all up to get the correct totals
+dt_all_fy20 = dt_all_fy20[ , .(value = sum(value, na.rm = T)),
                       by = .(sex, age, cya, caya, variable)]
 
 # export the data 
 write.csv(dt_all, paste0(dir, 'dt_all.csv'))
 write.csv(dt_all_fy20, paste0(dir, 'dt_all_fy20_no_fq.csv'))
+
+
+# --------------------
+# rename the FY20 data frame for use in stats and figures
+df = copy(dt_all_fy20)
+
+# add an agyw binary
+df[caya %in% c('Adolescent', 'Youth') & sex=='Female', agyw:=TRUE]
+df[is.na(agyw), agyw:=FALSE]
+
+# --------------------
 
 # ----------------------------------------------
 # source tables and visualizations
@@ -131,32 +154,49 @@ write.csv(dt_all_fy20, paste0(dir, 'dt_all_fy20_no_fq.csv'))
 # Descriptive statistics
 
 # --------------------
-# HIV testing disparities
-test_tot = dt_all[variable=='hts_tst', sum(value)]
-dt_all_fy20[variable=='hts_tst' & sex=='Male', sum(value)/test_tot]
-dt_all_fy20[variable=='hts_tst' & sex=='Female', sum(value)/test_tot]
+# PrEP  Enrollment, FY20
 
-dt_all_fy20[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19", "20-24"),
-       sum(value)]
-dt_all_fy20[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19"),
-       sum(value)]
-dt_all_fy20[variable=='hts_tst' & sex=='Female' & age %in% c("20-24"),
-       sum(value)]
-dt_all_fy20[variable=='hts_tst' & sex=='Male' & age %in% c("10-14", "15-19", "20-24"),
-       sum(value)]
+# currently on prep - disparities
+df[variable=='prep_curr', sum(value)]
+df[variable=='prep_curr' & sex=='Female', sum(value)]
+df[variable=='prep_curr' & sex=='Male', sum(value)]
+df[variable=='prep_curr' & agyw==T, sum(value)]
+
+df[variable=='prep_new', sum(value)]
+df[variable=='prep_new' & sex=='Female', sum(value)]
+df[variable=='prep_new' & sex=='Male', sum(value)]
+df[variable=='prep_new' & agyw==T, sum(value)]
 
 # --------------------
-# test positivity
+# HIV testing disparities, FY20 
 
-pos = dt_all_fy20[(variable=='hts_tst' | variable=='hts_tst_pos') & age %in% c("10-14", "15-19", "20-24"),
+# tested for HIV - hts_tst
+test_tot = df[variable=='hts_tst', sum(value)]
+df[variable=='hts_tst' & sex=='Male', sum(value)/test_tot]
+df[variable=='hts_tst' & sex=='Female', sum(value)/test_tot]
+
+df[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19", "20-24"),
+       sum(value)]
+df[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19"),
+       sum(value)]
+df[variable=='hts_tst' & sex=='Female' & age %in% c("20-24"),
+       sum(value)]
+df[variable=='hts_tst' & sex=='Male' & age %in% c("10-14", "15-19", "20-24"),
+       sum(value)]
+df[variable=='hts_tst' & sex=='Female' & age %in% c("10-14", "15-19", "20-24"),
+   sum(value)]
+
+
+# test positivity
+pos = df[(variable=='hts_tst' | variable=='hts_tst_pos') & age %in% c("10-14", "15-19", "20-24"),
       .(value = sum(value)), by = .(sex, variable)]
 pos = dcast(pos, sex~variable)
 pos[ , rate:=hts_tst_pos/hts_tst]
 
 # --------------------
-# newly enrolled on ART
+# ART enrollment, FY20
 
-dt_all_fy20[variable=='hts_tst_pos' & age %in% c("10-14", "15-19", "20-24"),
+df[variable=='hts_tst_pos' & age %in% c("10-14", "15-19", "20-24"),
        .(sum(value)), by = sex]
 
 # ----------------------------------------------
