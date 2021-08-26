@@ -31,7 +31,7 @@ setwd(dir)
 # set the output directory
 outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/PrEP COP Meeting/'
 
-# mapping director
+# mapping directory
 mapDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps/r_shape_files/africa_shape_file/'
 
 # read in the data 
