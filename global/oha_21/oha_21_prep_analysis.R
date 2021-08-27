@@ -60,10 +60,10 @@ dt$fq = factor(dt$fq, c("FY20 Q2", "FY20 Q4",
         c("Q2 FY20", "Q4 FY20",
           "Q1 FY21", "Q2 FY21", "Q3 FY21"))
 
-dt$date = factor(dt$date, c('Jan-Mar 2020', 'Oct-Dec 2020',
-      'Jul-Sep 2020', 'Jan-Mar 2021', 'Apr-Jun 2021'), 
-      c('Jan-Mar 2020', 'Oct-Dec 2020',
-        'Jul-Sep 2020', 'Jan-Mar 2021', 'Apr-Jun 2021'))
+dt$date = factor(dt$date, c('Jan-Mar 2020','Jul-Sep 2020', 'Oct-Dec 2020',
+                            'Jan-Mar 2021', 'Apr-Jun 2021'),
+                      c('Jan-Mar 2020','Jul-Sep 2020', 'Oct-Dec 2020',
+                      'Jan-Mar 2021', 'Apr-Jun 2021'))
 
 dt$age = factor(dt$age, c("Unknown Age", "15-19", "20-24", "25-29",
                           "30-34", "35-39", "40-44", "45-49", "50+"),
@@ -98,7 +98,7 @@ setnames(dt_excel, c('Country', 'Award Full', 'Award', 'Quarter',
 write.xlsx(dt_excel, paste0(outDir, 'OHA_21_PREP_figures.xlsx'), overwrite = T)
 
 # delete the data set
-dt_excel = NULL
+rm(dt_excel)
 
 # ----------------------------------------------
 
@@ -110,7 +110,7 @@ dt_excel = NULL
 
 # --------------------
 # import the shape file and convert to a data table
-map = shapefile(paste0(mapDir, 'africa_shape_file/1.shp'))
+map = shapefile(paste0(mapDir, 'africa_admin0_hdx/africa_admin0_hdx.shp'))
 coord = data.table(fortify(map))
 names = data.table(cbind(country = c(map@data$COUNTRY), id =  c(0, seq(1:47))))
 coord = merge(coord, names, by = 'id')
