@@ -19,6 +19,7 @@ library(openxlsx)
 library(ggplot2)
 library(RColorBrewer)
 library(raster)
+library(rgdal)
 library(ggrepel)
 # --------------------
 
@@ -111,8 +112,6 @@ dt_excel = NULL
 # import the shape file and convert to a data table
 map = shapefile(paste0(mapDir, 'africa_shape_file/1.shp'))
 coord = data.table(fortify(map))
-
-# merge in the names of the countries to match the data 
 names = data.table(cbind(country = c(map@data$COUNTRY), id =  c(0, seq(1:47))))
 coord = merge(coord, names, by = 'id')
 
@@ -154,6 +153,9 @@ pc = dcast(pc, country~fq)
 setnames(pc, c('country', 'pc2_20', 'pc4_20',
                'pc1_21', 'pc2_21', 'pc3_21'))
 
+# drop lesotho - not reporting the indicator in the same way 
+pc = pc[country!='Lesotho']
+
 # --------------------
 # MERGE THE PREP_NEW DATA WITH THE SHAPE FILE
 coord = merge(coord, pn, by = 'country', all = T)
@@ -169,22 +171,18 @@ coord_long = melt(coord, id.vars = idVars)
 # --------------------
 # calculate rates of change
 
-
-
-
-
 # --------------------
 
 # --------------------
 # # create labels
 
 # create the labels
-pn_labels = data.table(coordinates(map))
-setnames(pn_labels, c('long', 'lat'))
-pn_labels = cbind(pn_labels, country = names$country)
+labels = data.table(coordinates(map))
+setnames(labels, c('long', 'lat'))
+labels = cbind(labels, country = names$country)
 
 # add specific variables by indicator and time period
-pn_labels = merge(pn_labels, pn, by = 'country', all = T)
+pn_labels = merge(labels, pn, by = 'country', all = T)
 
 # prep new labels
 pn_labels[!is.na(pn_20_21), pn_20_21_label:=paste0(country, ': ', pn_20_21)]
@@ -203,10 +201,30 @@ pn_labels_long$variable = factor(pn_labels_long$variable,
                                  c('Oct.-Dec. 2020', 'Jan.-March 2021', 'Apr.-June 2021'))
 
 # --------------------
+# Create currently on PrEP labels
+
+pc_labels = merge(labels, pc, by = 'country', all = T)
+
+# prep new labels
+pc_labels[!is.na(pc1_21), pc1_21_label:=paste0(country, ': ', pc1_21)]
+pc_labels[!is.na(pc2_21), pc2_21_label:=paste0(country, ': ', pc2_21)]
+pc_labels[!is.na(pc3_21), pc3_21_label:=paste0(country, ': ', pc3_21)]
+
+# melted labels for the facet wrap
+pc_labels_long = pc_labels[ ,.(country, long, lat, 
+                               pc1_21_label, pc2_21_label, pc3_21_label)]
+pc_labels_long = melt(pc_labels_long, id.vars = c('country', 'long', 'lat'))
+
+# facto these specific labels to match the facet of the data 
+pc_labels_long$variable = factor(pc_labels_long$variable,
+                                 c('pc1_21_label', 'pc2_21_label', 'pc3_21_label'),
+                                 c('Oct.-Dec. 2020', 'Jan.-March 2021', 'Apr.-June 2021'))
+
+# --------------------
 # fix the map by creating a South Africa specific map
 s_africa_layer = geom_polygon(aes(x = long, y = lat, group = group),
-                              data = coord[country=='South Africa' & hole==F], fill = NA, 
-                              color = 'black')
+                              data = coord[country=='South Africa'], fill = NA, 
+                              size = 0.01, color = 'black')
 
 # ----------------------------------------------
 # MAPS
@@ -215,43 +233,37 @@ s_africa_layer = geom_polygon(aes(x = long, y = lat, group = group),
 # ----------------------------------------------
 # NEWLY ENROLLED ON PREP
 
+pdf(paste0(outDir, 'PREP_Maps.pdf'), width = 14, height = 10)
+
+# --------------------
+# NEWLY ENROLLED ON PREP
+# --------------------
 # new clients enrolled on prep, Q3 FY21
 ggplot(coord[country!='South Africa'], aes(x=long, y=lat, group=group, fill=pn_q3)) + 
   coord_fixed() +
-  geom_polygon() + 
-  geom_path(size=0.01) + 
+  geom_polygon() +
+  s_africa_layer+
+  geom_path(size=0.01) +
   scale_fill_gradientn(colors = brewer.pal(9, 'YlGn'), na.value='#ffffff') + 
   theme_void(base_size =16) +
   labs(fill="PREP_NEW", 
        title = 'New clients enrolled on PrEP (PREP_NEW), Apr.-June 2021',
        caption = '*IHAP has not yet reported new PrEP enrollments in the third quarter of Fiscal Year 21')+
   theme(text=element_text(size=24), plot.caption = element_text(size = 12))+
-  s_africa_layer+
+  geom_path(size=0.01)+
   geom_label_repel(data = pn_labels, aes(label = pn_q3_label, 
-              x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
-
-# total new clients enrolled, FY20 - FY21
-ggplot(coord[country!='South Africa'], aes(x=long, y=lat, group=group, fill=pn_20_21)) + 
-  coord_fixed() +
-  geom_polygon() + 
-  geom_path(size=0.01) + 
-  scale_fill_gradientn(colors = brewer.pal(5, 'Blues'), na.value='#ffffff') + 
-  theme_void(base_size =16) +
-  labs(fill="PREP_NEW", 
-       title = 'Total new clients enrolled on PrEP, Q1 FY20 - Q3 FY21',
-       caption = '*IHAP has not yet reported new PrEP enrollments in the third quarter of Fiscal Year 21')+
-  theme(text=element_text(size=24), 
-  plot.caption = element_text(size = 12))+
-  s_africa_layer+
-  geom_label_repel(data = pn_labels, aes(label = pn_20_21_label, 
        x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
 
+# --------------------
+# facet map by quarter FY21
 
+# create a small data for these quarters to label appropriately 
+coord_long_1_3 = coord_long[variable %in% c('pn_q1', 'pn_q2', 'pn_q3')]
 
+coord_long_1_3$variable = factor(coord_long_1_3$variable,
+                                 c('pn_q1', 'pn_q2', 'pn_q3'),
+                                 c('Oct.-Dec. 2020', 'Jan.-March 2021', 'Apr.-June 2021'))
 
-
-
-# facet map by quarter
 ggplot(coord_long_1_3[country!='South Africa'], 
        aes(x=long, y=lat, group=group, fill=value)) + 
   coord_fixed() +
@@ -267,12 +279,74 @@ ggplot(coord_long_1_3[country!='South Africa'],
         plot.caption = element_text(size = 12))+
   s_africa_layer+
   geom_label_repel(data = pn_labels_long, aes(label = value , 
-     x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
+                                              x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
 
-coord_long_1_3 = coord_long[variable %in% c('pn_q1', 'pn_q2', 'pn_q3')]
+# --------------------
+# total new clients enrolled, FY20 - FY21
+ggplot(coord[country!='South Africa'], aes(x=long, y=lat, group=group, fill=pn_20_21)) + 
+  coord_fixed() +
+  geom_polygon() + 
+  geom_path(size=0.01) + 
+  scale_fill_gradientn(colors = brewer.pal(5, 'Purples'), na.value='#ffffff') + 
+  theme_void(base_size =16) +
+  labs(fill="PREP_NEW", 
+       title = 'Total new clients enrolled on PrEP, Q1 FY20 - Q3 FY21',
+       caption = '*IHAP has not yet reported new PrEP enrollments in the third quarter of Fiscal Year 21')+
+  theme(text=element_text(size=24), 
+  plot.caption = element_text(size = 12))+
+  s_africa_layer+
+  geom_label_repel(data = pn_labels, aes(label = pn_20_21_label, 
+       x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
 
-coord_long_1_3$variable = factor(coord_long_1_3$variable,
-                                 c('pn_q1', 'pn_q2', 'pn_q3'),
+# --------------------
+# CURRENTLY ON PREP
+# --------------------
+
+# --------------------
+# PREP_CURR, Q3 FY21
+ggplot(coord[country!='South Africa'], aes(x=long, y=lat, group=group, fill=pc3_21)) + 
+  coord_fixed() +
+  geom_polygon() +
+  s_africa_layer+
+  geom_path(size=0.01) +
+  scale_fill_gradientn(colors = brewer.pal(9, 'RdYlBu'), na.value='#ffffff') + 
+  theme_void(base_size =16) +
+  labs(fill="PREP_CURR", 
+       title = 'Number of PrEP clients (PREP_CURR), Apr.-June 2021')+
+  theme(text=element_text(size=24), plot.caption = element_text(size = 12))+
+  geom_path(size=0.01)+
+  geom_label_repel(data = pc_labels, aes(label = pc3_21_label, 
+                    x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
+
+# --------------------
+# facet wrap by quarter q1 - q3 
+
+coord_long_1_3pc = coord_long[variable %in% c('pc1_21', 'pc2_21', 'pc3_21')]
+
+coord_long_1_3pc$variable = factor(coord_long_1_3pc$variable,
+                                 c('pc1_21', 'pc2_21', 'pc3_21'),
                                  c('Oct.-Dec. 2020', 'Jan.-March 2021', 'Apr.-June 2021'))
+
+ggplot(coord_long_1_3pc[country!='South Africa'], 
+       aes(x=long, y=lat, group=group, fill=value)) + 
+  coord_fixed() +
+  geom_polygon() + 
+  geom_path(size=0.01) + 
+  scale_fill_gradientn(colors = brewer.pal(5, 'RdYlBu'), na.value='#ffffff') + 
+  theme_void(base_size =16) +
+  facet_wrap(~variable)+
+  labs(fill="PREP_CURR", 
+       title = 'Number of PrEP clients (PREP_CURR)')+
+  theme(text=element_text(size=24), 
+        plot.caption = element_text(size = 12))+
+  s_africa_layer+
+  geom_label_repel(data = pc_labels_long, aes(label = value , 
+      x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
+
+# --------------------
+
+# --------------------
+dev.off()
+# --------------------
 
 
