@@ -44,13 +44,13 @@ mapFinal = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps_new/sh
 # set arguments for the function
 
 # select region or district level shape files
-level = 'region'
+level = 'district'
 
 # set the county
 country  = 'Cameroon'
 
 # are you running the raw or edited shape file?
-file_type = 'edited'
+file_type = 'raw'
 # --------------------
 
 # ----------------------------------------------
@@ -88,6 +88,7 @@ if (file_type == 'edited') {
 # set the name of the file based on the country for the original shape files 
 if (level=='district') {
 if (file_type == 'raw') {
+  if (country=='Cameroon') file = paste0(mapDir, 'district/cmr_admbnda_inc_20180104_SHP/cmr_admbnda_adm3_inc_20180104.shp')
   if (country=='DRC') file = paste0(mapDir, 'district/rdc_zone_de_sante_09092019/RDC_Zone_de_sante_09092019.shp')
   if (country=='Eswatini') file = paste0(mapDir, 'district/swz_admbnda_cso2007_shp/swz_admbnda_adm2_CSO_2007.shp')
   if (country=='Lesotho') file = paste0(mapDir, 'district/lso_adm_fao_mlgca_2019/lso_admbnda_adm2_FAO_MLGCA_2019.shp')
@@ -127,6 +128,7 @@ if (level=='region'){
 }
 
 if (level=='district'){
+  if (country=='Cameroon') x = 359
   if (country=='DRC' & file_type == 'raw') x = 518
   if (country=='DRC' & file_type == 'edited') x = 34
   if (country=='Eswatini') x = 54
@@ -141,6 +143,7 @@ if (country!='DRC' & country!='Mozambique' & country!='Cameroon') {
   if (level=='region') names = data.table(cbind(region = c(map@data$ADM1_EN), id =  c(0, seq(1:x))))
   if (level=='district') names = data.table(cbind(region = c(map@data$ADM2_EN), id =  c(0, seq(1:x))))
   } else { if (level=='region' & country!='Mozambique') names = data.table(cbind(region = c(map@data$ADM1_FR), id =  c(0, seq(1:x))))
+  if (level=='district' & country!='Mozambique') names = data.table(cbind(region = c(map@data$ADM2_FR), id =  c(0, seq(1:x))))
   if (level=='district' & country=='DRC') names = data.table(cbind(region = c(map@data$Nom), id =  c(0, seq(1:x)))) }
 
 # for mozambique - use the portugese names of regions and districts
