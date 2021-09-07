@@ -84,12 +84,17 @@ dt = dt[ ,.(value), by = .(country, award, award_alt, fq, date,
 # --------------------
 
 # ----------------------------------------------
-# export an Excel file for Excel graphs 
+# export an Excel file for Excel graphs and an RDS for analysis
 dt_excel = copy(dt)
 
 # change the names of variables to appear correctly on graphs
 dt_excel[variable=='prep_curr', variable:='PREP_CURR']
 dt_excel[variable=='prep_new', variable:='PREP_NEW']
+
+# save an rds version for analyses
+saveRDS(dt_excel, paste0(outDir, 'oha_21_prep.rds'))
+
+# change the variable names for Excel Pivot Tables
 setnames(dt_excel, c('Country', 'Award Full', 'Award', 'Quarter',
                      'Fiscal Quarter', 'Sex', 'Age', 'Variable',
                      'Value'))
