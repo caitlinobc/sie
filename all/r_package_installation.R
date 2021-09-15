@@ -28,6 +28,7 @@ install.packages('RColorBrewer')
 install.packages('gridExtra')
 install.packages('epitools')
 install.packages('Hmisc')
+install.packages('rgdal')
 
 # mapping packages
 install.packages('Rtools')
