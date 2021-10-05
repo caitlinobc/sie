@@ -47,10 +47,10 @@ mapFinal = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps_new/sh
 level = 'district'
 
 # set the county
-country  = 'Cameroon'
+country  = 'Uganda'
 
 # are you running the raw or edited shape file?
-file_type = 'raw'
+file_type = 'edited'
 # --------------------
 
 # ----------------------------------------------
@@ -64,6 +64,7 @@ if (file_type == 'raw') {
   if (country=='Cameroon') file = paste0(mapDir, 'region/cmr_admbnda_inc_20180104_SHP/cmr_admbnda_adm1_inc_20180104.shp')
   if (country=='DRC') file = paste0(mapDir, 'region/cod_admbnda_rgc_itos_20190911_shp/cod_admbnda_adm1_rgc_itos_20190911.shp')
   if (country=='Eswatini') file = paste0(mapDir, 'region/swz_admbnda_cso2007_shp/swz_admbnda_adm1_CSO_2007.shp')
+  if (country=='Kenya') file = paste0(mapDir, 'region/ken_adm_iebc_20191031_shp/ken_admbnda_adm1_iebc_20191031.shp')
   if (country=='Lesotho') file = paste0(mapDir, 'region/lso_adm_fao_mlgca_2019/lso_admbnda_adm1_FAO_MLGCA_2019.shp')
   if (country=='Malawi') file = paste0(mapDir, 'region/mwi_adm_nso_20181016_shp/mwi_admbnda_adm1_nso_20181016.shp')
   if (country=='Mozambique') file = paste0(mapDir, 'region/moz_adm_20190607b_shp/moz_admbnda_adm1_ine_20190607.shp')
@@ -75,6 +76,7 @@ if (file_type == 'edited') {
   if (country=='Cameroon') file = paste0(mapFinal, 'region/cameroon_regions_hdx/cameroon_regions_hdx.shp')
   if (country=='DRC') file = paste0(mapFinal, 'region/drc_regions_hdx/drc_regions_hdx.shp')
   if (country=='Eswatini') file = paste0(mapFinal, 'region/eswatini_regions_hdx/eswatini_regions_hdx.shp')
+  if (country=='Kenya') file = paste0(mapFinal, 'region/kenya_regions_hdx/kenya_regions_hdx.shp')
   if (country=='Lesotho') file = paste0(mapFinal, 'region/lesotho_regions_hdx/lesotho_regions_hdx.shp')
   if (country=='Malawi') file = paste0(mapFinal, 'region/malawi_regions_hdx/malawi_regions_hdx.shp')
   if (country=='Mozambique') file = paste0(mapFinal, 'region/mozambique_regions_hdx/mozambique_regions_hdx.shp')
@@ -91,6 +93,7 @@ if (file_type == 'raw') {
   if (country=='Cameroon') file = paste0(mapDir, 'district/cmr_admbnda_inc_20180104_SHP/cmr_admbnda_adm3_inc_20180104.shp')
   if (country=='DRC') file = paste0(mapDir, 'district/rdc_zone_de_sante_09092019/RDC_Zone_de_sante_09092019.shp')
   if (country=='Eswatini') file = paste0(mapDir, 'district/swz_admbnda_cso2007_shp/swz_admbnda_adm2_CSO_2007.shp')
+  if (country=='Kenya') file = paste0(mapDir, 'district/ken_adm_iebc_20191031_shp/ken_admbnda_adm2_iebc_20191031.shp')
   if (country=='Lesotho') file = paste0(mapDir, 'district/lso_adm_fao_mlgca_2019/lso_admbnda_adm2_FAO_MLGCA_2019.shp')
   if (country=='Malawi') file = paste0(mapDir, 'district/mwi_adm_nso_20181016_shp/mwi_admbnda_adm2_nso_20181016.shp')
   if (country=='Mozambique') file = paste0(mapDir, 'district/moz_adm_20190607b_shp/moz_admbnda_adm2_ine_20190607.shp')
@@ -99,11 +102,18 @@ if (file_type == 'raw') {
 
 # set the name of the file based on the country for the edited shape files 
 if (file_type == 'edited') {
-  if (country=='DRC') file = paste0(mapFinal, 'district/kinshasa_districts_hdx/kinshasa_districts_hdx.shp')
-  if (country=='Eswatini') file = paste0(mapFinal, 'district/eswatini_districts_hdx/eswatini_districts_hdx.shp')
-  if (country=='Malawi') file = paste0(mapFinal, 'district/malawi_districts_hdx/malawi_districts_hdx.shp')
-  if (country=='Mozambique') file = paste0(mapFinal, 'district/mozambique_districts_hdx/mozambique_districts_hdx.shp')
-  if (country=='Uganda') file = paste0(mapFinal, 'district/uganda_districts_hdx/uganda_districts_hdx.shp')
+  c = as.character(tolower(country))
+  if (country=='DRC') c = 'kinshasa'
+  file = paste0(mapFinal, 'district/', c,  '_districts_hdx/', c, '_districts_hdx.shp')
+  
+  # 
+  # if (country=='DRC') file = paste0(mapFinal, 'district/kinshasa_districts_hdx/kinshasa_districts_hdx.shp')
+  # if (country=='Eswatini') file = paste0(mapFinal, 'district/eswatini_districts_hdx/eswatini_districts_hdx.shp')
+  # if (country=='Kenya') file = paste0(mapFinal, 'district/kenya_districts_hdx/kenya_districts_hdx.shp')
+  # if (country=='Lesotho') file = paste0(mapFinal, 'district/lesotho_districts_hdx/lesotho_districts_hdx.shp')
+  # if (country=='Malawi') file = paste0(mapFinal, 'district/malawi_districts_hdx/malawi_districts_hdx.shp')
+  # if (country=='Mozambique') file = paste0(mapFinal, 'district/mozambique_districts_hdx/mozambique_districts_hdx.shp')
+  # if (country=='Uganda') file = paste0(mapFinal, 'district/uganda_districts_hdx/uganda_districts_hdx.shp')
 }}
 # --------------------
 # ----------------------------------------------
@@ -113,6 +123,7 @@ if (file_type == 'edited') {
 
 # read in the file and fortify
 map = shapefile(file)
+plot(map)
 coord = data.table(fortify(map))
 
 # set the number of administrative boundaries to import
@@ -121,6 +132,7 @@ if (level=='region'){
   if (country=='Cameroon') x = 9
   if (country=='DRC') x = 25
   if (country=='Eswatini') x = 3
+  if (country=='Kenya') x = 46
   if (country=='Lesotho') x = 9 
   if (country=='Malawi') x = 2 
   if (country=='Mozambique') x = 10 
@@ -132,6 +144,7 @@ if (level=='district'){
   if (country=='DRC' & file_type == 'raw') x = 518
   if (country=='DRC' & file_type == 'edited') x = 34
   if (country=='Eswatini') x = 54
+  if (country=='Kenya') x = 289
   if (country=='Lesotho') x = 77
   if (country=='Malawi') x = 31 
   if (country=='Mozambique') x = 157 
@@ -189,22 +202,84 @@ ggplot(coord, aes(x=long, y=lat, group=group, fill=region)) +
        title = country)+
   theme(legend.position = 'none')+
   geom_label_repel(data = labels, aes(label = region , 
-     x=long, y=lat, group=region), inherit.aes=FALSE, size=3, max.overlaps = 135)
+     x=long, y=lat, group=region), inherit.aes=FALSE, size=3, max.overlaps = 400)
 # ----------------------------------------------
 
 #---------------------------------
-# check if all of the pepfar regions appear on the map
+# check if all of the DATIM regions appear on the map
 
-# upload the data - downloaded from PBI by country
+# upload the data
 # data represents a full list of pepfar regions or districts
-check = data.table(read.csv("C:/Users/ccarelli/Downloads/data.csv"))
-setnames(check, 'areas')
+
+if (level=='region') check = data.table(read.csv(paste0(outDir, 'supporting_files/all_pepfar_regions.csv')))
+if (level=='district') check = data.table(read.csv(paste0(outDir, 'supporting_files/all_pepfar_districts.csv')))
+
+# format the data set for checking
+setnames(check, c('country','areas'))
+cty = as.character(country)
+check = check[country==cty]
+
+# drop military and random blanks
+check = check[areas!="" & !grepl("Military", areas)]
 
 # check if the region or district is present
 x = !(check$areas %in% areas$areas)
 check[x] # lists the regions/districts in the data that do not map
 
-#---------------------------------
+#--------------------------------
+# create a sub-regional shape file for uganda by dissolving polygons
+
+# import the sub-regional shape file and format
+ug_file = 'C:/Users/ccarelli/Downloads/Uganda_sub_region2006/Uganda_sub_region2006.shp'
+ug = shapefile(ug_file)
+plot(ug)
+ug_coord = data.table(fortify(ug))
+
+
+
+# finalize the file for mapping
+ug_coord = merge(ug_coord, ug_names, by = 'id')
+
+
+
+
+
+# 
+# 
+# libs <- c("rgdal", "maptools", "gridExtra")
+# lapply(libs, require, character.only = TRUE)
+
+# Import Oregon census data
+uganda = readOGR(dsn = 'C:/Users/ccarelli/Downloads/Uganda_sub_region2006/Uganda_sub_region2006.shp')
+uganda.coords = data.table(coordinates(uganda))
+
+# import the names and bind them to the polygon centers
+ug_names = data.table(region = ug@data$SUB_REGION)
+uganda.coords = cbind(uganda.coords, ug_names)
+uganda.coords[ ,.N, by = region]
+
+# create numeric ids
+ids = data.table(uganda.coords[ ,.N, by = region])
+ids[ , id:=seq(1:9)]
+ids[ ,N:=NULL]
+uganda.coords = merge(uganda.coords, ids, by = 'region', all.x=T)
+
+
+uganda.id = cut(uganda.coords$region)
+
+
+
+
+# Generate IDs for grouping
+uganda.id <- cut(uganda.coords[,V1], quantile(uganda.coords[,V1]), include.lowest=TRUE)
+
+# Merge polygons by ID
+uganda.union <- unionSpatialPolygons(uganda, uganda.id)
+
+# Plotting
+plot(uganda)
+plot(uganda.union, add = TRUE, border = "red", lwd = 2)
+
 
 # ----------------------------------------------
 # create the uganda regional shape file
