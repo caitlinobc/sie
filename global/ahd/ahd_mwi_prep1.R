@@ -11,7 +11,7 @@ library(data.table)
 library(stringr)
 library(dplyr)
 library(openxlsx)
-lobrary(ggplot2)
+library(ggplot2)
 #---------------------
 
 #-----------------------------------
@@ -114,6 +114,10 @@ dt[49 < age, age_cat:='50+']
 dt$age_cat = factor(dt$age_cat, c('<1', '1-4', '5-9', '10-14', '15-19',
                      '20-24', '25-29', '30-34',
                      '35-39', '40-44', '45-49', '50+'))
+#---------------------
+# some numbers import as characters
+dt[ , cd4_count:=as.numeric(cd4_count)]
+
 
 #-----------------------------------
 # descriptive statistics
@@ -131,6 +135,19 @@ dt[ , range(age), by = pre_post]
 # count of under 5s
 dt[age < 5, length(unique(id)), by = pre_post]
 
+# age distirbution by sex
+dt[ , mean(age), by = .(sex, pre_post)]
+
+#-----------------------------------
+# cd4 and other services
+
+# 3 is missing
+dt[cd4_done==1, mean(age)]
+dt[cd4_done==2 & pre_post=='Endline', mean(age)]
+dt[cd4_done==1, mean(age), by = sex]
+dt[cd4_done==2 & pre_post=='Endline', mean(age), by = sex]
+
+dt[cd4_done==1, mean(cd4_count)]
 
 #-----------------------------------
 # TABLES
@@ -162,6 +179,37 @@ tbl3 = dcast(tbl3, age_cat~variable)
 
 # oputput the table 
 write.xlsx(tbl3, paste0(outDir, 'age_sex_cohort.xlsx'))
+
+#---------------------
+# table of cohort distribution by sex, study eligibility
+tbl4 = dt[, .(value = length(unique(id))), 
+          by = .(p_elig, sex, pre_post)]
+tbl4[ , variable:=paste(pre_post, sex)]
+tbl4 = dcast(tbl4, p_elig~variable)
+
+# oputput the table 
+write.xlsx(tbl4, paste0(outDir, 'elig_sex_cohort.xlsx'))
+
+
+#---------------------
+# table of cohort distribution by sex, study eligibility
+tbl5 = dt[, .(value = length(unique(id))), 
+          by = .(cd4_done, sex, pre_post)]
+tbl5[ , variable:=paste(pre_post, sex)]
+tbl5 = dcast(tbl5, cd4_done~variable)
+
+# oputput the table 
+write.xlsx(tbl5, paste0(outDir, 'cd4_sex_cohort.xlsx'))
+
+#---------------------
+# table of cohort distribution by sex, study eligibility
+tbl6 = dt[cd4_done==1, .(value = length(unique(id))), 
+          by = .(site, sex, pre_post)]
+tbl6[ , variable:=paste(pre_post, sex)]
+tbl6 = dcast(tbl6, site~variable)
+
+# oputput the table 
+write.xlsx(tbl6, paste0(outDir, 'cd4_site_sex_cohort.xlsx'))
 
 #-----------------------------------
 # VISUALIZATIONS
