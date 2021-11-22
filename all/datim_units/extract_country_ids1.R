@@ -2,8 +2,10 @@
 # Caitlin O'Brien-Carelli
 #
 # 11/22/21
-# Create an accurate list of health facilities
+# Extract the IDs of African countries
 # Using the API call
+# currently: not an automatic download
+# visit the link with the appropriate id to download
 # ----------------------------------------------
 
 # --------------------
@@ -35,10 +37,6 @@ outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/datim_uni
 main_dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
 
 # --------------------
-# load the function that fixes diacritical marks
-source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie/all/fix_diacritics_function.R')
-
-# --------------------
 
 # ---------------------------------------------
 # source link for all files 
@@ -48,17 +46,28 @@ source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie
 # 'https://www.datim.org/api/organisationUnits/bQQJe0cC1eD.json?includeDescendants=true&paging=false&fields=id,name,parent,level,geometry'
 
 # country ids for all african countries
-af =  fromJSON(paste0(dir, 'africa_country_ids.json'))
-af = data.table(af$children)
+# af =  fromJSON(paste0(main_dir, 'all/datim_units/africa_country_ids.json'))
+# af = data.table(af$children)
+# setnames(af, 'id')
 
 # create a list of country ids 
 country = data.table(c('cameroon', 'cdi', 'drc', 'eswatini', 'kenya', 
                        'lesotho', 'malawi', 'moz', 'tanzania', 'uganda'))
-              
-orgUnitID = c('bQQJe0cC1eD', 'ds0ADyc9UCU', 'ANN4YCOufcP', 'V0qMZH29CtN', 'HfVjCurKxh2',
-            'qllxzIjjurr', 'lZsCb6y0KDX', 'h11OyvlPxpJ', 'mdXu6iCbn2G', 'FETQ6OmnsKB')
 
-# site codes 
+# create a list of their associated org unit ids              
+orgUnitID = c('bQQJe0cC1eD', 'ds0ADyc9UCU', 'ANN4YCOufcP', 'V0qMZH29CtN', 'HfVjCurKxh2',
+              'qllxzIjjurr', 'lZsCb6y0KDX', 'h11OyvlPxpJ', 'mdXu6iCbn2G', 'FETQ6OmnsKB')
+
+# bind the names of the countries to their associated ids
+clist = cbind(country, orgUnitID)
+setnames(clist, c('country', 'orgUnitID'))
+
+# save the africa ids to prepped data 
+saveRDS(paste0(outDir, 'african_country_ids.rds'))
+
+# --------------------
+# country organizational unit ids
+
 # 1: qllxzIjjurr - lesotho 
 # 2: cDGPF739ZZr - south africa
 # 3: mdXu6iCbn2G - tanzania
@@ -81,38 +90,4 @@ orgUnitID = c('bQQJe0cC1eD', 'ds0ADyc9UCU', 'ANN4YCOufcP', 'V0qMZH29CtN', 'HfVjC
 # 20: Qh4XMQJhbk8 - burundi
 # 21: bQQJe0cC1eD - cameroon
 # 22: XOivy2uDpMF - angola
-
-# ---------------------------------------------
-# pull the organisation unit meta data for every country in datim
-
-# load a list of every unit in datim
-dt = RJSONIO::fromJSON(paste0(dir, 'cam1.json'))
-
 # --------------------
-# loop to get entire list
-
-# loop through each unit, leaving off lat/long
-i = 1
-for (o in seq(1:length(dt$organisationUnits))) {
-
-org = dt$organisationUnits[i][[1]]
-lt = c(level = org$level, name = org$name, id = org$id, parent = org$parent)
-
-if (i == 1) org_list = lt
-if (1 < i) org_list = rbind(org_list, lt)
-i = i +1
-}
-
-# convert to a data table for ease of use
-org_list = data.table(org_list)
-# --------------------
-
-# ---------------------------------------------
-# match up the parent ids with the sites
-
-
-
-
-
-
-
