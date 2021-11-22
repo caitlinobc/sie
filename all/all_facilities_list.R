@@ -44,6 +44,11 @@ source('C:/Users/ccarelli/Documents/GitHub/sie/all/fix_diacritics_function.r')
 af =  fromJSON(paste0(dir, 'africa_country_ids.json'))
 af = data.table(af$children)
 
+
+
+
+
+
 # fill in the names of the countries by code
 af[id=='ds0ADyc9UCU', country := 'Cote dIvoire']
 af[id=='V0qMZH29CtN', country:= 'Eswatini']
