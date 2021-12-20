@@ -1,10 +1,10 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 11/11/2021
+# 12/20/2021
 # Tanzania Baseline Cohort Data
 # Import and clean the AHD study data
-# Processes both the baseline and endline and appends
+# Processes both the baseline and endline data sets and appends
 # Run data quality checks to identify any issues with the extraction
 # ----------------------------------------------
 
@@ -50,11 +50,78 @@ append = FALSE
 # -------------------------------------
 # load the study data 
 
-if (period=='baseline') {
-# load the patient study eligibility and service provision data 
+# load the patient study eligibility and service provision data - tab 1
 dt = data.table(read_xlsx(paste0(dir,
-    'raw/Tanzania AHD_Baseline_28.10.xlsx'), 
-     sheet = 'flat(leys_siteid,pid)', skip = 3))}
+    'raw/Tanzania AHD_', period, '_28.10.xlsx'), 
+     sheet = 'flat(leys_siteid,pid)', skip = 3))
+
+# load the sex data to be combined with the original file
+dt_sex = data.table(read_xlsx(paste0(dir,
+  'raw/tanzania_ahd_', period, '_sex.xlsx')))
+
+# subset the sex data to solely the variables needed to merge
+dt_sex = dt_sex[ ,.(sex, siteid, pid, ahd_dt)]
+
+# -------------------------------------
+# deal with duplicate patient ids
+
+# create a data set of duplicate id patients and examine
+dt[ , count:=.N, by = pid]
+dup_ids = dt[count==2, unique(pid)]
+
+# 6 duplicate ids, 12 patients
+dup = dt[pid %in% dup_ids, .(pid, dob, ahd_dt)][order(pid, ahd_dt)]
+dup[ , count:=seq(1, nrow(dup))]
+
+# export the data for the duplicates
+write.csv(dt[pid %in% dup_ids],paste0(prepDir, period, '_duplicate_patient_ids.csv'))
+
+# numbers the entries by date within each pid group
+dup$ord = ave(dup$count, dup$pid, FUN = seq_along)
+
+# drop the entry for the same pid, dob, ahd_dt (keep later service delivery)
+if (period=='baseline') dt = dt[!(pid=='01-04-0100-009528' & siteid==14216)]
+if (period=='baseline') dup = dup[pid!='01-04-0100-009528']
+
+# create a unique identifier based on pid and ahd_dt
+dup[ ,c('dob', 'count'):=NULL]
+dt = merge(dt, dup, by = c('pid', 'ahd_dt'), all.x = T)
+
+# add a b to the same pids with distinct dobs; get rid of order
+dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140') & ord==2, pid:=paste0(pid, 'b')]
+dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140'), ord:=NA]
+
+# drop the earlier entry of the duplicates
+dt = dt[is.na(ord) | ord==2]
+
+#------------------------
+# re-check the count and drop unecessary variables
+dt[duplicated(pid)] # should be empty
+dt[ , c('count', 'ord'):=NULL]
+
+# ------------------------
+
+# -------------------------------------
+# merge in the sex data 
+
+#add the bs to the ids from baseline
+if (period=='baseline') {
+dt_sex[pid=='03-04-0100-009460' & siteid==2569, pid:=paste0(pid, 'b')]
+dt_sex[pid=='03-04-0300-000140' & siteid==2569, pid:=paste0(pid, 'b')]}
+
+# create a unique identifier for each entry
+dt[ ,id:=paste0(pid, ahd_dt, siteid)]
+dt_sex[ ,id:=paste0(pid, ahd_dt, siteid)]
+
+# merge based on the unique identifier and drop
+dt_sex = dt_sex[ ,.(sex, id)]
+dt = merge(dt, dt_sex, by = 'id', all.x = T)
+dt[ , id:=NULL]
+
+# -------------------------------------
+
+# -------------------------------------
+# LINKED DATA SETS 
 
 # # load the tb data 
 # tb = data.table(read_xlsx(paste0(dir,
@@ -65,6 +132,7 @@ dt = data.table(read_xlsx(paste0(dir,
 # cd4 = data.table(read_xlsx(paste0(dir,
 #     'Tanzania Baseline Data Abstraction - October 6th, 2020.xlsx'), 
 #     sheet = 'allCD4_flat(siteid,pid)', skip = 1))
+# -------------------------------------
 
 # -------------------------------------
 # DATA PREP AND BASIC QUALITY CHECKS
@@ -106,7 +174,7 @@ dt[is.na(age)]
 dt[is.na(dob)]
 
 # ------------------------
-# additional date variables
+# format additional date variables
 
 # format the date of variables imported as POSIXct
 dt[ , dtpos:=as.Date(dtpos)]
@@ -156,62 +224,77 @@ dt[ , sstest:=as.logical(sstest)]
 dt[ , gxtest:=as.logical(gxtest)]
 dt[ , tbtxstart:=as.logical(tbtxstart)]
 
-dt[ ,unique( ahd_cd4u200)]
-
 # -------------------------------------
 # DATA QUALITY CHECKS
 # -------------------------------------
 
 # ------------------------
 # check the sites and site ids against the study protocols
+# correct sites in baseline
 ids = dt[ ,.(siteid = unique(siteid)), by = .(dhisid, dhisname)]
-write.csv(ids, paste0(outDir, 'facilities_in_data.csv'))
+write.csv(ids, paste0(outDir, period, '_facilities_in_data.csv'))
 
-#-----------------
 # check for duplicate patient ids and duplicate entries
 dt[duplicated(dt)] # no duplicate entries
-dt[ , pid_test:=.N, by = pid]
-dt[1 < pid_test, .(pid, pid_test, dhisname, dob), by = pid]
-
-# output a list of duplicate patient identifiers
-write.csv(ids, paste0(outDir, 'duplicate_participant_ids.csv'))
-dt[ , pid_test:=NULL]
-
-#-----------------
-# # check links with other data sets
-# cd4[!(pid %in% dt$pid)] # all pids there, but one entry is a dup pid
-# tb[!(pid %in% dt$pid), length(unique(pid))]
-
-#-----------------
-# check that patients eligible as under 5 are under 5
-dt[age < 5, unique(ahd_elig)] # includes 5 and 1
-dt[age < 5 & ahd_elig==1]
 
 # check that study eligibility was after the patient was born
-dt[ahd_dt < dob]
+dt[ahd_dt < dob] # no entries
 
 # when age is equal to 0, how old is the participant?
 dt[age==0, .(dob, ahd_dt)]
 
 # -------------------------------------
-# MISSINGNESS
+# add a five year age category
 
+dt[age < 5, age_cat:='<5']
+dt[4 < age & age <=9, age_cat:='5-9']
+dt[9 < age & age<=14, age_cat:='10-14']
+dt[14 < age & age<=19, age_cat:='15-19']
+dt[19 < age & age<=24, age_cat:='20-24']
 
+dt[24 < age & age<=29, age_cat:='25-29']
+dt[29 < age & age<=34, age_cat:='30-34']
+dt[34 < age & age<=39, age_cat:='35-39']
+dt[39 < age & age<=44, age_cat:='40-44']
+dt[44 < age & age<=49, age_cat:='45-49']
+
+dt[49 < age, age_cat:='50+']
+
+# factor the age category to sort correctly in figures and tables
+dt$age_cat = factor(dt$age_cat, c('<5', '5-9',
+        '10-14', '15-19', '20-24', '25-29', '30-34',
+        '35-39', '40-44', '45-49', '50+'),
+        c('<5', '5-9','10-14', '15-19', '20-24', '25-29', '30-34',
+          '35-39', '40-44', '45-49', '50+'))
 
 # -------------------------------------
-# output the data set for processing 
+# MISSINGNESS CHECKS
+# -------------------------------------
 
+# key variables for study eligibility determination
+# should always be 0 rows 
+dt[is.na(pid)]
+dt[is.na(ahd_dt)]
+dt[is.na(siteid)]
+dt[is.na(ahd_elig)]
+dt[is.na(dob)]
+
+# -------------------------------------
+# OUTPUT THE DATA SETS AND APPEND
+# -------------------------------------
+
+# -----------------
 # add a variable distinguishing baseline from endline
-if (period=='baseline') dt[ , period:='Baseline']
-if (period=='endline') dt[ , period:='Endline']
+if (period=='baseline') dt[ , period:='b']
+if (period=='endline') dt[ , period:='e']
 
 # output baseline data 
 if (period=='baseline') {
-write.csv(dt, paste0(prepDir, 'baseline_main.csv'))
-  saveRDS(dt, paste0(prepDir, 'baseline_main.rds'))
+write.csv(dt, paste0(prepDir, 'baseline_main_to_append.csv'))
+  saveRDS(dt, paste0(prepDir, 'baseline_main_to_append.rds'))
 } else {
-  write.csv(dt, paste0(prepDir, 'endline_main.csv'))
-  saveRDS(dt, paste0(prepDir, 'endline_main.rds'))
+  write.csv(dt, paste0(prepDir, 'endline_main_to_append.csv'))
+  saveRDS(dt, paste0(prepDir, 'endline_main_to_append.rds'))
 }
 
 # -------------------------------------
@@ -219,12 +302,24 @@ write.csv(dt, paste0(prepDir, 'baseline_main.csv'))
 
 if (append==T) {
   
+  # read in the data sets
+  base = readRDS(paste0(prepDir, 'baseline_main_to_append.rds'))
+  end = readRDS(paste0(prepDir, 'endline_main_to_append.rds'))
   
-}
+  # rbind them together
+  full_data = rbind(base, end)
+  
+  # run some quick checks
+  
+  # save the final data set
+  saveRDS(full_data, paste0(prepDir, 'full_data.RDS'))
+  write.csv(full_data, paste0(prepDir, 'full_data.csv')) }
 
 # -------------------------------------
 
-
+# -------------------------------------
+# LE FIN
+# -------------------------------------
 
 
 

@@ -20,7 +20,7 @@ dt[, range(age, na.rm=TRUE)]
 dt[age==0, .(dob, ahd_dt)]
 
 # summarize the patients under 5
-dt[under5==TRUE, unique(pid)]
+dt[under5==TRUE, length(unique(pid))]
 dt[under5==TRUE, mean(age, na.rm=TRUE)]
 dt[under5==TRUE, median(age, na.rm=TRUE)]
 dt[under5==TRUE, range(age, na.rm=TRUE)]
@@ -33,7 +33,9 @@ dt[hivresult==TRUE]
 
 # study eligibility
 dt[ ,table(ahd_elig)]
+
 # get the percentage
+
 
 dt[ ,table(whostage1_done)]
 dt[ ,table(whostage1st)]

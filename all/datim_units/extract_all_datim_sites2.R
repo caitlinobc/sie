@@ -39,10 +39,10 @@ main_dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
 source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie/all/fix_diacritics_function.R')
 
 # --------------------
-# set the country argument
+# set the country argument to a list of egpaf countries
 
-country = 'cameroon'
-
+countries = c('cameroon', 'cdi', 'drc', 'eswatini', 'kenya', 
+            'lesotho', 'malawi', 'moz', 'tanzania', 'uganda')
 # ---------------------------------------------
 # source link for all files 
 # download the api from the link above and process
@@ -53,10 +53,16 @@ country = 'cameroon'
 # ---------------------------------------------
 # pull the organisation unit meta data for every country in datim
 
+# set the index to 1
+dex = 1
+
+# loop through each country's file for the total units
+for (c in countries) {
+
 # -------------------
 
 # load a list of every unit in datim
-dt = RJSONIO::fromJSON(paste0(dir, country, '.json'))
+dt = RJSONIO::fromJSON(paste0(dir, c, '.json'))
 
 # --------------------
 # loop to get the entire list of org units for the country
@@ -75,12 +81,34 @@ i = i +1}
 # --------------------
 # convert to a data table for ease of use
 org_list = data.table(org_list)  
+org_list[ , country:=as.character(c)]
+
+# --------------------
+# combine all countries 
+if(dex==1) full_data = org_list
+if(1 < dex) full_data = rbind(full_data, org_list)
+dex = dex+1
+
+# --------------------
+
+}
 
 # ---------------------------------------------
-# match up the parent ids with the sites
+# format the file and export
 
+# convert level to a numeric
+full_data[ , level:=as.numeric(level)]
 
+# save the file
+saveRDS(full_data, paste0(outDir, 'all_org_units.rds'))
 
+# delete unnecessary files from the environment
+remove(dt, org, org_list)
+
+# ---------------------------------------------
+
+# ---------------------------------------------
+# run the prep function
 
 
 

@@ -32,6 +32,7 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/site_count_c
 dt = data.table(fread(paste0(dir, 'cam_sites_any_ki.csv')))
 setnames(dt, c('site', 'variable', 'value'))
 
+
 # reshape the data wide for comparison 
 dt = dcast(dt, site~variable)
 
