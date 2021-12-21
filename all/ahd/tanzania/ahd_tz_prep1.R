@@ -43,7 +43,7 @@ outDir = paste0(dir, 'outputs/')
 period = 'endline'
 
 # append the data sets? T/F
-append = FALSE
+append = TRUE
 
 # ------------------------
 
@@ -74,7 +74,7 @@ dup = dt[pid %in% dup_ids, .(pid, dob, ahd_dt)][order(pid, ahd_dt)]
 dup[ , count:=seq(1, nrow(dup))]
 
 # export the data for the duplicates
-write.csv(dt[pid %in% dup_ids],paste0(prepDir, period, '_duplicate_patient_ids.csv'))
+write.csv(dt[pid %in% dup_ids],paste0(prepDir, 'duplicate_ids/', period, '_duplicate_patient_ids.csv'))
 
 # numbers the entries by date within each pid group
 dup$ord = ave(dup$count, dup$pid, FUN = seq_along)
@@ -293,13 +293,8 @@ if (period=='baseline') dt[ , period:='b']
 if (period=='endline') dt[ , period:='e']
 
 # output baseline data 
-if (period=='baseline') {
-write.csv(dt, paste0(prepDir, 'baseline_main_to_append.csv'))
-  saveRDS(dt, paste0(prepDir, 'baseline_main_to_append.rds'))
-} else {
-  write.csv(dt, paste0(prepDir, 'endline_main_to_append.csv'))
-  saveRDS(dt, paste0(prepDir, 'endline_main_to_append.rds'))
-}
+if (period=='baseline') { saveRDS(dt, paste0(prepDir, 'baseline_main_to_append.rds'))
+} else {saveRDS(dt, paste0(prepDir, 'endline_main_to_append.rds'))}
 
 # -------------------------------------
 # append the data sets to create a master data set
@@ -327,6 +322,9 @@ if (append==T) {
   full_data[ , id_count:=.N, by = pid2]
   full_data[ ,unique(id_count)]
   
+  # export the duplicate ids across intervention periods
+  write.csv(full_data[1 < id_count], paste0(prepDir, 'duplicate_ids/full_data_duplicate_patient_ids.csv')) 
+  
   # create a data set of duplicates and examine
   # count the number of entries with same pid, dob
   full_data[ , id_dob:=paste0(pid, dob)]
@@ -350,7 +348,29 @@ if (append==T) {
   full_data[duplicated(pid)] # should be 0!
   
   # --------------------------
+  # rearrange the data set in the order that you prefer
+  # data set starts with demographic variables, meta data
   
+ full_data[ , c("pid", "period", "dob", "age", "age_cat", "under5",  "sex",     
+   "siteid", "dhisid", "dhisname",   "district", "region",
+    "ahd_dt", "ahd_elig", "knwstat", "hivtest","dtpos", "hivresult",
+    "cd4done_after_ahdelig", "cd4_after_ahdelig_dt","cd4_after_ahdelig_result", 
+    "whostage1_done", "whostage1st_dt", "whostage1st",             
+    "tbsympscrn","tptstart", "tptalready", "tptstart_dt", "tptalready_dt",           
+    "tptcplt","tptcplt_dt", "tptcplt_impute", "sstest", "sstest_dt",               
+    "sspos","gxtest", "gxtest_dt","gxpos", "everart",                 
+    "firstart_dt","art6m", "hvl6m", "hvl6m_dt",                
+    "hvl6mcat", "hvl6mresult",  "tbtxstart", "tbtxalready", 
+    "tbtxstart_dt", "tbtxalready_dt", 
+    "tbtxcplt","tbtxcplt_dt", "firstvis", "whostage_fvis",  
+    "transferinid", "cd4_fvis_dt","cd4_fvis", "ahd_u5", "ahd_u5_dt",  
+    "ahd_newcd4","ahd_new_cd4_dt", "ahd_new_cd4result",  "ahd_newwho",
+    "ahd_new_who_dt","ahd_new_whostage",        
+    "ahd_oclin","ahd_oclin_who_dt", "ahd_oclin_whostage", 
+    "ahd_tb", "ahd_tb_dt",  "ahd_incwho", "ahd_incwho_dt", "ahd_whostage_incwho", 
+    "ahd_hvl", "ahd_hvl_dt", "ahd_hvlresult","ahd_hvlcat", "ahd_cd4u200",
+    "ahd_cd4u200_dt","ahd_cd4result")]       
+                        
   # --------------------------
   #  SAVE THE FINAL, PREPPED DATA SET
   saveRDS(full_data, paste0(prepDir, 'full_data.RDS'))
