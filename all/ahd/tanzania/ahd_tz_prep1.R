@@ -40,7 +40,7 @@ outDir = paste0(dir, 'outputs/')
 # select baseline or endline for processing raw data 
 # determine if you want to append the data sets together
 
-period = 'baseline'
+period = 'endline'
 
 # append the data sets? T/F
 append = FALSE
@@ -83,13 +83,16 @@ dup$ord = ave(dup$count, dup$pid, FUN = seq_along)
 if (period=='baseline') dt = dt[!(pid=='01-04-0100-009528' & siteid==14216)]
 if (period=='baseline') dup = dup[pid!='01-04-0100-009528']
 
+
 # create a unique identifier based on pid and ahd_dt
 dup[ ,c('dob', 'count'):=NULL]
 dt = merge(dt, dup, by = c('pid', 'ahd_dt'), all.x = T)
 
 # add a b to the same pids with distinct dobs; get rid of order
-dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140') & ord==2, pid:=paste0(pid, 'b')]
-dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140'), ord:=NA]
+if (period=='baseline') {dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140') & ord==2, pid:=paste0(pid, 'b')]
+} else {dt[pid=='02-03-0100-006660' & ord==2, pid:=paste0(pid, 'b')]} # endline duplicate
+
+dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140' | pid=='02-03-0100-006660'), ord:=NA]
 
 # drop the earlier entry of the duplicates
 dt = dt[is.na(ord) | ord==2]
@@ -107,7 +110,8 @@ dt[ , c('count', 'ord'):=NULL]
 #add the bs to the ids from baseline
 if (period=='baseline') {
 dt_sex[pid=='03-04-0100-009460' & siteid==2569, pid:=paste0(pid, 'b')]
-dt_sex[pid=='03-04-0300-000140' & siteid==2569, pid:=paste0(pid, 'b')]}
+dt_sex[pid=='03-04-0300-000140' & siteid==2569, pid:=paste0(pid, 'b')]
+} else {dt_sex[pid=='02-03-0100-006660' & siteid==2657, pid:=paste0(pid, 'b')]}
 
 # create a unique identifier for each entry
 dt[ ,id:=paste0(pid, ahd_dt, siteid)]
@@ -309,9 +313,46 @@ if (append==T) {
   # rbind them together
   full_data = rbind(base, end)
   
-  # run some quick checks
+  # drop the bs from the patient ids to check duplication across periods
+  full_data[ , pid2:=pid]
+  full_data[ , pid2:=gsub('b', '', pid2)]
   
-  # save the final data set
+  # run some quick checks
+  full_data[duplicated(pid2)] # 154 duplicate ids, baseline to endline
+  
+  # --------------------------
+  # DUPLICATE IDS ENDLINE TO BASELINE
+  
+  # count the total number of duplicate id rows
+  full_data[ , id_count:=.N, by = pid2]
+  full_data[ ,unique(id_count)]
+  
+  # create a data set of duplicates and examine
+  # count the number of entries with same pid, dob
+  full_data[ , id_dob:=paste0(pid, dob)]
+  full_data[ , id_dob_count:=.N, by = id_dob]
+  
+  # check that there is one entry per period
+  full_data[id_dob_count==2, pers:=length(unique(period)), by = id_dob]
+  full_data[id_dob_count==2, unique(pers)] # all are two
+  
+  # for entries with the same pid and dob keep baseline only
+  full_data = full_data[!(id_dob_count==2 & period=='e')]
+  
+  # there is one entry with the same id, but different dob, in each period
+  full_data[pid=='02-03-0200-005511' & siteid=='14216', pid:='02-03-0200-005511b']
+  full_data = full_data[!(pid=='03-04-0100-009460' & period=='e')]
+  
+  # drop excess variables
+  full_data[ , c('pid2', 'id_count', 'id_dob', 'id_dob_count', 'pers'):=NULL]
+  
+  # test for duplicates
+  full_data[duplicated(pid)] # should be 0!
+  
+  # --------------------------
+  
+  # --------------------------
+  #  SAVE THE FINAL, PREPPED DATA SET
   saveRDS(full_data, paste0(prepDir, 'full_data.RDS'))
   write.csv(full_data, paste0(prepDir, 'full_data.csv')) }
 
