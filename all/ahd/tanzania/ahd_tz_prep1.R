@@ -180,34 +180,21 @@ dt[is.na(dob)]
 # ------------------------
 # format additional date variables
 
-# format the date of variables imported as POSIXct
-dt[ , dtpos:=as.Date(dtpos)]
+# the following variable appears as POSIX CT but is an import error
+setnames(dt, 'ahd_whostage_incwho', 'ahd_whostage_incwho1' )
+dt[grepl(3, ahd_whostage_incwho1), ahd_whostage_incwho:=3]
+dt[grepl(4, ahd_whostage_incwho1), ahd_whostage_incwho:=4]
+dt[ , ahd_whostage_incwho1:=NULL] #after this, should be no more POSIXCT in data
 
-dt[ , cd4_after_ahdelig_dt:=as.Date(cd4_after_ahdelig_dt)]
-dt[ , whostage1st_dt:=as.Date(whostage1st_dt)]
-dt[ , tptstart_dt:=as.Date(tptstart_dt)]
-dt[ , tptalready_dt:=as.Date(tptalready_dt)]
 
-dt[ , tptcplt_dt:=as.Date(tptcplt_dt)]
-dt[ , sstest_dt:=as.Date(sstest_dt)]
-dt[ , firstart_dt:=as.Date(firstart_dt)]
-dt[ , hvl6m_dt:=as.Date(hvl6m_dt)]
-dt[ , tbtxstart_dt:=as.Date(tbtxstart_dt)]
 
-dt[ , tbtxalready_dt:=as.Date(tbtxalready_dt)]
-dt[ , tptcplt_dt:=as.Date(tptcplt_dt)]
-dt[ , tbtxcplt_dt:=as.Date(tbtxcplt_dt)]
-dt[ , firstvis:=as.Date(firstvis)]
-dt[ , cd4_fvis_dt:=as.Date(cd4_fvis_dt)]
+# all date names include dt except dob and firstvis
+dates = c(names(dt)[ grepl("dt", names(dt))], 'dob', 'firstvis')
 
-dt[ , ahd_u5_dt:=as.Date(ahd_u5_dt)]
-dt[ , ahd_new_cd4_dt:=as.Date(ahd_new_cd4_dt)]
-dt[ , ahd_oclin_who_dt:=as.Date(ahd_oclin_who_dt)]
-dt[ , ahd_incwho_dt:=as.Date(ahd_incwho_dt )]
-dt[ , ahd_whostage_incwho:=as.Date(ahd_whostage_incwho)]
+# convert the date variables to date type variables
+date_byVars = names(dt)[!(names(dt) %in% dates)] # list of not dates
+dt = dt[ , lapply(.SD, as.Date), by = date_byVars]
 
-dt[ , ahd_hvl_dt:=as.Date(ahd_hvl_dt)]
-dt[ , ahd_cd4u200_dt:=as.Date(ahd_cd4u200_dt)]
 # ------------------------
 
 # ------------------------
