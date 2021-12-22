@@ -186,8 +186,6 @@ dt[grepl(3, ahd_whostage_incwho1), ahd_whostage_incwho:=3]
 dt[grepl(4, ahd_whostage_incwho1), ahd_whostage_incwho:=4]
 dt[ , ahd_whostage_incwho1:=NULL] #after this, should be no more POSIXCT in data
 
-
-
 # all date names include dt except dob and firstvis
 dates = c(names(dt)[ grepl("dt", names(dt))], 'dob', 'firstvis')
 
@@ -257,6 +255,17 @@ dt$age_cat = factor(dt$age_cat, c('<5', '5-9',
         '35-39', '40-44', '45-49', '50+'),
         c('<5', '5-9','10-14', '15-19', '20-24', '25-29', '30-34',
           '35-39', '40-44', '45-49', '50+'))
+
+# --------------------------
+# create a variable called site that reformats the names
+
+dt$site = factor(dt$dhisname, c("Arusha Lutheran Medical Hospital",
+            "Dodoma  Regional Referral Hospital", "KCMC  Referral Hospital at Zonal Level",
+            "Kibong`oto TB Hospital", "Manyara  Regional Referral Hospital", 
+            "Mawenzi  Regional Referral Hospital", "Mt. Meru  Regional Referral Hospital",   
+            "Singida  Regional Referral Hospital"),
+            c('ALMH', 'Dodoma RRH', 'KCMC RRH', 'Kibongoto TB Hospital', 'Manyara RRH',
+              'Mawenzi RRH', 'Mt. Meru RRH', 'Singida RRH'))
 
 # -------------------------------------
 # MISSINGNESS CHECKS
@@ -338,8 +347,8 @@ if (append==T) {
   # rearrange the data set in the order that you prefer
   # data set starts with demographic variables, meta data
   
- full_data[ , c("pid", "period", "dob", "age", "age_cat", "under5",  "sex",     
-   "siteid", "dhisid", "dhisname",   "district", "region",
+   full_data = full_data[ , c("pid", "period", "dob", "age", "age_cat", "under5",  "sex",     
+   "siteid", "dhisid", "dhisname", "site",  "district", "region",
     "ahd_dt", "ahd_elig", "knwstat", "hivtest","dtpos", "hivresult",
     "cd4done_after_ahdelig", "cd4_after_ahdelig_dt","cd4_after_ahdelig_result", 
     "whostage1_done", "whostage1st_dt", "whostage1st",             

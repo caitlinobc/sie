@@ -3,6 +3,14 @@
 # Sourced from ahd_data_prep.R
 #-------------------------
 
+
+
+# --------------------
+# convert eligibility classification to a factor
+
+dt$ahd_elig = factor(dt$ahd_elig, levels = c(1:6), labels = c('Newly diagnosed',
+                                                              'LTFU and returned', 'On ART vir failure', 'On ART AIDS ill',
+                                                              'Under 5', 'CD4 < 200'))
 #-------------------------
 # color palettes 
 tri_colors = c('#b2182b', '#fdae61', '#74add1')

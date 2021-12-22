@@ -35,21 +35,73 @@ prepDir = paste0(dir, 'prepped/')
 outDir = paste0(dir, 'outputs/')
 
 # ------------------------
-
-# ----------------------------------------------
 # import the data
 dt = readRDS(paste0(prepDir, 'full_data.RDS'))
 
+# ------------------------
+
 # ----------------------------------------------
+# DEMOGRAPHIC TABLES 
+# ----------------------------------------------
+# create some demographic tables to show study eligibility
+
+# ------------------------
+# participants by sex, age category
+dt_sa = dt[ ,.(value = length(unique(pid))), by =.(sex, age_cat, period)]
+dt_sa = dcast(dt_sa, age_cat~period+sex)
+dt_sa[ , b_Total:=(b_Female+b_Male)]
+dt_sa[ , e_Total:=(e_Female+e_Male)]
+dt_sa = dt_sa[ ,.(age_cat,b_Female, b_Male, b_Total, e_Female, e_Male, e_Total)]
+
+# export the table
+write.csv(dt_sa, paste0(outDir, 'participants_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# participants by site, sex
+dt_ss = dt[ ,.(value = length(unique(pid))), by =.(sex, dhisname, period)]
+dt_ss = dcast(dt_ss, dhisname~period+sex)
+dt_ss[ , b_Total:=(b_Female+b_Male)]
+dt_ss[ , e_Total:=(e_Female+e_Male)]
+dt_ss = dt_ss[ ,.(Site = dhisname,b_Female, b_Male, b_Total, e_Female, e_Male, e_Total)]
+
+# export the table
+write.csv(dt_ss, paste0(outDir, 'participants_site_sex.csv'))
+# ------------------------
+
+# ------------------------
+# age distribution by site
+dt_as = dt[ ,.(value = length(unique(pid))), by =.(age_cat, site, period)]
+dt_as = dcast(dt_as, age_cat~period+site)
+
+# export the table
+write.csv(dt_as, paste0(outDir, 'participants_site_age.csv'))
+# ------------------------
+
+# ------------------------
+# study eligibility by sex
+
+dt_elig = dt[, .(value = length(unique(pid))) , by = .(ahd_elig, sex)]
+
+
+# ------------------------
 
 
 
-# number of participants by sex and age category
 
 
-dt_sa = dt[ ,.(value = length(unique(pid))), by =.(sex, age_cat)]
-dt_sa = dcast(dt_sa, age_cat~sex)
-write.csv(dt_sa, paste0(outDir, 'age_sex_endline.csv'))
 
-dt_elig = dt[, .(value = length(unique(pid))) , by = .(ahd_elig)]
-write.csv(dt_elig, paste0(outDir, 'elig_baseline.csv'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
