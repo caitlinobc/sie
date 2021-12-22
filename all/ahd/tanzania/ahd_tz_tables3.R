@@ -80,13 +80,19 @@ write.csv(dt_as, paste0(outDir, 'participants_site_age.csv'))
 
 # ------------------------
 # study eligibility by sex
+dt_elig = dt[, .(value = length(unique(pid))) , by = .(ahd_elig, sex, period)]
+dt_elig2 = dt[, .(value = length(unique(pid))) , by = .(ahd_elig, period)]
+dt_elig2[ , sex:='Total']
+dt_elig = rbind(dt_elig, dt_elig2)
+dt_elig = dcast(dt_elig, ahd_elig~period+sex)
 
-dt_elig = dt[, .(value = length(unique(pid))) , by = .(ahd_elig, sex)]
-
-
+# export the table
+write.csv(dt_elig, paste0(outDir, 'eligibilty_sex.csv'))
 # ------------------------
 
-
+# ----------------------------------------------
+# OUTCOME TABLES: TB SCREENING
+# ----------------------------------------------
 
 
 
