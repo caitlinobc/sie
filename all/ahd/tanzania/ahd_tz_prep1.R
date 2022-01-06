@@ -213,6 +213,10 @@ dt[ , sstest:=as.logical(sstest)]
 dt[ , gxtest:=as.logical(gxtest)]
 dt[ , tbtxstart:=as.logical(tbtxstart)]
 
+dt[ , everart:=as.logical(everart)]
+dt[ , art6m:=as.logical(art6m)]
+dt[ , hvl6m:=as.logical(hvl6m)]
+
 # -------------------------------------
 # DATA QUALITY CHECKS
 # -------------------------------------
@@ -344,6 +348,7 @@ if (append==T) {
   full_data[duplicated(pid)] # should be 0!
   
   # --------------------------
+  
   # rearrange the data set in the order that you prefer
   # data set starts with demographic variables, meta data
   
