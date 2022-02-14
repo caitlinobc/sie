@@ -176,6 +176,80 @@ write.csv(dpt, paste0(outDir, 'age_at_hiv_diag_dt.csv'))
 # OUTCOME TABLES: CD4 TESTING 
 # ----------------------------------------------
 
+#-------------------
+# check the cd4 data
+#-------------------
+# check if the cd4 counts for new patients are the same as all patients
+cd = dt[ , .(cd4done_after_ahdelig, cd4_after_ahdelig_dt, cd4_after_ahdelig_result,
+        ahd_newcd4, ahd_new_cd4_dt, ahd_new_cd4result)]
+x = cd[ , lapply(.SD, is.na)]
+x [ , check:=(apply(x[, c(1:6)], 1, sum))]
+cd = cbind(cd, test = x$check)
+cd = cd[test!=6]
+
+# there are three patients for which the new result is different than the general result
+cd[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result]
+
+# for these three patients, use the earlier result as baseline cd4 (they are very close, anyway)
+dt[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result,
+   cd4_after_ahdelig_result:=ahd_new_cd4result]
+dt[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result,
+   cd4_after_ahdelig_dt:=ahd_new_cd4_dt]
+#-------------------
+
+#-------------------
+# basic descriptive statistics for cd4
+# there are no false entries and the majority of entries are missing (96%)
+table(dt$cd4done_after_ahdelig)
+dt[!is.na(cd4done_after_ahdelig), length(unique(pid)), by = period]
+dt[is.na(cd4done_after_ahdelig), length(unique(pid))]
+dt[is.na(cd4done_after_ahdelig), length(unique(pid))]/nrow(dt)
+#-------------------
+
+#-------------------
+# number receiving cd4 after ahd by sex, period
+cd4_s1 = dt[!is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(sex, period)]
+cd4_s2 = dt[is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(sex, period)]
+cd4_s1[ , type:='CD4 Tested']
+cd4_s2[ , type:='Missing']
+cd4_s = rbind(cd4_s1, cd4_s2)
+cd4_s =  dcast(cd4_s, type~period+sex)
+
+# export the table
+write.csv(cd4_s, paste0(outDir, 'cd4_done_sex.csv'))
+#-------------------
+
+#-------------------
+# mean cd4 by sex
+cd4_m1 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(mean(cd4_after_ahdelig_result), 1)), 
+   by = .(sex, period)]
+cd4_m2 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(mean(cd4_after_ahdelig_result), 1),
+                                                sex = 'Total'), by = period]
+cd4_m = rbind(cd4_m1, cd4_m2)
+cd4_m =  dcast(cd4_m, sex~period)
+
+# export the table
+write.csv(cd4_m, paste0(outDir, 'cd4_result_sex.csv'))
+#-------------------
+
+#-------------------
+# mean cd4 by age
+cd4_ma1 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(mean(cd4_after_ahdelig_result, na.rm=T), 1)), 
+            by = .(age_cat, sex, period)]
+cd4_ma2 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(mean(cd4_after_ahdelig_result, na.rm=T), 1),
+                                                sex ='Total'), by = .(age_cat, period)]
+
+cd4_ma3 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(mean(cd4_after_ahdelig_result, na.rm=T), 1),
+            age_cat = 'Total'), by = .(sex, period)]
+cd4_ma4= dt[!is.na(cd4_after_ahdelig_result), .(value = round(mean(cd4_after_ahdelig_result, na.rm=T), 1),
+            age_cat = 'Total', sex ='Total'), by = period]
+cd4_ma = rbind(cd4_ma1, cd4_ma2, cd4_ma3, cd4_ma4)
+cd4_ma =  dcast(cd4_ma, age_cat~period+sex)
+
+# export the table
+write.csv(cd4_ma, paste0(outDir, 'cd4_result_sex_age.csv'))
+#-------------------
+
 # ----------------------------------------------
 # OUTCOME TABLES: WHO STAGING
 # ----------------------------------------------
@@ -265,7 +339,65 @@ write.csv(tb_all, paste0(outDir, 'screened_ns_for_tb_sex_age.csv'))
 # ----------------------------------------------
 # OUTCOME TABLES: IPT
 # ----------------------------------------------
+"tbsympscrn"               "tptstart"                 "tptalready"               "tptstart_dt"              "tptalready_dt"           
+"tptcplt"                  "tptcplt_dt"               "tptcplt_impute"         
 
+# ------------------------
+# examine the tb preventive therapy variables
+# some patients received tb preventive therapy even if no screening outcome recorded
+dt[ , table(tptstart)]
+dt[ , table(tptalready)]
+dt[tptstart==T & tptalready==T] # no patients were both started and already on
+# ------------------------
+
+# ------------------------
+# create a table of anyone started on or already on TB preventive therapy
+tp1 = dt[ ,.(value = sum(tptstart)), by = .(sex, period)]
+tp2 = dt[ ,.(value = sum(tptstart)), by = .(period)]
+tp2[ , sex:='Total']
+tp = rbind(tp1, tp2)
+tp[ , variable:='Started TB preventive therapy']
+
+tp3 = dt[ ,.(value = sum(tptalready)), by = .(sex, period)]
+tp4 = dt[ ,.(value = sum(tptalready)), by = .(period)]
+tp4[ , sex:='Total']
+tp5 = rbind(tp3, tp4)
+tp5[ , variable:='Already on TB preventive therapy']
+tp = rbind(tp, tp5)
+
+# create a full data set and output
+tp = dcast(tp, variable~sex+period)
+
+# export the table
+write.csv(tp, paste0(outDir, 'on_tpt_sex.csv'))
+# ------------------------
+
+# ------------------------
+# add a table for no tb preventive therapy 
+
+no_tp = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(sex, period)]
+no_tp2 = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(period)]
+no_tp2[ , sex:='Total']
+no_tp = rbind(no_tp, no_tp2)
+no_tp[ , variable:='No TB preventive therapy']
+no_tp = dcast(no_tp, variable~period+sex)
+
+# export the table
+write.csv(no_tp, paste0(outDir, 'no_tpt_sex.csv'))
+# ------------------------
+
+# ------------------------
+# time on tpt
+
+dt[(tptstart==T | tptalready==T), c("tbsympscrn",  "tptstart",
+          "tptalready", "tptstart_dt",  "tptalready_dt", 
+             "tptcplt", "tptcplt_dt", "tptcplt_impute")]
+
+
+
+
+
+# ------------------------
 
 
 # ----------------------------------------------
@@ -304,7 +436,7 @@ art6[ ,c('b_NA', 'e_NA'):=NULL]
 art6 = art6[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
 
 # export the table
-write.csv(art, paste0(outDir, 'on_art_6m_sex.csv'))
+write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
 # ------------------------
 
 # ------------------------

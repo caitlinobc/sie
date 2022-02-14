@@ -19,6 +19,7 @@ library(openxlsx)
 library(ggplot2)
 library(RColorBrewer)
 library(raster)
+library(ggrepel)
 # --------------------
 
 # ----------------------------------------------
@@ -32,7 +33,7 @@ setwd(dir)
 outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/PrEP COP Meeting/'
 
 # mapping directory
-mapDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps/r_shape_files/africa_shape_file/'
+mapDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/maps/shape_files/africa_admin0_hdx/'
 
 # read in the data 
 dt = data.table(read.csv(paste0(dir, 'prep_data_fy20_21.csv')))
@@ -81,7 +82,7 @@ df = dt[ , .(value = sum(value, na.rm = T)), by = .(country, fq, variable)]
 
 # --------------------
 # import the shape file and convert to a data table
-map = shapefile(paste0(mapDir, '1.shp'))
+map = shapefile(paste0(mapDir, 'africa_admin0_hdx.shp'))
 coord = data.table(fortify(map))
 
 # merge in the names of the countries to match the data 
@@ -190,7 +191,7 @@ ggplot(coord, aes(x=long, y=lat, group=group, fill=prep_curr)) +
     theme( text=element_text(size=18))+
     s_africa_layer+
     geom_label_repel(data = labels, aes(label = pw_label, 
-        x=long, y=lat, group=country), inherit.aes=FALSE, size=4)
+        x=long, y=lat, group=country), inherit.aes=FALSE, size=3)
 
 
   # map of rates of change in new enrollments

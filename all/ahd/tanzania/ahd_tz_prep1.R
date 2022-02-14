@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 12/20/2021
+# 2/14/2021
 # Tanzania Baseline Cohort Data
 # Import and clean the AHD study data
 # Processes both the baseline and endline data sets and appends
@@ -83,7 +83,6 @@ dup$ord = ave(dup$count, dup$pid, FUN = seq_along)
 if (period=='baseline') dt = dt[!(pid=='01-04-0100-009528' & siteid==14216)]
 if (period=='baseline') dup = dup[pid!='01-04-0100-009528']
 
-
 # create a unique identifier based on pid and ahd_dt
 dup[ ,c('dob', 'count'):=NULL]
 dt = merge(dt, dup, by = c('pid', 'ahd_dt'), all.x = T)
@@ -98,7 +97,7 @@ dt[(pid=='03-04-0100-009460' | pid=='03-04-0300-000140' | pid=='02-03-0100-00666
 dt = dt[is.na(ord) | ord==2]
 
 #------------------------
-# re-check the count and drop unecessary variables
+# re-check the count and drop unnecessary variables
 dt[duplicated(pid)] # should be empty
 dt[ , c('count', 'ord'):=NULL]
 
@@ -196,26 +195,19 @@ dt = dt[ , lapply(.SD, as.Date), by = date_byVars]
 # ------------------------
 
 # ------------------------
-# recode 1s and 0s as logicals
-dt[ , knwstat:=as.logical(knwstat)]
-dt[ , hivtest:=as.logical(hivtest)]
-dt[ , hivresult:=as.logical(hivresult)]
-dt[ , cd4done_after_ahdelig:=as.logical(cd4done_after_ahdelig)]
-dt[ , whostage1_done:=as.logical(whostage1_done)]
+# convert logicals to logicals from 0/1
+logicals = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig',
+      'whostage1_done', 'tbsympscrn', 'tptstart', 'tptalready', 'tptcplt',
+      'ahd_cd4u200', 'sstest', 'gxtest', 'tbtxstart', 
+      'everart', 'art6m', 'hvl6m', 'ahd_newcd4', 'ahd_newwho')
 
-dt[ , tptalready:=as.logical(tptalready)]
-dt[ , tptcplt:=as.logical(tptcplt)]
-dt[ , ahd_cd4u200:=as.logical(ahd_cd4u200)]
+TF_byVars = names(dt)[!(names(dt) %in% logicals)] # list of not logicals
+dt = dt[ , lapply(.SD, as.logical), by = TF_byVars]
 
-dt[ , tbsympscrn:=as.logical(tbsympscrn)]
-dt[ , tptstart:=as.logical(tptalready)]
-dt[ , sstest:=as.logical(sstest)]
-dt[ , gxtest:=as.logical(gxtest)]
-dt[ , tbtxstart:=as.logical(tbtxstart)]
-
-dt[ , everart:=as.logical(everart)]
-dt[ , art6m:=as.logical(art6m)]
-dt[ , hvl6m:=as.logical(hvl6m)]
+# ------------------------
+# check against cd4 for new patients 
+# recode as yes if a new patient received cd4 (stored as a distinct variable)
+dt[is.na(cd4done_after_ahdelig) & ahd_newcd4==T, cd4done_after_ahdelig:=T]
 
 # -------------------------------------
 # DATA QUALITY CHECKS
@@ -376,6 +368,32 @@ if (append==T) {
   #  SAVE THE FINAL, PREPPED DATA SET
   saveRDS(full_data, paste0(prepDir, 'full_data.RDS'))
   write.csv(full_data, paste0(prepDir, 'full_data.csv')) }
+
+# -------------------------------------
+
+# -------------------------------------
+# format the names of the variables for Tableau
+
+tab_full = setnames(full_data, c("pid", "period", "dob", "age", "age_cat", "under5",  "sex",     
+ "siteid", "dhisid", "dhisname", "site",  "district", "region",
+     "ahd_dt", "ahd_elig", "knwstat", "hivtest","dtpos", "hivresult",
+         "cd4done_after_ahdelig", "cd4_after_ahdelig_dt","cd4_after_ahdelig_result", 
+               "whostage1_done", "whostage1st_dt", "whostage1st",             
+                   "tbsympscrn","tptstart", "tptalready", "tptstart_dt", "tptalready_dt",           
+                      "tptcplt","tptcplt_dt", "tptcplt_impute", "sstest", "sstest_dt",               
+                         "sspos","gxtest", "gxtest_dt","gxpos", "everart",                 
+                             "firstart_dt","art6m", "hvl6m", "hvl6m_dt",                
+                                "hvl6mcat", "hvl6mresult",  "tbtxstart", "tbtxalready", 
+                                   "tbtxstart_dt", "tbtxalready_dt", 
+  "tbtxcplt","tbtxcplt_dt", "firstvis", "whostage_fvis",  
+        "transferinid", "cd4_fvis_dt","cd4_fvis", "ahd_u5", "ahd_u5_dt",  
+           "ahd_newcd4","ahd_new_cd4_dt", "ahd_new_cd4result",  "ahd_newwho",
+               "ahd_new_who_dt","ahd_new_whostage",        
+                   "ahd_oclin","ahd_oclin_who_dt", "ahd_oclin_whostage", 
+                        "ahd_tb", "ahd_tb_dt",  "ahd_incwho", "ahd_incwho_dt", "ahd_whostage_incwho", 
+                             "ahd_hvl", "ahd_hvl_dt", "ahd_hvlresult","ahd_hvlcat", "ahd_cd4u200",
+                                "ahd_cd4u200_dt","ahd_cd4result"))
+
 
 # -------------------------------------
 
