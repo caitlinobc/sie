@@ -40,7 +40,7 @@ outDir = paste0(dir, 'outputs/')
 # select baseline or endline for processing raw data 
 # determine if you want to append the data sets together
 
-period = 'endline'
+period = 'baseline'
 
 # append the data sets? T/F
 append = TRUE
@@ -198,7 +198,7 @@ dt = dt[ , lapply(.SD, as.Date), by = date_byVars]
 # convert logicals to logicals from 0/1
 logicals = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig',
       'whostage1_done', 'tbsympscrn', 'tptstart', 'tptalready', 'tptcplt',
-      'ahd_cd4u200', 'sstest', 'gxtest', 'tbtxstart', 
+      'ahd_cd4u200', 'sstest', 'sspos', 'gxtest', 'tbtxstart', 
       'everart', 'art6m', 'hvl6m', 'ahd_newcd4', 'ahd_newwho')
 
 TF_byVars = names(dt)[!(names(dt) %in% logicals)] # list of not logicals

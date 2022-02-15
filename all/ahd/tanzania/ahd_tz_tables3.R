@@ -337,10 +337,8 @@ write.csv(tb_all, paste0(outDir, 'screened_ns_for_tb_sex_age.csv'))
 # ------------------------
 
 # ----------------------------------------------
-# OUTCOME TABLES: IPT
+# OUTCOME TABLES: TPT
 # ----------------------------------------------
-"tbsympscrn"               "tptstart"                 "tptalready"               "tptstart_dt"              "tptalready_dt"           
-"tptcplt"                  "tptcplt_dt"               "tptcplt_impute"         
 
 # ------------------------
 # examine the tb preventive therapy variables
@@ -366,7 +364,7 @@ tp5[ , variable:='Already on TB preventive therapy']
 tp = rbind(tp, tp5)
 
 # create a full data set and output
-tp = dcast(tp, variable~sex+period)
+tp = dcast(tp, variable~period+sex)
 
 # export the table
 write.csv(tp, paste0(outDir, 'on_tpt_sex.csv'))
@@ -389,11 +387,12 @@ write.csv(no_tp, paste0(outDir, 'no_tpt_sex.csv'))
 # ------------------------
 # time on tpt
 
-dt[(tptstart==T | tptalready==T), c("tbsympscrn",  "tptstart",
-          "tptalready", "tptstart_dt",  "tptalready_dt", 
-             "tptcplt", "tptcplt_dt", "tptcplt_impute")]
+dt[(tptstart==T | tptalready==T), .(tbsympscrn,  tptstart,
+          tptalready, tptstart_dt,  tptalready_dt, 
+             tptcplt, tptcplt_dt, tptcplt_impute), 
+   by = .(pid, period, dob, age, age_cat, sex)]
 
-
+tpt_duration 
 
 
 
@@ -445,4 +444,80 @@ write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
 
 # ------------------------
 
+# ----------------------------------------------
+# OUTCOME TABLES: TB TESTING
+# ----------------------------------------------
 
+# ------------------------
+# create a table of genexpert testing by sex, age 
+# no missing data for genexpert testing; no results data in emr
+
+# there are almost no values for 
+dt[, sum(gxtest)]
+
+gx1 = dt[ ,.(value = sum(gxtest)), by = .(age_cat, sex, period)]
+gx2 = dt[ ,.(value = sum(gxtest)), by = .(age_cat, period)]
+gx2[ , sex:='Total']
+gx = rbind(gx1, gx2)
+gx = dcast(gx, age_cat~period+sex)
+
+# export the table
+write.csv(gx, paste0(outDir, 'genexpert_tested_age_sex.csv'))
+# ------------------------
+
+
+# ------------------------
+# create a table of sputum smear microscopy testing and positive ss test by sex
+ss1 = dt[ ,.(value = sum(sstest)), by = .(sex, period)]
+ss2 = dt[ ,.(value = sum(sstest)), by = .(period)]
+ss2[ , sex:='Total']
+ss = rbind(ss1, ss2)
+ss[ , variable:='Tested']
+
+ss3 = dt[sstest==T,.(value = sum(sspos)), by = .(sex, period)]
+ss4 = dt[sstest==T,.(value = sum(sspos)), by = .(period)]
+ss4[ , sex:='Total']
+ss5 = rbind(ss3, ss4)
+ss5[ , variable:='Positive']
+ss = rbind(ss, ss5)
+
+# create a full data set and output
+ss = dcast(ss, sex~period+variable)
+
+# add the percentage and reorder
+ss[ , b_PP:=round(100*(b_Positive/b_Tested), 1)]
+ss[ , e_PP:=round(100*(e_Positive/e_Tested), 1)]
+
+ss = ss[ ,.(b_Positive, b_Tested, b_PP, e_Positive, e_Tested, e_PP), by = sex]
+
+# export the table
+write.csv(ss, paste0(outDir, 'ss_tested_sex.csv'))
+# ------------------------
+
+# ------------------------
+# create a table of sputum smear microscopy testing and positive ss test by age
+ssa1 = dt[ ,.(value = sum(sstest)), by = .(age_cat, period)]
+ssa2 = dt[ ,.(value = sum(sstest)), by = .(period)]
+ssa2[ , age_cat:='Total']
+ssa = rbind(ssa1, ssa2)
+ssa[ , variable:='Tested']
+
+ssa3 = dt[sstest==T,.(value = sum(sspos)), by = .(age_cat, period)]
+ssa4 = dt[sstest==T,.(value = sum(sspos)), by = .(period)]
+ssa4[ , age_cat:='Total']
+ssa5 = rbind(ssa3, ssa4)
+ssa5[ , variable:='Positive']
+ssa = rbind(ssa, ssa5)
+
+# create a full data set and output
+ssa = dcast(ssa, age_cat~period+variable)
+
+# add the percentage and reorder
+ssa[ , b_PP:=round(100*(b_Positive/b_Tested), 1)]
+ssa[ , e_PP:=round(100*(e_Positive/e_Tested), 1)]
+
+ssa = ssa[ ,.(b_Positive, b_Tested, b_PP, e_Positive, e_Tested, e_PP), by = age_cat]
+
+# export the table
+write.csv(ssa, paste0(outDir, 'ss_tested_age.csv'))
+# ------------------------
