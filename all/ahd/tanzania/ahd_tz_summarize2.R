@@ -1,7 +1,46 @@
+# ----------------------------------------------
+# Caitlin O'Brien-Carelli
+#
+# 2/14/2021
+# Tanzania Baseline Cohort Data
+# Summarize the data set for the technical report outline
+# Sources the data prepped in ahd_tz_prep1.R
+# ----------------------------------------------
+
+# ------------------------
+# load packages
+
+rm(list=ls()) # clear the workspace
+library(readxl)
+library(data.table)
+library(lubridate)
+library(plyr)
+library(tidyr)
+library(zoo)
+library(stringr)
+library(ggplot2)
+# ------------------------
+
+# ------------------------
+# files and directories
+
+# set the working directory to the ahd data sets
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/tanzania/'
+setwd(dir)
+
+# set the output directory for prepped data 
+prepDir = paste0(dir, 'prepped/')
+
+# set the output directory for tables
+outDir = paste0(dir, 'outputs/tables/')
+
+# ------------------------
+# import the data
+dt = readRDS(paste0(prepDir, 'full_data.RDS'))
+# ------------------------
 
 # -------------------------------------
-# SUMMARIZE DATA 
-
+# DEMOGRAPHICS AND STU
 # -------------------------------------
 # summarize the eligibility data 
 
@@ -10,20 +49,28 @@
 nrow(dt)
 dt[,length(unique(pid))]
 
+# use tables to determine sex ratios for text
 # -------------
 # summarize age
-dt[, mean(age, na.rm=TRUE)]
-dt[, median(age, na.rm=TRUE)]
-dt[, range(age, na.rm=TRUE)]
+dt[, mean(age, na.rm=TRUE), by = period]
+dt[, median(age, na.rm=TRUE), by = period]
+dt[, range(age, na.rm=TRUE), by = period]
 
-# how many patients are <1?
-dt[age==0, .(dob, ahd_dt)]
+# summarize age by sex
+dt[period=='b', mean(age, na.rm=TRUE), by = sex]
+dt[period=='e', mean(age, na.rm=TRUE), by = sex]
+
+# count of patients under 5 by period
+dt[under5==TRUE, length(unique(pid)), by = period]
 
 # summarize the patients under 5
-dt[under5==TRUE, length(unique(pid))]
 dt[under5==TRUE, mean(age, na.rm=TRUE)]
 dt[under5==TRUE, median(age, na.rm=TRUE)]
 dt[under5==TRUE, range(age, na.rm=TRUE)]
+
+
+# how many patients are <1?
+dt[age==0, .(dob, ahd_dt)]
 
 # summarize hiv status
 dt[knwstat==F]

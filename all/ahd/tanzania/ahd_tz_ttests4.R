@@ -1,26 +1,94 @@
-# t tests
-# 
-# exp = dt[ ,.(pid, whostage1_done, cd4done_after_ahdelig, tbsympscrn)]
-# exp[is.na(cd4done_after_ahdelig), cd4done_after_ahdelig:=FALSE]
-# exp[ , country:='TZ']
-# exp[, period:=period]
-# 
-# saveRDS(exp, paste0(dir, period, '_ttest.RDS'))
+# ----------------------------------------------
+# Caitlin O'Brien-Carelli
+#
+# 2/14/2021
+# Tanzania Baseline Cohort Data
+# Run a series of t-tests ok key outcome variables
+# Sources the data prepped in ahd_tz_prep1.R
+# ----------------------------------------------
 
-dt1 = readRDS(paste0(dir, 'baseline_ttest.RDS'))
-dt2 = readRDS(paste0(dir, 'endline_ttest.RDS'))
+# ------------------------
+# load packages
 
-dt = rbind(dt1, dt2)
-dt[is.na(whostage1_done), whostage1_done:=FALSE]
+rm(list=ls()) # clear the workspace
+library(readxl)
+library(data.table)
+library(lubridate)
+library(plyr)
+library(tidyr)
+library(zoo)
+library(stringr)
+library(ggplot2)
+# ------------------------
+
+# ------------------------
+# files and directories
+
+# set the working directory to the ahd data sets
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/tanzania/'
+setwd(dir)
+
+# set the output directory for prepped data 
+prepDir = paste0(dir, 'prepped/')
+
+# set the output directory for tables
+outDir = paste0(dir, 'outputs/tables/')
+
+# ------------------------
+# import the data
+dt = readRDS(paste0(prepDir, 'full_data.RDS'))
+# ------------------------
+
+# ----------------------------------------------
+# T-TESTS ON BINARY OUTCOMES: TANZANIA
+# ----------------------------------------------
+
+# ------------------------
+# was who staging completed?
+who = dt[, whostage1_done, by = period]
+who[is.na(whostage1_done), whostage1_done:=FALSE]
+t.test(who[period=='b']$whostage1_done, who[period=='e']$whostage1_done, var.eqal = FALSE)
+# ------------------------
+
+# ------------------------
+# was cd4 testing completed on or after the ahd diagnosis?
+cd4 = dt[, .(cd4done_after_ahdelig), by = period]
+cd4[is.na(cd4done_after_ahdelig), cd4done_after_ahdelig:=FALSE]
+t.test(cd4[period=='b']$cd4done_after_ahdelig, cd4[period=='e']$cd4done_after_ahdelig)
+# ------------------------
+
+# ------------------------
+# was the patient screened for signs and symptoms of tb?
+tbs = dt[, .(tbsympscrn), by = period]
+t.test(tbs[period=='b']$tbsympscrn, tbs[period=='e']$tbsympscrn)
+# ------------------------
+
+# ------------------------
+# was the patient started on tb preventive therapy?
+tpt = dt[, .(tptstart, tptalready), by = period]
+tpt[tptstart==T | tptalready==T, tpt_ever:=TRUE]
+tpt[is.na(tpt_ever), tpt_ever:=FALSE]
+t.test(tpt[period=='b']$tpt_ever, tpt[period=='e']$tpt_ever)
+# ------------------------
+
+# ------------------------
+# did the patient complete a regimen of tb preventive therapy?
+tptc = dt[, .(tptcplt), by = period]
+t.test(tptc[period=='b']$tptcplt, tptc[period=='e']$tptcplt)
+# ------------------------
+
+
+
+logicals = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig',
+             'whostage1_done', 'tbsympscrn', 'tptstart', 'tptalready', 'tptcplt',
+             'ahd_cd4u200', 'sstest', 'sspos', 'gxtest', 'tbtxstart', 
+             'everart', 'art6m', 'hvl6m', 'ahd_newcd4', 'ahd_newwho')
+
 
 t.test(dt[period=='baseline']$whostage1_done, dt[period=='endline']$whostage1_done)
 t.test(dt[period=='baseline']$cd4done_after_ahdelig, dt[period=='endline']$cd4done_after_ahdelig)
 t.test(dt[period=='baseline']$tbsympscrn, dt[period=='endline']$tbsympscrn)
 
-
-# test data
-x = seq(1:20)
-y = seq(40, 60)
 
 #--------------------------
 # MALAWI
