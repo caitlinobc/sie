@@ -19,10 +19,13 @@ library(ggplot2)
 # read in the files
 
 # set the working directory
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/malawi/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/malawi/raw/'
+
+# set the directory for the prepped data
+prepDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/malawi/prepped/'
 
 # set the output directory
-outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/outputs/malawi/'
+outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/malawi/outputs/'
 
 # read in the master data file
 # note missings are coded as "n/a"
@@ -130,6 +133,13 @@ setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1
 #-----------------------------------        
 
 #---------------------
+# format the period variable and label
+dt[ , period:=as.character(period)]
+dt[period=='1', period:='b']
+dt[period=='2', period:='e']
+#---------------------
+
+#---------------------
 # convert dates to date type variables
 
 # all date names include dt except dob and firstvis
@@ -195,7 +205,7 @@ dt[siteid==4, site:='Malamulo Rural Hospital']
 
 dt[siteid==5, site:='Mpemba Health Centre']
 dt[siteid==6, site:='Mwanza District Hospital']
-dt[siteid==7, site:='St. Lukes   Mission Hospital']
+dt[siteid==7, site:='St. Lukes Mission Hospital']
 dt[siteid==8, site:='Thyolo District Hospital']
 dt[siteid==9, site:='Police College Clinic']
 #---------------------
@@ -220,11 +230,26 @@ dt[hivresult==4, hivresult:=NA] # 4 coded as inconclusive, treat as missing here
 dt[hivresult==2, hivresult:=0]
 dt[ , hivresult:=as.logical(hivresult)]
 
+dt[cd4done_after_ahdelig==3, cd4done_after_ahdelig:=NA]
+dt[cd4done_after_ahdelig==2, cd4done_after_ahdelig:=0]
+dt[ , cd4done_after_ahdelig:=as.logical(cd4done_after_ahdelig)]
 
+dt[whostage1_done==3, whostage1_done:=NA]
+dt[whostage1_done==2, whostage1_done:=0]
+dt[ , whostage1_done:=as.logical(whostage1_done)]
 
+# 
+# tbsympscrn
+# 
+# tptstart
+# tptcplt 
+# sstest
+# 
+# dt[, unique(whostage1_done)]
 
-dt[, unique(hivresult)]
-
-
-
+#----------------------------------- 
+#  SAVE THE FINAL, PREPPED DATA SET
+saveRDS(dt, paste0(prepDir, 'full_data.RDS'))
+write.csv(dt, paste0(prepDir, 'full_data.csv'))
+#----------------------------------- 
 
