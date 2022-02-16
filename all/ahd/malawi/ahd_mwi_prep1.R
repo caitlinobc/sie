@@ -1,7 +1,8 @@
 #---------------------
 # Malawi AHD Initial Exploratory Analysis
 # Caitlin O'Brien-Carelli
-# 10/5/21
+# 2/15/21
+# Prep the Malawi data for both cohorts
 
 #---------------------
 # load the packages
@@ -24,316 +25,206 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/malawi/'
 outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Global/AHD/outputs/malawi/'
 
 # read in the master data file
-df = data.table(read.csv(paste0(dir, 'AHD_M&E_Valueslabels.csv')))
+# note missings are coded as "n/a"
+dt = data.table(read.csv(paste0(dir, 'AHD_M&E_Valueslabels.csv'), na.strings = "n/a"))
 
 #-----------------------------------
 
+#-----------------------------------
+# CLEAN THE DATA
+#-----------------------------------
+
 #---------------------
-# set up the data for analysis
+# drop unnecessary variables
+
+# drop variables associated with identifying the data collector
+drop_names = names(dt)[grepl('^X', names(dt))]
+               
+dt[ , c('starttime', 'deviceid', 'capturedate', 'section1.SexFemale',
+        'meta.instanceID', "studyid_calcu", "AHD_Diagnosisdate",
+        "hiv_treatment.artStarddate","hiv_treatment.artStarddate2", # binary for if start date is missing
+        drop_names):=NULL]
+
+#---------------------
+
+#---------------------
+# check for repeat patient ids
 
 # check for repeat patient ids
-df[ , pt_count:=.N, by = participant_number]
-df[pt_count==2][order(participant_number)]
-
 # there are 8 repeat ids - none have the same DOB
-# do not appear to be duplicate entries
-# create alternate IDs with no duplicates
-df[pt_count==2, rank:=seq(1:2), by = participant_number]
-df[pt_count==2 & rank==2, 
-   alt_participant_number:=paste0(participant_number, 'b')]
-df[is.na(alt_participant_number),
-   alt_participant_number:=as.character(participant_number)]
-df[ ,c('pt_count', 'rank'):=NULL]
+# these are unlikely to be duplicate entries
+dt[ , pt_count:=.N, by = participant_number]
+dt[pt_count==2][order(participant_number)]
 
+
+# create alternate IDs with no duplicates by adding a 'b' to the 2nd entry
+dt[pt_count==2, rank:=seq(1:2), by = participant_number]
+dt[ , participant_number:=as.character(participant_number)]
+dt[pt_count==2 & rank==2, participant_number:=paste0(participant_number, 'b')]
+dt[ ,c('pt_count', 'rank'):=NULL]
+#---------------------
 #-----------------------------------
-# EXPLORATORY ANALYSIS
-#---------------------
+# RENAME THE VARIABLES 
+#-----------------------------------
 
 #---------------------
-# initial analysis of participants
-
-# subset to just participant ids and study eligibility
-dt = cbind(df[ , 3:24], alt_id = df$alt_participant_number)
-
-# rename the variables for ease of analysis
-setnames(dt, c('site_id', 'capture_date', 'pre_post',
-  'id', 'studyid', 'p_elig', 
-  'ahd_diag_dt_class', 'ahd_diag_dt', 'dob',
-  'sex', 'fsex', 'pt_hiv_knowledge',
-  'hiv_tested', 'dt_tested', 'hiv_test_result',
-  'cd4_done', 'dt_cd4_done', 'cd4_results_returned_dt',
-  'cd4_count', 'who_staged', 'pt_who_stage', 
-  'dt_who_staged', 'alt_id'
-))
-
-# replace ids with dq issue with unique ids
-dt[ , id:=alt_id]
-dt[ ,alt_id:=NULL]
+# change the names to match the names in the tanzania data 
+setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1.Sex", "StudySite",           
+     "AHD_Diagnosisdate1" , "peligibility", "section1.Patient_HIVknowledge",     "section1.HIV_Tested",
+      "section1.Date_tested", "section1.hivtestresult",   
+     
+     "section2.wascd4_done", "section2.wascd4_donedate", 
+     "section2.wascd4_resultsreturneddate", "section2.CD4_counttestresult", 
+     "section2.WHO_staged",  "section2.patientdatestaged","section2.patientWHOStage",
+     
+     "TB_screening.screenedforTB", "TB_screening.datescreenedforTB", "TB_screening.patiernttb_Symptomsscreenresult",  
+     "TB_screening.waspatient_startedonTB", "TB_screening.datepatient_startedonTB",        
+     "TB_screening.didpatientcompleteTBtherapy",  "TB_screening.date_tbtherapycompleted",
+     "TB_screening.testedfo_TBvaiSputumSmear", "TB_screening.date_sputumCollected",     
+     "TB_screening.date_sputumtestresultreturned", "TB_screening.sputSmeartestresult", 
+     "TB_screening.wasGenXparttested",  "TB_screening.GenXparttesteddatecollected",         
+     "TB_screening.Gxtest_resultsreturndate", "TB_screening.GXtest_testresult",
+     "TB_screening.TestedTBViaLAM", "TB_screening.TBLAMcollectdate", 
+     "TB_screening.LAMtestresults_ReturnDate", "TB_screening.LAMtestresults",  
+     
+     "tb_treatment.Start_TBTreatment", "tb_treatment.DateStart_TBTreatment",               
+     "tb_treatment.complete_TBTreatment", "tb_treatment.dateTBtreat_Completed",         
+     
+     "Crypto_Screening.screenedfor_Crypto", "Crypto_Screening.CrAg_Sampletest_date",            
+     "Crypto_Screening.CrAg_Sampleresult_date", "Crypto_Screening.CrAg_Sampletest_result", "Crypto_Screening.referred_LumberPuncture",         
+     "Crypto_Screening.date_Lumberreferred","Crypto_Screening.LumberPucturedone",  "Crypto_Screening.DateLumberPucturedone",           
+     "Crypto_Screening.CSF_CrAgperformed", "Crypto_Screening.Date_CSF_CrAgperformed", "Crypto_Screening.Date_CSFCrAgresultsreturned",     
+     "Crypto_Screening.CSF_testresults", "crypto_treatment.crypo_regimen",  "crypto_treatment.Date_startedon_crypo_regimen",    
+     "crypto_treatment.complete_cryptoindcuti2weeks", "crypto_treatment.datecomplete_cryptoindcuti2weeks",
+     
+     "hiv_treatment.startedonART", "hiv_treatment.art_startdate",
+     "hiv_treatment.restartedonART", "hiv_treatment.art_startdate2", "hiv_treatment.on6monthsART",                       
+     "hiv_treatment.was_VLtestPerformedlast6", "hiv_treatment.Vltestdate", "hiv_treatment.patientVLresult"), 
+                       
+    # new names for the variables  
+    c("pid", "period", "dob", "sex", "siteid",  
+          "ahd_dt", "ahd_elig", "knwstat", "hivtest", "dtpos", "hivresult",
+       "cd4done_after_ahdelig", "cd4_after_ahdelig_dt",
+       "cd4_afterahdelig_res_ret_dt", "cd4_after_ahdelig_result", 
+       "whostage1_done", "whostage1st_dt", "whostage1st",
+       "tbsympscrn", "tbsympscrn_dt", "tbsympscrn_result", 
+       "tptstart",  "tptstart_dt", "tptcplt","tptcplt_dt",
+       "sstest", "sstest_dt", "ssreturn_dt", "ssresult",
+       "gxtest", "gxtest_dt","gxreturn_dt", "gxresult", 
+       "lamtest", "lamtest_dt", "lamreturn_dt", "lamresult",
+       "tbtx_start", "tbtx_start_dt", "tb_tx_cplt", "tb_tx_cplt_dt",
+       "screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
+       "referred_lumbarpuncture", "lumbarreferred_dt", "lumbardone", "lumbar_dt",           
+        "csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
+        "csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
+        "complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt",
+        "everart", "firstart_dt", "restarted_art", "art_restart_dt", "art6m",
+        "ahd_vl", "ahd_vl_dt", "ahd_vl_result"
+      
+      ))  
+                
+#---------------------
+                                                                                                          
+#-----------------------------------
+# FORMAT THE DATA FOR ANALYSIS
+#-----------------------------------        
 
 #---------------------
-# prepare the variables for analysis
-
 # convert dates to date type variables
-dt[ , capture_date:=as.Date(capture_date, '%m/%d/%Y')]
-dt[ , ahd_diag_dt:=as.Date(ahd_diag_dt, '%m/%d/%Y')]
-dt[ , dob:=as.Date(dob, '%m/%d/%Y')]
-dt[ , dt_tested:=as.Date(dt_tested, '%m/%d/%Y')]
-dt[ , dt_cd4_done:=as.Date(dt_cd4_done, '%m/%d/%Y')]
-dt[ , cd4_results_returned_dt:=as.Date(cd4_results_returned_dt, '%m/%d/%Y')]
-dt[ , dt_who_staged:=as.Date(dt_who_staged, '%m/%d/%Y')]
 
-# calculate age
-dt[ , age:=as.numeric(floor((ahd_diag_dt - dob)/365))]
-dt[age < 0, age:=0] # one mistaken dob (before ahd_elig)
-# when ahd eligibility date is missing, sub in who staging date
-dt[is.na(age), age:=as.numeric(floor((dt_who_staged - dob)/365))]
+# all date names include dt except dob and firstvis
+dates = c(names(dt)[ grepl("dt", names(dt))], 'dob')
 
-# factor the variables with associated labels
-dt$pre_post = factor(dt$pre_post, c(1, 2), c('Baseline', 'Endline'))
-dt$sex = factor(dt$sex, c(1, 2), c('Male', 'Female'))
-
-# label the site names
-dt[ , site:=unlist(lapply(str_split(studyid, '-'), '[', 1))]
+# convert the date variables to date type variables
+date_byVars = names(dt)[!(names(dt) %in% dates)] # list of not dates
+dt = dt[ , lapply(.SD, as.Date, '%m/%d/%Y'), by = date_byVars]
+#---------------------
 
 #---------------------
-# create an age category variable
-dt[age < 1 , age_cat:='<1']
-dt[0 < age & age < 5 , age_cat:='1-4']
-dt[4 < age & age < 10 , age_cat:='5-9']
-dt[9 < age & age < 15 , age_cat:='10-14']
-dt[14 < age & age < 20 , age_cat:='15-19']
-dt[19 < age & age < 25 , age_cat:='20-24']
+# calculate age
+dt[ , age:=as.numeric(floor((ahd_dt - dob)/365))]
+dt[age < 0, age:=0] # one mistaken dob (before ahd_elig)
 
-dt[24 < age & age < 30 , age_cat:='25-29']
-dt[29 < age & age < 35 , age_cat:='30-34']
-dt[34 < age & age < 40 , age_cat:='35-39']
-dt[39 < age & age < 45 , age_cat:='40-44']
-dt[44 < age & age < 50 , age_cat:='45-49']
+# when ahd eligibility date is missing, sub in who staging date
+# there are only three missing eligibility dates
+dt[is.na(age), age:=as.numeric(floor((whostage1st_dt - dob)/365))]
+
+# add a binary for under 5
+dt[age < 5, under5:=TRUE]
+dt[5 <= age, under5:=FALSE]
+#---------------------
+
+#---------------------
+# add a five year age category
+
+dt[age < 5, age_cat:='<5']
+dt[4 < age & age <=9, age_cat:='5-9']
+dt[9 < age & age<=14, age_cat:='10-14']
+dt[14 < age & age<=19, age_cat:='15-19']
+dt[19 < age & age<=24, age_cat:='20-24']
+
+dt[24 < age & age<=29, age_cat:='25-29']
+dt[29 < age & age<=34, age_cat:='30-34']
+dt[34 < age & age<=39, age_cat:='35-39']
+dt[39 < age & age<=44, age_cat:='40-44']
+dt[44 < age & age<=49, age_cat:='45-49']
+
 dt[49 < age, age_cat:='50+']
 
-dt$age_cat = factor(dt$age_cat, c('<1', '1-4', '5-9', '10-14', '15-19',
-                     '20-24', '25-29', '30-34',
-                     '35-39', '40-44', '45-49', '50+'))
+# factor the age category to sort correctly in figures and tables
+dt$age_cat = factor(dt$age_cat, c('<5', '5-9',
+                                  '10-14', '15-19', '20-24', '25-29', '30-34',
+                                  '35-39', '40-44', '45-49', '50+'),
+                    c('<5', '5-9','10-14', '15-19', '20-24', '25-29', '30-34',
+                      '35-39', '40-44', '45-49', '50+'))
 #---------------------
-# some numbers import as characters
-dt[ , cd4_count:=as.numeric(cd4_count)]
 
+#---------------------
+# format the sex variable
+dt[ , sex:=as.character(sex)]
+dt[sex=="1", sex:="Male"]
+dt[sex=="2", sex:="Female"]
+#---------------------
+
+#---------------------
+# label the site names based on the data dictionary
+dt[siteid==1, site:='Bangwe Health Centre']
+dt[siteid==2, site:='Chileka Health Centre']
+dt[siteid==3, site:='Domasi Rural Hospital']
+dt[siteid==4, site:='Malamulo Rural Hospital']
+
+dt[siteid==5, site:='Mpemba Health Centre']
+dt[siteid==6, site:='Mwanza District Hospital']
+dt[siteid==7, site:='St. Lukes   Mission Hospital']
+dt[siteid==8, site:='Thyolo District Hospital']
+dt[siteid==9, site:='Police College Clinic']
+#---------------------
 
 #-----------------------------------
-# descriptive statistics
-#-----------------------------------
-# sex distribution between cohorts 
-dt[, length(unique(id)), by = sex]
-dt[, length(unique(id)), by = pre_post]
-dt[, length(unique(id)), by = .(sex, pre_post)]
-
-# age distribution between cohorts 
-dt[ , median(age), by = pre_post]
-dt[ , mean(age), by = pre_post]
-dt[ , range(age), by = pre_post]
-
-# count of under 5s
-dt[age < 5, length(unique(id)), by = pre_post]
-
-# age distirbution by sex
-dt[ , mean(age), by = .(sex, pre_post)]
-
-#-----------------------------------
-# cd4 and other services
-
-# 3 is missing
-dt[cd4_done==1, mean(age)]
-dt[cd4_done==2 & pre_post=='Endline', mean(age)]
-dt[cd4_done==1, mean(age), by = sex]
-dt[cd4_done==2 & pre_post=='Endline', mean(age), by = sex]
-
-dt[cd4_done==1, mean(cd4_count)]
-
-#-----------------------------------
-# TABLES
-#-----------------------------------
-# table of cohort distribution by sex, site
-tbl1 = dt[, .(value = length(unique(id))), by = .(site, sex, pre_post)]
-tbl1[ , variable:=paste(pre_post, sex)]
-tbl1 = dcast(tbl1, site~variable)
-
-# oputput the table 
-write.xlsx(tbl1, paste0(outDir, 'site_sex_cohort.xlsx'))
+# CHECK AND FORMAT DATA TYPES 
+#-----------------------------------  
 
 #---------------------
-# table of cohort distribution by sex, who stage 
-tbl2 = dt[, .(value = length(unique(id))), 
-          by = .(pt_who_stage, sex, pre_post)]
-tbl2[ , variable:=paste(pre_post, sex)]
-tbl2 = dcast(tbl2, pt_who_stage~variable)
+# format YN variables as logicals 
+# format the variables in which 3 is coded as missing
+dt[knwstat==3, knwstat:=NA]
+dt[knwstat==2, knwstat:=0]
+dt[ , knwstat:=as.logical(knwstat)]
 
-# oputput the table 
-write.xlsx(tbl2, paste0(outDir, 'stage_sex_cohort.xlsx'))
+dt[hivtest==3, hivtest:=NA]
+dt[hivtest==2, hivtest:=0]
+dt[ , hivtest:=as.logical(hivtest)]
 
-#---------------------
-# table of cohort distribution by cohort, sex age category
-tbl3 = dt[, .(value = length(unique(id))), 
-          by = .(age_cat, sex, pre_post)]
-tbl3[ , variable:=paste(pre_post, sex)]
-tbl3 = dcast(tbl3, age_cat~variable)
-
-# oputput the table 
-write.xlsx(tbl3, paste0(outDir, 'age_sex_cohort.xlsx'))
-
-#---------------------
-# table of cohort distribution by sex, study eligibility
-tbl4 = dt[, .(value = length(unique(id))), 
-          by = .(p_elig, sex, pre_post)]
-tbl4[ , variable:=paste(pre_post, sex)]
-tbl4 = dcast(tbl4, p_elig~variable)
-
-# oputput the table 
-write.xlsx(tbl4, paste0(outDir, 'elig_sex_cohort.xlsx'))
+dt[hivresult==3, hivresult:=NA]
+dt[hivresult==4, hivresult:=NA] # 4 coded as inconclusive, treat as missing here
+dt[hivresult==2, hivresult:=0]
+dt[ , hivresult:=as.logical(hivresult)]
 
 
-#---------------------
-# table of cohort distribution by sex, study eligibility
-tbl5 = dt[, .(value = length(unique(id))), 
-          by = .(cd4_done, sex, pre_post)]
-tbl5[ , variable:=paste(pre_post, sex)]
-tbl5 = dcast(tbl5, cd4_done~variable)
-
-# oputput the table 
-write.xlsx(tbl5, paste0(outDir, 'cd4_sex_cohort.xlsx'))
-
-#---------------------
-# table of cohort distribution by sex, study eligibility
-tbl6 = dt[cd4_done==1, .(value = length(unique(id))), 
-          by = .(site, sex, pre_post)]
-tbl6[ , variable:=paste(pre_post, sex)]
-tbl6 = dcast(tbl6, site~variable)
-
-# oputput the table 
-write.xlsx(tbl6, paste0(outDir, 'cd4_site_sex_cohort.xlsx'))
-
-#-----------------------------------
-# VISUALIZATIONS
-#-----------------------------------
-# overall picture of the cohort 
-#---------------------
-
-#---------------------
-# plot of the cohorts by sex
-distr = dt[ ,.(Participants = length(unique(id))), by = .(pre_post)]
-sex_distr = dt[ ,.(Participants = length(unique(id))), by = .(sex, pre_post)]
-
-# total size of cohorts
-p1 = ggplot(distr, aes(x = pre_post, y = Participants, fill = pre_post))+
-  geom_bar(stat = "identity", position = position_dodge())+
-  scale_fill_manual(values = c('#ffc641', '#73afb6'))+
-  geom_text(aes(label = Participants),
-            vjust = -0.5, position = position_dodge(0.8))+
-  theme_bw()+
-  labs(title = 'Total participants by cohort (n = 1,118)',
-       x = 'Cohort')+
-  theme(legend.position = "none")
-
-# sex distribution of cohorts
-p2 = ggplot(sex_distr, aes(x = pre_post, y = Participants, fill = sex))+
-  geom_bar(stat = "identity", position = position_dodge())+
-  scale_fill_manual(values = c('#ffc641', '#c02034'))+
-  geom_text(aes(label = Participants),
-            vjust = -0.5, position = position_dodge(0.8))+
-  theme_bw()+
-  labs(title = 'Sex distribution by cohort', x = 'Cohort',
-       fill = 'Sex')
-
-# sex distribution of cohorts - stacked 
-p3 = ggplot(sex_distr, aes(x = pre_post, y = Participants, fill = sex,
-                      label = Participants))+
-  geom_bar(stat = "identity")+
-  scale_fill_manual(values = c('#ffc641', '#c02034'))+
-  geom_text(position = position_stack(0.8))+
-  theme_bw()+
-  labs(title = 'Sex distribution by cohort - stacked', x = 'Cohort',
-       fill = 'Sex')
-
-#---------------------
-# age distributions (cannot save as a vector, added to PDF)
-hist(dt$age, xlab = 'Age', main = 'Histogram of Age')
-
-hist(dt[pre_post=='Baseline']$age, xlab = 'Age', 
-          main = 'Histogram of Age: Baseline Cohort')
-
-hist(dt[pre_post=='Endline']$age, xlab = 'Age', 
-          main = 'Histogram of Age: Endline Cohort')
-
-#---------------------
-# distributions by site 
-
-fac_distr = dt[ ,.(Participants = length(unique(id))), by = .(sex, pre_post, site)]
-
-# total size of cohorts
-p7 = ggplot(fac_distr, aes(x = site, y = Participants, fill = sex))+
-  geom_bar(stat = "identity")+
-  scale_fill_manual(values = c('#c02034', '#2896d0' ))+
-   facet_wrap(~pre_post)+
-  theme_minimal()+
-  labs(title = 'Total participants site, sex',
-       x = 'Site', fill = 'Sex')
-
- 
-# total size of cohorts
-p8 = ggplot(fac_distr, aes(x = pre_post, y = Participants, fill = sex))+
-   geom_bar(stat = "identity", position = position_dodge())+
-   geom_text(aes(label = Participants),
-             vjust = -0.5, position = position_dodge(0.8))+
-   scale_fill_manual(values = c('#c02034', '#2896d0' ))+
-   facet_wrap(~site)+
-   theme_minimal()+
-   labs(title = 'Total participants by site, sex', x = '', fill = 'Sex')
- 
-#---------------------
- # site based age histograms 
- 
-age_distr = dt[ ,.(Participants = length(unique(id))), by = .(age, pre_post, site)]
-
-# age distribution by site - baseline
-p9 = ggplot(age_distr[pre_post=='Baseline'], aes(x = age, y = Participants, fill = '#c02034'))+
-  geom_bar(stat = "identity", position = position_dodge())+
-  scale_fill_manual(values = c('#c02034'))+
-  facet_wrap(~site)+
-  theme_minimal()+
-  labs(title = 'Age distribution by site: baseline cohort', x = 'Age')+
-  theme(legend.position = "none")
 
 
-# age distribution by site - endline
-p10 = ggplot(age_distr[pre_post=='Endline'], aes(x = age, y = Participants, fill = '#ffc641'))+
-  geom_bar(stat = "identity", position = position_dodge())+
-  scale_fill_manual(values = c('#ffc641'))+
-  facet_wrap(~site)+
-  theme_minimal()+
-  labs(title = 'Age distribution by site: endline cohort', x = 'Age')+
-  theme(legend.position = "none")
+dt[, unique(hivresult)]
 
-#---------------------
-# PRINT THE PLOTS
 
-pdf(paste0(outDir, 'exploratory_plots.pdf'), width = 12, height = 9 )
-p1
-p2
-p3
-
-hist(dt$age, xlab = 'Age', main = 'Histogram of Age')
-
-hist(dt[pre_post=='Baseline']$age, xlab = 'Age', 
-     main = 'Histogram of Age: Baseline Cohort')
-
-hist(dt[pre_post=='Endline']$age, xlab = 'Age', 
-     main = 'Histogram of Age: Endline Cohort')
-
-p7
-p8
-p9
-p10
-dev.off()
-
-#---------------------
 
 

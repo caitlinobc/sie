@@ -374,8 +374,8 @@ if (append==T) {
 # -------------------------------------
 # format the names of the variables for Tableau
 
-tab_full = setnames(full_data, c("pid", "period", "dob", "age", "age_cat", "under5",  "sex",     
- "siteid", "dhisid", "dhisname", "site",  "district", "region",
+tab_full = setnames(full_data, c("Patient ID", "Period", "DOB", "Age", "Age Category", "Under 5",  "Sex",     
+ "Site ID", "DHIS2 ID", "DHIS2 Site", "Site",  "District", "Region",
      "ahd_dt", "ahd_elig", "knwstat", "hivtest","dtpos", "hivresult",
          "cd4done_after_ahdelig", "cd4_after_ahdelig_dt","cd4_after_ahdelig_result", 
                "whostage1_done", "whostage1st_dt", "whostage1st",             
