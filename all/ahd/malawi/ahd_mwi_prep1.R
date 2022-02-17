@@ -47,7 +47,6 @@ dt[ , c('starttime', 'deviceid', 'capturedate', 'section1.SexFemale',
         'meta.instanceID', "studyid_calcu", "AHD_Diagnosisdate",
         "hiv_treatment.artStarddate","hiv_treatment.artStarddate2", # binary for if start date is missing
         drop_names):=NULL]
-
 #---------------------
 
 #---------------------
@@ -94,8 +93,9 @@ setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1
      "tb_treatment.complete_TBTreatment", "tb_treatment.dateTBtreat_Completed",         
      
      "Crypto_Screening.screenedfor_Crypto", "Crypto_Screening.CrAg_Sampletest_date",            
-     "Crypto_Screening.CrAg_Sampleresult_date", "Crypto_Screening.CrAg_Sampletest_result", "Crypto_Screening.referred_LumberPuncture",         
-     "Crypto_Screening.date_Lumberreferred","Crypto_Screening.LumberPucturedone",  "Crypto_Screening.DateLumberPucturedone",           
+     "Crypto_Screening.CrAg_Sampleresult_date", "Crypto_Screening.CrAg_Sampletest_result", 
+     "Crypto_Screening.referred_LumberPuncture","Crypto_Screening.date_Lumberreferred",
+     "Crypto_Screening.LumberPucturedone",  "Crypto_Screening.DateLumberPucturedone",           
      "Crypto_Screening.CSF_CrAgperformed", "Crypto_Screening.Date_CSF_CrAgperformed", "Crypto_Screening.Date_CSFCrAgresultsreturned",     
      "Crypto_Screening.CSF_testresults", "crypto_treatment.crypo_regimen",  "crypto_treatment.Date_startedon_crypo_regimen",    
      "crypto_treatment.complete_cryptoindcuti2weeks", "crypto_treatment.datecomplete_cryptoindcuti2weeks",
@@ -106,7 +106,7 @@ setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1
                        
     # new names for the variables  
     c("pid", "period", "dob", "sex", "siteid",  
-          "ahd_dt", "ahd_elig", "knwstat", "hivtest", "dtpos", "hivresult",
+      "ahd_dt", "ahd_elig", "knwstat", "hivtest", "dtpos", "hivresult",
        "cd4done_after_ahdelig", "cd4_after_ahdelig_dt",
        "cd4_afterahdelig_res_ret_dt", "cd4_after_ahdelig_result", 
        "whostage1_done", "whostage1st_dt", "whostage1st",
@@ -117,7 +117,8 @@ setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1
        "lamtest", "lamtest_dt", "lamreturn_dt", "lamresult",
        "tbtx_start", "tbtx_start_dt", "tb_tx_cplt", "tb_tx_cplt_dt",
        "screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
-       "referred_lumbarpuncture", "lumbarreferred_dt", "lumbardone", "lumbar_dt",           
+      
+       "lumbar_referred", "lumbarreferred_dt", "lumbar_done", "lumbar_done_dt",           
         "csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
         "csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
         "complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt",
@@ -148,6 +149,7 @@ dates = c(names(dt)[ grepl("dt", names(dt))], 'dob')
 # convert the date variables to date type variables
 date_byVars = names(dt)[!(names(dt) %in% dates)] # list of not dates
 dt = dt[ , lapply(.SD, as.Date, '%m/%d/%Y'), by = date_byVars]
+
 #---------------------
 
 #---------------------
@@ -217,35 +219,125 @@ dt[siteid==9, site:='Police College Clinic']
 #---------------------
 # format YN variables as logicals 
 # format the variables in which 3 is coded as missing
+#---------------------
+# variables that are mysteriously coded correctly
+# ssreslt, gxresult, lamresult, crag_result
+# lumbar_done is always missing 
+# crypto_regimen is categorical
+#---------------------
+#---------------------
+# reformat the 3 value as missing
 dt[knwstat==3, knwstat:=NA]
-dt[knwstat==2, knwstat:=0]
-dt[ , knwstat:=as.logical(knwstat)]
-
 dt[hivtest==3, hivtest:=NA]
-dt[hivtest==2, hivtest:=0]
-dt[ , hivtest:=as.logical(hivtest)]
-
 dt[hivresult==3, hivresult:=NA]
-dt[hivresult==4, hivresult:=NA] # 4 coded as inconclusive, treat as missing here
-dt[hivresult==2, hivresult:=0]
-dt[ , hivresult:=as.logical(hivresult)]
-
 dt[cd4done_after_ahdelig==3, cd4done_after_ahdelig:=NA]
-dt[cd4done_after_ahdelig==2, cd4done_after_ahdelig:=0]
-dt[ , cd4done_after_ahdelig:=as.logical(cd4done_after_ahdelig)]
-
 dt[whostage1_done==3, whostage1_done:=NA]
-dt[whostage1_done==2, whostage1_done:=0]
-dt[ , whostage1_done:=as.logical(whostage1_done)]
 
-# 
-# tbsympscrn
-# 
-# tptstart
-# tptcplt 
-# sstest
-# 
-# dt[, unique(whostage1_done)]
+dt[tbsympscrn==3, tbsympscrn:=NA]
+dt[tbsympscrn_result==3, tbsympscrn_result:=NA] # includes 1s, 0s, and 3s
+dt[tptstart==3, tptstart:=NA]
+dt[tptcplt==3, tptcplt:=NA]
+dt[sstest==3, sstest:=NA]
+
+dt[gxtest==3, gxtest:=NA]
+dt[lamtest==3, lamtest:=NA]
+dt[tbtx_start==3, tbtx_start:=NA]
+dt[tb_tx_cplt==3, tb_tx_cplt:=NA]
+dt[screenedfor_crypto==3, screenedfor_crypto:=NA]
+
+dt[lumbar_referred ==3, lumbar_referred :=NA]
+dt[csf_cragperformed ==3, csf_cragperformed:=NA]
+dt[csf_result==3, csf_result:=NA]
+dt[complete_cryptoindcuti2weeks==3, complete_cryptoindcuti2weeks:=NA]
+dt[everart==3, everart:=NA]
+
+dt[restarted_art==3, restarted_art:=NA]
+dt[art6m==3, art6m:=NA]
+dt[ahd_vl==3, ahd_vl:=NA]
+      
+#---------------------
+
+#---------------------
+# reformat the 2 value as 0s
+dt[knwstat==2, knwstat:=0]
+dt[hivtest==2, hivtest:=0]
+dt[hivresult==2, hivresult:=0]
+dt[cd4done_after_ahdelig==2, cd4done_after_ahdelig:=0]
+dt[whostage1_done==2, whostage1_done:=0]
+
+dt[tbsympscrn==2, tbsympscrn:=0]
+dt[tbsympscrn_result==2, tbsympscrn_result:=0] # includes 1s, 0s, and 2s
+dt[tptstart==2, tptstart:=0]
+dt[tptcplt==2, tptcplt:=0]
+dt[sstest==2, sstest:=0]
+
+dt[gxtest==2, gxtest:=0]
+dt[lamtest==2, lamtest:=0]
+dt[tbtx_start==2, tbtx_start:=0]
+dt[tb_tx_cplt==2, tb_tx_cplt:=0]
+dt[screenedfor_crypto==2, screenedfor_crypto:=0]
+
+dt[lumbar_referred==2, lumbar_referred :=0]
+dt[csf_cragperformed==2, csf_cragperformed:=0]
+dt[csf_result==2, csf_result:=0]
+dt[complete_cryptoindcuti2weeks==2, complete_cryptoindcuti2weeks:=0]
+dt[everart==2, everart:=0]
+
+dt[restarted_art==2, restarted_art:=0]
+dt[art6m==2, art6m:=0]
+dt[ahd_vl==2, ahd_vl:=0]
+
+#---------------------
+
+#---------------------
+# 4 coded as inconclusive, treat as missing here
+dt[hivresult==4, hivresult:=NA] 
+#---------------------
+
+#---------------------
+# reformat the 0,1 variables as logicals 
+logi_vars = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig', 'whostage1_done',
+              'tbsympscrn', 'tbsympscrn_result', 'tptstart', 'tptcplt', 'sstest',
+              'gxtest', 'lamtest', 'tbtx_start', 'tb_tx_cplt', 'screenedfor_crypto',
+              'lumbar_referred', 'csf_cragperformed', 'complete_cryptoindcuti2weeks', 'everart',
+              'restarted_art', 'art6m', 'ahd_vl',
+              'ssresult', 'gxresult', 'lamresult', 'crag_result', 'lumbar_done')
+
+# # check that the variables were properly coded
+# test = dt[, .(pid = unique(pid)), by = logi_vars]
+# test = melt(test, id.vars = 'pid')
+# for (v in logi_vars) {
+# print(v)
+# print(table(test[variable==v]$value))}
+
+logi_byVars = names(dt)[!(names(dt) %in% logi_vars)] # list of not dates
+dt = dt[ , lapply(.SD, as.logical), by = logi_byVars]
+#---------------------
+
+#-----------------------------------
+# ARRANGE VARIABLES IN PREFERRED ORDER
+#-----------------------------------
+
+#---------------------
+dt = dt[ ,.(ahd_dt, ahd_elig, knwstat, hivtest, dtpos, hivresult,
+cd4done_after_ahdelig, cd4_after_ahdelig_dt,
+cd4_afterahdelig_res_ret_dt, cd4_after_ahdelig_result, 
+whostage1_done, whostage1st_dt, whostage1st,
+tbsympscrn, tbsympscrn_dt, tbsympscrn_result, 
+tptstart,  tptstart_dt, tptcplt,tptcplt_dt,
+sstest, sstest_dt, ssreturn_dt, ssresult,
+gxtest, gxtest_dt,gxreturn_dt, gxresult, 
+lamtest, lamtest_dt, lamreturn_dt, lamresult,
+tbtx_start, tbtx_start_dt, tb_tx_cplt, tb_tx_cplt_dt,
+screenedfor_crypto, crag_dt, crag_result_dt, crag_result, 
+lumbar_referred, lumbarreferred_dt, lumbar_done, lumbar_done_dt,           
+csf_cragperformed, csf_cragperformed_dt, csfcragresultsreturned_dt,     
+csf_result, crypto_regimen, crypto_regimen_start_dt,    
+complete_cryptoindcuti2weeks, complete_cryptoindcuti2weeks_dt,
+everart, firstart_dt, restarted_art, art_restart_dt, art6m,
+ahd_vl, ahd_vl_dt, ahd_vl_result),
+        by = .(siteid, site, pid, period, sex, dob, age, age_cat, under5)]
+#---------------------
 
 #----------------------------------- 
 #  SAVE THE FINAL, PREPPED DATA SET

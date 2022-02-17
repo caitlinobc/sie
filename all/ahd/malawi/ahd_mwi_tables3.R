@@ -1,10 +1,10 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/14/2021
-# Tanzania Baseline Cohort Data
+# 2/15/2021
+# Malawi tables
 # Create and export tables for analysis
-# Sources the data prepped in ahd_tz_prep1.R
+# Sources the data prepped in ahd_mwi_prep1.R
 # ----------------------------------------------
 
 # ------------------------
@@ -25,7 +25,7 @@ library(ggplot2)
 # files and directories
 
 # set the working directory to the ahd data sets
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/tanzania/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/ahd/malawi/'
 setwd(dir)
 
 # set the output directory for prepped data 
@@ -59,11 +59,11 @@ write.csv(dt_sa, paste0(outDir, 'participants_age_sex.csv'))
 
 # ------------------------
 # participants by site, sex, period
-dt_ss = dt[ ,.(value = length(unique(pid))), by =.(sex, dhisname, period)]
-dt_ss = dcast(dt_ss, dhisname~period+sex)
+dt_ss = dt[ ,.(value = length(unique(pid))), by =.(sex, site, period)]
+dt_ss = dcast(dt_ss, site~period+sex)
 dt_ss[ , b_Total:=(b_Female+b_Male)]
 dt_ss[ , e_Total:=(e_Female+e_Male)]
-dt_ss = dt_ss[ ,.(Site = dhisname,b_Female, b_Male, b_Total, e_Female, e_Male, e_Total)]
+dt_ss = dt_ss[ ,.(site,b_Female, b_Male, b_Total, e_Female, e_Male, e_Total)]
 
 # export the table
 write.csv(dt_ss, paste0(outDir, 'participants_site_sex.csv'))
@@ -93,21 +93,20 @@ write.csv(dt_elig, paste0(outDir, 'eligibilty_sex.csv'))
 # ----------------------------------------------
 # OUTCOME TABLES: HIV TESTING/STATUS
 # ----------------------------------------------
-# notes from gretchen - the know status variable is always false
-# the tested and tested positive variables are always true
-# auto filled so not useful 
-# the date range of the hiv tests is useful
 
-# one patient has a study eligibility date two years before testing positive
-# exclude this date as it is likely wrong or indicates a confirmatory test
-dt[pid=='07-01-0119-000593', dtpos:=NA]
-
+# ------------------------
 # calculate the extent of missingness in the dates of positive hiv tests
-# dt[!is.na(dtpos), length(unique(pid)),by = period]
-# dt[ , range(dtpos, na.rm=T)]
+dt[!is.na(dtpos), length(unique(pid)),by = period]
+dt[!is.na(dtpos), length(unique(pid))]
+dt[ , range(dtpos, na.rm=T)]
 
 # length of time between positive test and study eligibility date 
 dt[ , time2ahd_days:=(ahd_dt-dtpos)]
+
+# 19 people had an ahd diagnosis before the positive test - likely confirmatory
+dt[time2ahd_days <0, time2ahd_days:=NA]
+
+# now calculate in months
 dt[ , time2ahd_mos:=round(((ahd_dt-dtpos)/30), 1)]
 
 # create a table of mean and median length of time to diagnosis - all patients
@@ -134,6 +133,23 @@ mpt = mpt[ ,.(Sex = sex, Mean = b.x, Median = b.y, Mean = e.x, Median = e.y)]
 
 # export the table
 write.csv(mpt, paste0(outDir, 'hiv_diag_dt.csv'))
+# ------------------------
+
+# ------------------------
+# know status - write in
+dt[period=='b', table(knwstat)]
+dt[period=='e', table(knwstat)]
+dt[is.na(knwstat), length(unique(pid)), by = period]
+# ------------------------
+
+# ------------------------
+# tested for HIV - write in
+dt[period=='b', table(hivtest)]
+dt[period=='e', table(hivtest)]
+dt[is.na(hivtest), length(unique(pid)), by = period]
+
+dt[!is.na(hivtest) & is.na(hivresult)]
+# ------------------------
 
 # ------------------------
 # calculate age at diagnosis - use days and divide by 365 for years
@@ -179,27 +195,16 @@ write.csv(dpt, paste0(outDir, 'age_at_hiv_diag_dt.csv'))
 #-------------------
 # check the cd4 data
 #-------------------
-# check if the cd4 counts for new patients are the same as all patients
-cd = dt[ , .(cd4done_after_ahdelig, cd4_after_ahdelig_dt, cd4_after_ahdelig_result,
-             ahd_newcd4, ahd_new_cd4_dt, ahd_new_cd4result)]
-x = cd[ , lapply(.SD, is.na)]
-x [ , check:=(apply(x[, c(1:6)], 1, sum))]
-cd = cbind(cd, test = x$check)
-cd = cd[test!=6]
 
-# there are three patients for which the new result is different than the general result
-cd[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result]
+# cd4done_after_ahdelig           
+# cd4_after_ahdelig_dt           
+# cd4_afterahdelig_res_ret_dt    
+# cd4_after_ahdelig_result
 
-# for these three patients, use the earlier result as baseline cd4 (they are very close, anyway)
-dt[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result,
-   cd4_after_ahdelig_result:=ahd_new_cd4result]
-dt[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result,
-   cd4_after_ahdelig_dt:=ahd_new_cd4_dt]
 #-------------------
 
 #-------------------
 # basic descriptive statistics for cd4
-# there are no false entries and the majority of entries are missing (96%)
 table(dt$cd4done_after_ahdelig)
 dt[!is.na(cd4done_after_ahdelig), length(unique(pid)), by = period]
 dt[is.na(cd4done_after_ahdelig), length(unique(pid))]
@@ -208,9 +213,8 @@ dt[is.na(cd4done_after_ahdelig), length(unique(pid))]/nrow(dt)
 
 #-------------------
 # number receiving cd4 after ahd by sex, period
-cd4_s1 = dt[!is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(sex, period)]
+cd4_s1 = dt[!is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(type = cd4done_after_ahdelig,  sex, period)]
 cd4_s2 = dt[is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(sex, period)]
-cd4_s1[ , type:='CD4 Tested']
 cd4_s2[ , type:='Missing']
 cd4_s = rbind(cd4_s1, cd4_s2)
 cd4_s =  dcast(cd4_s, type~period+sex)
@@ -229,7 +233,20 @@ cd4_m = rbind(cd4_m1, cd4_m2)
 cd4_m =  dcast(cd4_m, sex~period)
 
 # export the table
-write.csv(cd4_m, paste0(outDir, 'cd4_result_sex.csv'))
+write.csv(cd4_m, paste0(outDir, 'cd4_result_sex_mean.csv'))
+#-------------------
+
+#-------------------
+# median cd4 by sex
+cd4_md1 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(median(cd4_after_ahdelig_result), 1)), 
+            by = .(sex, period)]
+cd4_md2 = dt[!is.na(cd4_after_ahdelig_result), .(value = round(median(cd4_after_ahdelig_result), 1),
+                                                sex = 'Total'), by = period]
+cd4_md = rbind(cd4_md1, cd4_md2)
+cd4_md =  dcast(cd4_md, sex~period)
+
+# export the table
+write.csv(cd4_md, paste0(outDir, 'cd4_result_sex_median.csv'))
 #-------------------
 
 #-------------------
@@ -254,11 +271,11 @@ write.csv(cd4_ma, paste0(outDir, 'cd4_result_sex_age.csv'))
 # OUTCOME TABLES: WHO STAGING
 # ----------------------------------------------
 
-# counts of missing data 
-# values for stage completed are eithe 1 or missing
-# dt[is.na(whostage1_done)] # 9 missing entries
-# dt[, table(whostage1_done), by = .(period, sex)]
-# dt[is.na(whostage1_done)][order(period)]
+# check for missing data 
+dt[is.na(whostage1_done)] # 105 missing entries
+dt[!is.na(whostage1_done), length(unique(pid))]
+dt[, table(whostage1_done), by = .(period, sex)]
+dt[is.na(whostage1_done)][order(period)]
 
 # ------------------------
 # who stage by sex, period
@@ -282,9 +299,9 @@ who_a = who_a[!is.na(whostage1st)] # drop patients missing stage
 who_a = dcast(who_a, age_cat~period+whostage1st, value.var = 'pts')
 
 # rename the columns for ease of use
-setnames(who_a, c('Age Category', '1', '2', '3', '4',
-                  '1', '2', '3', '4'))
-
+setnames(who_a, c('Age Category', '1', '3', '4', 
+                  '1', '2', '3', '4')) # no data for criterion 2 in baseline
+ 
 # export the table
 write.csv(who_a, paste0(outDir, 'who_stage_age.csv'))
 # ------------------------
@@ -297,9 +314,11 @@ write.csv(who_a, paste0(outDir, 'who_stage_age.csv'))
 
 # ------------------------
 # screened and not screened for tb by period
-tb_scrn = dt[, .(scrn = sum(tbsympscrn), type = 'Screened'), by = period]
-tb_scrn2 = dt[tbsympscrn==0, .(scrn = length(unique(pid)), type = 'Not screened'), by = period]
+tb_scrn = dt[, .(scrn = sum(tbsympscrn, na.rm=T), type = 'Screened'), by = period]
+tb_scrn2 = dt[tbsympscrn==F, .(scrn = length(unique(pid)), type = 'Not screened'), by = period]
 tb_scrn = rbind(tb_scrn, tb_scrn2)
+tb_scrn3 = dt[is.na(tbsympscrn),.(scrn = length(unique(pid)), type = 'Missing'), by = period]
+tb_scrn = rbind(tb_scrn, tb_scrn3)
 tb_scrn = dcast(tb_scrn, type~period, value.var = 'scrn')
 setnames(tb_scrn, c('Screened for TB', 'Pre-intervention', 'Post-intervention'))
 
@@ -309,7 +328,7 @@ write.csv(tb_scrn, paste0(outDir, 'screened_for_tb.csv'))
 
 # ------------------------
 # screened for tb by sex, age, period
-tb_scrn_as = dt[, .(scrn = sum(tbsympscrn)), by = .(sex, age_cat, period)]
+tb_scrn_as = dt[, .(scrn = sum(tbsympscrn, na.rm=T)), by = .(sex, age_cat, period)]
 tb_scrn_as = dcast(tb_scrn_as, age_cat~period+sex, value.var = 'scrn')
 
 # export the table
@@ -323,9 +342,12 @@ setnames(tb_scrn_as,c('age_cat', 'b_Female_s', 'b_Male_s',
                       'e_Female_s', 'e_Male_s'))
 
 # table of not screened for tb
-tb_ns_as = dt[tbsympscrn==0, .(scrn = length(unique(pid))), by = .(sex, age_cat, period)]
+tb_ns_as = dt[tbsympscrn==FALSE, .(scrn = length(unique(pid))), by = .(sex, age_cat, period)]
 tb_ns_as = dcast(tb_ns_as, age_cat~period+sex, value.var = 'scrn')
 tb_all = merge(tb_scrn_as, tb_ns_as, by = 'age_cat', all = T)
+
+# no men were "not screened" in the baseline in malawi
+tb_all[ , b_Male:=0]
 
 # rearrange variables in order of table - by sex, then screening status
 tb_all = tb_all[ ,.(age_cat, b_Female_s, b_Female, b_Male_s, b_Male,
@@ -335,6 +357,44 @@ tb_all = tb_all[ ,.(age_cat, b_Female_s, b_Female, b_Male_s, b_Male,
 write.csv(tb_all, paste0(outDir, 'screened_ns_for_tb_sex_age.csv'))
 
 # ------------------------
+
+# ------------------------
+# calculate positive result
+
+# number by screened by sex, age, period, include totals
+tb_scrn_tot = dt[, .(scrn = sum(tbsympscrn, na.rm=T)), by = .(age_cat, period)]
+tb_scrn_tot = dcast(tb_scrn_tot, age_cat~period, value.var = 'scrn')
+screened = merge(tb_scrn_as, tb_scrn_tot, id.vars = 'age_cat')
+
+# number positive by sex, age, period, include totals
+tb_pos = dt[, .(scrn = sum(tbsympscrn_result, na.rm=T)), by = .(sex, age_cat, period)]
+tb_pos = dcast(tb_pos, age_cat~period+sex, value.var = 'scrn')
+tb_post = dt[, .(scrn = sum(tbsympscrn_result, na.rm=T)), by = .(age_cat, period)]
+tb_post = dcast(tb_post, age_cat~period, value.var = 'scrn')
+positives = merge(tb_pos, tb_post, id.vars = 'age_cat')
+
+setnames(positives, c('age_cat', 'b_Femalepos', 'b_Male_pos', 'e_Female_pos',
+                      'e_Male_pos', 'b_pos', 'e_pos'))
+
+# merge screened and positive
+tot = merge(screened, positives, id.vars = 'age_cat')
+
+# rearrange the data set
+tot = tot[ ,.(age_cat, b_Female_s, b_Femalepos, b_Male_s, b_Male_pos,
+              b, b_pos, e_Female_s, e_Female_pos, e_Male_s, e_Male_pos,
+              e, e_pos)]
+
+# export the table
+write.csv(tot, paste0(outDir, 'screened_for_tb_tbpos_sex_age.csv'))
+
+
+# ------------------------
+
+
+
+
+
+
 
 # ----------------------------------------------
 # OUTCOME TABLES: TPT
