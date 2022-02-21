@@ -84,7 +84,8 @@ for (v in unique(tt$variable)) {
   
   # run t-tests for samples with unequal variance
   print( t.test(tt[period=='b' & variable==var_name]$value, tt[period=='e' & variable==var_name]$value,
-          var.eqal = FALSE)) }
+          var.eqal = FALSE)) 
+  }
 
 # ------------------------
 
