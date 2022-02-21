@@ -392,131 +392,194 @@ write.csv(tot, paste0(outDir, 'screened_for_tb_tbpos_sex_age.csv'))
 
 
 
-
-
-
-
-# ----------------------------------------------
-# OUTCOME TABLES: TPT
-# ----------------------------------------------
-
-# ------------------------
-# examine the tb preventive therapy variables
-# some patients received tb preventive therapy even if no screening outcome recorded
-dt[ , table(tptstart)]
-dt[ , table(tptalready)]
-dt[tptstart==T & tptalready==T] # no patients were both started and already on
-# ------------------------
-
-# ------------------------
-# create a table of anyone started on or already on TB preventive therapy
-tp1 = dt[ ,.(value = sum(tptstart)), by = .(sex, period)]
-tp2 = dt[ ,.(value = sum(tptstart)), by = .(period)]
-tp2[ , sex:='Total']
-tp = rbind(tp1, tp2)
-tp[ , variable:='Started TB preventive therapy']
-
-tp3 = dt[ ,.(value = sum(tptalready)), by = .(sex, period)]
-tp4 = dt[ ,.(value = sum(tptalready)), by = .(period)]
-tp4[ , sex:='Total']
-tp5 = rbind(tp3, tp4)
-tp5[ , variable:='Already on TB preventive therapy']
-tp = rbind(tp, tp5)
-
-# create a full data set and output
-tp = dcast(tp, variable~period+sex)
-
-# export the table
-write.csv(tp, paste0(outDir, 'on_tpt_sex.csv'))
-# ------------------------
-
-# ------------------------
-# add a table for no tb preventive therapy 
-
-no_tp = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(sex, period)]
-no_tp2 = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(period)]
-no_tp2[ , sex:='Total']
-no_tp = rbind(no_tp, no_tp2)
-no_tp[ , variable:='No TB preventive therapy']
-no_tp = dcast(no_tp, variable~period+sex)
-
-# export the table
-write.csv(no_tp, paste0(outDir, 'no_tpt_sex.csv'))
-# ------------------------
-
-# ------------------------
-# time on tpt
-
-dt[(tptstart==T | tptalready==T), .(tbsympscrn,  tptstart,
-                                    tptalready, tptstart_dt,  tptalready_dt, 
-                                    tptcplt, tptcplt_dt, tptcplt_impute), 
-   by = .(pid, period, dob, age, age_cat, sex)]
-
-tpt_duration 
-
-
-
-# ------------------------
-
-
-# ----------------------------------------------
-# OUTCOME TABLES: ART & VIRAL LOAD
-# ----------------------------------------------
-
-# data quality checks - art and viral load variables
-dt[ ,is.na(everart)]
-dt[everart==F] # if ever on art is false, all subsuequent variables are missing
-
-# ------------------------
-# ever on art by sex, period
-art1 = dt[, .(pts = length(unique(pid))), by = .(sex, period, everart)]
-art2 = dt[, .(pts = length(unique(pid))), by = .(period, everart)]
-art2[ , sex:='Total']
-art = rbind(art1, art2)
-art = dcast(art, sex~period+everart, value.var = 'pts')
-
-# change the order
-art = art[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
-
-# export the table
-write.csv(art, paste0(outDir, 'ever_on_art_sex.csv'))
-# ------------------------
-
-# ------------------------
-# on art at six months by sex, period
-art61 = dt[, .(pts = length(unique(pid))), by = .(sex, period, art6m)]
-art62 = dt[, .(pts = length(unique(pid))), by = .(period, art6m)]
-art62[ , sex:='Total']
-art6 = rbind(art61, art62)
-art6 = dcast(art6, sex~period+art6m, value.var = 'pts')
-art6[ ,c('b_NA', 'e_NA'):=NULL]
-
-# change the order
-art6 = art6[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
-
-# export the table
-write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
-# ------------------------
-
-# ------------------------
-# ever on art compared to on art at six months
-
-
-# ------------------------
+# 
+# 
+# 
+# 
+# # ----------------------------------------------
+# # OUTCOME TABLES: TPT
+# # ----------------------------------------------
+# 
+# # ------------------------
+# # examine the tb preventive therapy variables
+# # some patients received tb preventive therapy even if no screening outcome recorded
+# dt[ , table(tptstart)]
+# dt[ , table(tptalready)]
+# dt[tptstart==T & tptalready==T] # no patients were both started and already on
+# # ------------------------
+# 
+# # ------------------------
+# # create a table of anyone started on or already on TB preventive therapy
+# tp1 = dt[ ,.(value = sum(tptstart)), by = .(sex, period)]
+# tp2 = dt[ ,.(value = sum(tptstart)), by = .(period)]
+# tp2[ , sex:='Total']
+# tp = rbind(tp1, tp2)
+# tp[ , variable:='Started TB preventive therapy']
+# 
+# tp3 = dt[ ,.(value = sum(tptalready)), by = .(sex, period)]
+# tp4 = dt[ ,.(value = sum(tptalready)), by = .(period)]
+# tp4[ , sex:='Total']
+# tp5 = rbind(tp3, tp4)
+# tp5[ , variable:='Already on TB preventive therapy']
+# tp = rbind(tp, tp5)
+# 
+# # create a full data set and output
+# tp = dcast(tp, variable~period+sex)
+# 
+# # export the table
+# write.csv(tp, paste0(outDir, 'on_tpt_sex.csv'))
+# # ------------------------
+# 
+# # ------------------------
+# # add a table for no tb preventive therapy 
+# 
+# no_tp = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(sex, period)]
+# no_tp2 = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(period)]
+# no_tp2[ , sex:='Total']
+# no_tp = rbind(no_tp, no_tp2)
+# no_tp[ , variable:='No TB preventive therapy']
+# no_tp = dcast(no_tp, variable~period+sex)
+# 
+# # export the table
+# write.csv(no_tp, paste0(outDir, 'no_tpt_sex.csv'))
+# # ------------------------
+# 
+# # ------------------------
+# # time on tpt
+# 
+# dt[(tptstart==T | tptalready==T), .(tbsympscrn,  tptstart,
+#                                     tptalready, tptstart_dt,  tptalready_dt, 
+#                                     tptcplt, tptcplt_dt, tptcplt_impute), 
+#    by = .(pid, period, dob, age, age_cat, sex)]
+# 
+# tpt_duration 
+# 
+# 
+# 
+# # ------------------------
+# 
+# 
+# # ----------------------------------------------
+# # OUTCOME TABLES: ART & VIRAL LOAD
+# # ----------------------------------------------
+# 
+# # data quality checks - art and viral load variables
+# dt[ ,is.na(everart)]
+# dt[everart==F] # if ever on art is false, all subsuequent variables are missing
+# 
+# # ------------------------
+# # ever on art by sex, period
+# art1 = dt[, .(pts = length(unique(pid))), by = .(sex, period, everart)]
+# art2 = dt[, .(pts = length(unique(pid))), by = .(period, everart)]
+# art2[ , sex:='Total']
+# art = rbind(art1, art2)
+# art = dcast(art, sex~period+everart, value.var = 'pts')
+# 
+# # change the order
+# art = art[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
+# 
+# # export the table
+# write.csv(art, paste0(outDir, 'ever_on_art_sex.csv'))
+# # ------------------------
+# 
+# # ------------------------
+# # on art at six months by sex, period
+# art61 = dt[, .(pts = length(unique(pid))), by = .(sex, period, art6m)]
+# art62 = dt[, .(pts = length(unique(pid))), by = .(period, art6m)]
+# art62[ , sex:='Total']
+# art6 = rbind(art61, art62)
+# art6 = dcast(art6, sex~period+art6m, value.var = 'pts')
+# art6[ ,c('b_NA', 'e_NA'):=NULL]
+# 
+# # change the order
+# art6 = art6[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
+# 
+# # export the table
+# write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
+# # ------------------------
+# 
+# # ------------------------
+# # ever on art compared to on art at six months
+# 
+# 
+# # ------------------------
 
 # ----------------------------------------------
 # OUTCOME TABLES: TB TESTING
 # ----------------------------------------------
 
 # ------------------------
+# create a table of sputum smear microscopy testing by sex
+ss1 = dt[ ,.(value = sum(sstest, na.rm=T)), by = .(sex, period)]
+ss2 = dt[ ,.(value = sum(sstest, na.rm=T)), by = .(period)]
+ss2[ , sex:='Total']
+ss = rbind(ss1, ss2)
+ss[ , variable:='Tested']
+
+ss3 = dt[sstest==F,.(value = length(unique(pid))), by = .(sex, period)]
+ss4 = dt[sstest==F,.(value = length(unique(pid))), by = .(period)]
+ss4[ , sex:='Total']
+ss5 = rbind(ss3, ss4)
+ss5[ , variable:='NotTested']
+ss = rbind(ss, ss5)
+
+ss6 = dt[is.na(sstest),.(value = length(unique(pid))), by = .(sex, period)]
+ss7 = dt[is.na(sstest),.(value = length(unique(pid))), by = .(period)]
+ss7[ , sex:='Total']
+ss7 = rbind(ss6, ss7)
+ss7[ , variable:='Missing']
+ss = rbind(ss, ss7)
+
+# create a full data set and output
+ss = dcast(ss, sex~period+variable)
+
+# rearrange the columns
+ss = ss[,.(b_Tested, b_NotTested, b_Missing, e_Tested, e_NotTested, e_Missing), by = sex]
+
+# export the table
+write.csv(ss, paste0(outDir, 'ss_tested_sex.csv'))
+# ------------------------
+
+# ------------------------
+# create a table of genexpert testing by sex
+g1 = dt[ ,.(value = sum(gxtest, na.rm=T)), by = .(sex, period)]
+g2 = dt[ ,.(value = sum(gxtest, na.rm=T)), by = .(period)]
+g2[ , sex:='Total']
+gg = rbind(g1, g2)
+gg[ , variable:='Tested']
+
+g3 = dt[gxtest==F,.(value = length(unique(pid))), by = .(sex, period)]
+g4 = dt[gxtest==F,.(value = length(unique(pid))), by = .(period)]
+g4[ , sex:='Total']
+g5 = rbind(g3, g4)
+g5[ , variable:='NotTested']
+gg = rbind(gg, g5)
+
+g6 = dt[is.na(gxtest),.(value = length(unique(pid))), by = .(sex, period)]
+g7 = dt[is.na(gxtest),.(value = length(unique(pid))), by = .(period)]
+g7[ , sex:='Total']
+g7 = rbind(g6, g7)
+g7[ , variable:='Missing']
+gg = rbind(gg, g7)
+
+# create a full data set and output
+gg = dcast(gg, sex~period+variable)
+
+# rearrange the columns
+gg = gg[,.(b_Tested, b_NotTested, b_Missing, e_Tested, e_NotTested, e_Missing), by = sex]
+
+# export the table
+write.csv(gg, paste0(outDir, 'gx_tested_sex.csv'))
+# ------------------------
+
+# ------------------------
 # create a table of genexpert testing by sex, age 
-# no missing data for genexpert testing; no results data in emr
 
-# there are almost no values for 
-dt[, sum(gxtest)]
+# there are almost no values for genexpert testing - only 14 
+dt[, sum(gxtest, na.rm=T)]
 
-gx1 = dt[ ,.(value = sum(gxtest)), by = .(age_cat, sex, period)]
-gx2 = dt[ ,.(value = sum(gxtest)), by = .(age_cat, period)]
+gx1 = dt[ ,.(value = sum(gxtest, na.rm=T)), by = .(age_cat, sex, period)]
+gx2 = dt[ ,.(value = sum(gxtest, na.rm=T)), by = .(age_cat, period)]
 gx2[ , sex:='Total']
 gx = rbind(gx1, gx2)
 gx = dcast(gx, age_cat~period+sex)
@@ -525,60 +588,48 @@ gx = dcast(gx, age_cat~period+sex)
 write.csv(gx, paste0(outDir, 'genexpert_tested_age_sex.csv'))
 # ------------------------
 
-
 # ------------------------
-# create a table of sputum smear microscopy testing and positive ss test by sex
-ss1 = dt[ ,.(value = sum(sstest)), by = .(sex, period)]
-ss2 = dt[ ,.(value = sum(sstest)), by = .(period)]
-ss2[ , sex:='Total']
-ss = rbind(ss1, ss2)
-ss[ , variable:='Tested']
+# create a table of tb lam testing by sex, age 
 
-ss3 = dt[sstest==T,.(value = sum(sspos)), by = .(sex, period)]
-ss4 = dt[sstest==T,.(value = sum(sspos)), by = .(period)]
-ss4[ , sex:='Total']
-ss5 = rbind(ss3, ss4)
-ss5[ , variable:='Positive']
-ss = rbind(ss, ss5)
+# there are almost no values for genexpert testing - only 14 
+dt[, sum(lamtest, na.rm=T)]
 
-# create a full data set and output
-ss = dcast(ss, sex~period+variable)
-
-# add the percentage and reorder
-ss[ , b_PP:=round(100*(b_Positive/b_Tested), 1)]
-ss[ , e_PP:=round(100*(e_Positive/e_Tested), 1)]
-
-ss = ss[ ,.(b_Positive, b_Tested, b_PP, e_Positive, e_Tested, e_PP), by = sex]
+lt1 = dt[ ,.(value = sum(lamtest, na.rm=T)), by = .(age_cat, sex, period)]
+lt2 = dt[ ,.(value = sum(lamtest, na.rm=T)), by = .(age_cat, period)]
+lt2[ , sex:='Total']
+lt = rbind(lt1, lt2)
+lt = dcast(lt, age_cat~period+sex)
 
 # export the table
-write.csv(ss, paste0(outDir, 'ss_tested_sex.csv'))
+write.csv(lt, paste0(outDir, 'lam_tested_age_sex.csv'))
 # ------------------------
 
 # ------------------------
-# create a table of sputum smear microscopy testing and positive ss test by age
-ssa1 = dt[ ,.(value = sum(sstest)), by = .(age_cat, period)]
-ssa2 = dt[ ,.(value = sum(sstest)), by = .(period)]
-ssa2[ , age_cat:='Total']
-ssa = rbind(ssa1, ssa2)
-ssa[ , variable:='Tested']
+# create a table of tb lam tested and results
+# just create a table for endline, baseline has only one test
 
-ssa3 = dt[sstest==T,.(value = sum(sspos)), by = .(age_cat, period)]
-ssa4 = dt[sstest==T,.(value = sum(sspos)), by = .(period)]
-ssa4[ , age_cat:='Total']
-ssa5 = rbind(ssa3, ssa4)
-ssa5[ , variable:='Positive']
-ssa = rbind(ssa, ssa5)
+lt3 = dt[period=='e',.(value = sum(lamresult, na.rm=T)), by = .(age_cat, sex)]
+lt4 = dt[period=='e',.(value = sum(lamresult, na.rm=T)), by = .(age_cat)]
+lt4[ , sex:='Total']
+ltp = rbind(lt3, lt4)
+ltp = dcast(ltp, age_cat~sex)
 
-# create a full data set and output
-ssa = dcast(ssa, age_cat~period+variable)
-
-# add the percentage and reorder
-ssa[ , b_PP:=round(100*(b_Positive/b_Tested), 1)]
-ssa[ , e_PP:=round(100*(e_Positive/e_Tested), 1)]
-
-ssa = ssa[ ,.(b_Positive, b_Tested, b_PP, e_Positive, e_Tested, e_PP), by = age_cat]
+# merge in screened and organize columns
+lts = lt[,.(age_cat, e_Female, e_Male, e_Total)]
+lt_res = merge(ltp, lts, by = 'age_cat')
+lt_res = lt_res[ ,.(age_cat, Female, e_Female, Male, e_Male, Total, e_Total)]
 
 # export the table
-write.csv(ssa, paste0(outDir, 'ss_tested_age.csv'))
+write.csv(lt_res, paste0(outDir, 'lam_tested_result_age_sex.csv'))
+
 # ------------------------
+
+
+
+
+
+
+
+
+
 

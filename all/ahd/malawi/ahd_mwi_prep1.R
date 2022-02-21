@@ -301,7 +301,8 @@ logi_vars = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig', 'whost
               'gxtest', 'lamtest', 'tbtx_start', 'tb_tx_cplt', 'screenedfor_crypto',
               'lumbar_referred', 'csf_cragperformed', 'complete_cryptoindcuti2weeks', 'everart',
               'restarted_art', 'art6m', 'ahd_vl',
-              'ssresult', 'gxresult', 'lamresult', 'crag_result', 'lumbar_done')
+              'ssresult', 'gxresult', 'lamresult', 'crag_result', 'csf_result',
+              'lumbar_done')
 
 # # check that the variables were properly coded
 # test = dt[, .(pid = unique(pid)), by = logi_vars]
@@ -312,6 +313,37 @@ logi_vars = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig', 'whost
 
 logi_byVars = names(dt)[!(names(dt) %in% logi_vars)] # list of not dates
 dt = dt[ , lapply(.SD, as.logical), by = logi_byVars]
+#---------------------
+
+#---------------------
+# the viral load variable was hand entered with some nonsensical results
+
+# one result is an actual sentence
+dt[ahd_vl_result=="=5022 another sample collected on 2 July 2021 results not yet in", 
+   ahd_vl_result:="5022"]
+dt[ahd_vl_result=="#NAME?", ahd_vl_result:=NA]
+dt[ahd_vl_result=="results not yet in", ahd_vl_result:=NA]
+dt[grepl("iss", ahd_vl_result), ahd_vl_result:=NA] # data collector wrote in missing
+dt[grepl("avail", ahd_vl_result), ahd_vl_result:=NA] 
+
+# drop the characters (some text variables)
+# undetectable viral load - recode as 0 but check
+dt[grepl('d', tolower(ahd_vl_result)), ahd_vl_result:=0]
+
+# replace the less than/greater than signs to create a numeric
+dt[ , ahd_vl_result:=gsub('>', '', ahd_vl_result)]
+dt[ , ahd_vl_result:=gsub('<', '', ahd_vl_result)]
+
+# convert viral load to a numeric
+dt[ , ahd_vl_result:=as.numeric(ahd_vl_result)]
+
+# add a binary for suppressed/unsuppressed
+dt[ahd_vl_result < 20, suppressed:=TRUE]
+dt[20 <= ahd_vl_result, suppressed:=FALSE]
+
+# exclude one result over 3 million
+dt[ahd_vl_result==3128976, ahd_vl_result:=NA]
+
 #---------------------
 
 #-----------------------------------
@@ -335,7 +367,7 @@ csf_cragperformed, csf_cragperformed_dt, csfcragresultsreturned_dt,
 csf_result, crypto_regimen, crypto_regimen_start_dt,    
 complete_cryptoindcuti2weeks, complete_cryptoindcuti2weeks_dt,
 everart, firstart_dt, restarted_art, art_restart_dt, art6m,
-ahd_vl, ahd_vl_dt, ahd_vl_result),
+ahd_vl, ahd_vl_dt, ahd_vl_result, suppressed),
         by = .(siteid, site, pid, period, sex, dob, age, age_cat, under5)]
 #---------------------
 
