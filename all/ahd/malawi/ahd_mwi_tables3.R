@@ -648,9 +648,6 @@ dt[is.na(everart) & is.na(restarted_art) & !is.na(art6m)]
 
 dt[everart==F] # if ever on art is false, all subsequent variables are missing
 
-c("everart", "firstart_dt", "restarted_art", "art_restart_dt", "art6m",
-"ahd_vl", "ahd_vl_dt", "ahd_vl_result")
-
 # ------------------------
 # started art by sex, period
 art1 = dt[everart==T, .(pts = length(unique(pid))), by = .(sex, period)]
@@ -792,5 +789,69 @@ write.csv(sp, paste0(outDir, 'vl_suppression_rate_age_sex.csv'))
 # ----------------------------------------------
 # OUTCOME TABLES: MENINGITIS CASCADE
 # ----------------------------------------------
+
+c("screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
+  
+"lumbar_referred", "lumbarreferred_dt", "lumbar_done", "lumbar_done_dt",           
+
+"csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
+"csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
+"complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt")
+
+
+dt[ , table(screenedfor_crypto, period)]
+
+dt[ , table(screenedfor_crypto, period)]
+
+
+# ------------------------
+# screened for crypto by age, sex
+
+cry1 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, sex, period)]
+cry2 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, period)]
+cry2[ , sex:='Total']
+cry = rbind(cry1, cry2)
+cry = dcast(cry, age_cat~period+sex)
+
+# export the table
+write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# crypto screening result by age, sex
+
+cr1 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, sex, period)]
+cr2 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, period)]
+cr2[ , sex:='Total']
+cr = rbind(cr1, cr2)
+cr = dcast(cr, age_cat~period+sex)
+
+# export the table
+write.csv(cr, paste0(outDir, 'crag_result_age_sex.csv'))
+# ------------------------
+
+
+
+# ------------------------
+# screened for crypto by age, sex
+
+cry1 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, sex, period)]
+cry2 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, period)]
+cry2[ , sex:='Total']
+cry = rbind(cry1, cry2)
+cry = dcast(cry, age_cat~period+sex)
+
+# export the table
+write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
+# ------------------------
+
+
+
+
+
+
+
+
+
 
 
