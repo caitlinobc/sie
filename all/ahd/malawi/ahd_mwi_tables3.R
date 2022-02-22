@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/15/2021
+# 2/21/2021
 # Malawi tables
 # Create and export tables for analysis
 # Sources the data prepped in ahd_mwi_prep1.R
@@ -386,123 +386,89 @@ tot = tot[ ,.(age_cat, b_Female_s, b_Femalepos, b_Male_s, b_Male_pos,
 
 # export the table
 write.csv(tot, paste0(outDir, 'screened_for_tb_tbpos_sex_age.csv'))
+# ------------------------
 
+# ----------------------------------------------
+# OUTCOME TABLES: TPT
+# ----------------------------------------------
+
+# ------------------------
+# examine the tb preventive therapy variables
+# some patients received tb preventive therapy even if no screening outcome recorded
+# no patients who were not screened for tb were started on TPT
+dt[ , table(tptstart)]
+dt[ , table(tptcplt)]
+
+dt[tbsympscrn==F, unique(tptstart)]
+dt[is.na(tbsympscrn), unique(tptstart)]
+dt[tbsympscrn_result==F, unique(tptstart)]
+dt[tptstart==T, unique(tbsympscrn_result)]
+# ------------------------
+
+# ------------------------
+# create a table of anyone started on TB preventive therapy
+tp1 = dt[ ,.(value = sum(tptstart, na.rm=T)), by = .(sex, period)]
+tp2 = dt[ ,.(value = sum(tptstart, na.rm=T)), by = .(period)]
+tp2[ , sex:='Total']
+tp = rbind(tp1, tp2)
+tp[ , variable:='Started TB preventive therapy']
+
+tp3 = dt[ ,.(value = sum(tptcplt, na.rm=T)), by = .(sex, period)]
+tp4 = dt[ ,.(value = sum(tptcplt, na.rm=T)), by = .(period)]
+tp4[ , sex:='Total']
+tp5 = rbind(tp3, tp4)
+tp5[ , variable:='Completed TB preventive therapy']
+tp = rbind(tp, tp5)
+
+# create a full data set and output
+tp = dcast(tp, variable~period+sex)
+
+# export the table
+write.csv(tp, paste0(outDir, 'on_completed_tpt_sex.csv'))
+# ------------------------
+
+# ------------------------
+# create a table showing % started on TPT of those screen TB-negative
+tscreen1 = dt[tbsympscrn_result==F, .(value=length(unique(pid))), by = .(sex, period)]
+tscreen2 = dt[tbsympscrn_result==F, .(value=length(unique(pid))), by = .(period)]
+tscreen2[ , sex:='Total']
+tscreen = rbind(tscreen1, tscreen2)
+tscreen[ , variable:='Screened TB-negative']
+tscreen = dcast(tscreen, variable~period+sex)
+
+# bind the table to the tpt data and drop out completed
+tscreen = rbind(tp, tscreen)
+tscreen = tscreen[variable!='Completed TB preventive therapy']
+
+# export the table
+write.csv(tscreen, paste0(outDir, 'on_tpt_screened_neg_sex.csv'))
 
 # ------------------------
 
+# ------------------------
+# started tpt and completed tpt by age, sex, cohort
 
+# create a table of anyone started on TB preventive therapy
+ta1 = dt[ ,.(value = sum(tptstart, na.rm=T)), by = .(age_cat, sex, period)]
+ta2 = dt[ ,.(value = sum(tptstart, na.rm=T)), by = .(age_cat, period)]
+ta2[ , sex:='Total']
+ta = rbind(ta1, ta2)
+ta[ , variable:='Started TPT']
 
-# 
-# 
-# 
-# 
-# # ----------------------------------------------
-# # OUTCOME TABLES: TPT
-# # ----------------------------------------------
-# 
-# # ------------------------
-# # examine the tb preventive therapy variables
-# # some patients received tb preventive therapy even if no screening outcome recorded
-# dt[ , table(tptstart)]
-# dt[ , table(tptalready)]
-# dt[tptstart==T & tptalready==T] # no patients were both started and already on
-# # ------------------------
-# 
-# # ------------------------
-# # create a table of anyone started on or already on TB preventive therapy
-# tp1 = dt[ ,.(value = sum(tptstart)), by = .(sex, period)]
-# tp2 = dt[ ,.(value = sum(tptstart)), by = .(period)]
-# tp2[ , sex:='Total']
-# tp = rbind(tp1, tp2)
-# tp[ , variable:='Started TB preventive therapy']
-# 
-# tp3 = dt[ ,.(value = sum(tptalready)), by = .(sex, period)]
-# tp4 = dt[ ,.(value = sum(tptalready)), by = .(period)]
-# tp4[ , sex:='Total']
-# tp5 = rbind(tp3, tp4)
-# tp5[ , variable:='Already on TB preventive therapy']
-# tp = rbind(tp, tp5)
-# 
-# # create a full data set and output
-# tp = dcast(tp, variable~period+sex)
-# 
-# # export the table
-# write.csv(tp, paste0(outDir, 'on_tpt_sex.csv'))
-# # ------------------------
-# 
-# # ------------------------
-# # add a table for no tb preventive therapy 
-# 
-# no_tp = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(sex, period)]
-# no_tp2 = dt[!(tptstart==T | tptalready==T), .(value = length(unique(pid))), by = .(period)]
-# no_tp2[ , sex:='Total']
-# no_tp = rbind(no_tp, no_tp2)
-# no_tp[ , variable:='No TB preventive therapy']
-# no_tp = dcast(no_tp, variable~period+sex)
-# 
-# # export the table
-# write.csv(no_tp, paste0(outDir, 'no_tpt_sex.csv'))
-# # ------------------------
-# 
-# # ------------------------
-# # time on tpt
-# 
-# dt[(tptstart==T | tptalready==T), .(tbsympscrn,  tptstart,
-#                                     tptalready, tptstart_dt,  tptalready_dt, 
-#                                     tptcplt, tptcplt_dt, tptcplt_impute), 
-#    by = .(pid, period, dob, age, age_cat, sex)]
-# 
-# tpt_duration 
-# 
-# 
-# 
-# # ------------------------
-# 
-# 
-# # ----------------------------------------------
-# # OUTCOME TABLES: ART & VIRAL LOAD
-# # ----------------------------------------------
-# 
-# # data quality checks - art and viral load variables
-# dt[ ,is.na(everart)]
-# dt[everart==F] # if ever on art is false, all subsuequent variables are missing
-# 
-# # ------------------------
-# # ever on art by sex, period
-# art1 = dt[, .(pts = length(unique(pid))), by = .(sex, period, everart)]
-# art2 = dt[, .(pts = length(unique(pid))), by = .(period, everart)]
-# art2[ , sex:='Total']
-# art = rbind(art1, art2)
-# art = dcast(art, sex~period+everart, value.var = 'pts')
-# 
-# # change the order
-# art = art[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
-# 
-# # export the table
-# write.csv(art, paste0(outDir, 'ever_on_art_sex.csv'))
-# # ------------------------
-# 
-# # ------------------------
-# # on art at six months by sex, period
-# art61 = dt[, .(pts = length(unique(pid))), by = .(sex, period, art6m)]
-# art62 = dt[, .(pts = length(unique(pid))), by = .(period, art6m)]
-# art62[ , sex:='Total']
-# art6 = rbind(art61, art62)
-# art6 = dcast(art6, sex~period+art6m, value.var = 'pts')
-# art6[ ,c('b_NA', 'e_NA'):=NULL]
-# 
-# # change the order
-# art6 = art6[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
-# 
-# # export the table
-# write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
-# # ------------------------
-# 
-# # ------------------------
-# # ever on art compared to on art at six months
-# 
-# 
-# # ------------------------
+# create a table of anyone who completed TB preventive therapy
+tc1 = dt[ ,.(value = sum(tptcplt, na.rm=T)), by = .(age_cat, sex, period)]
+tc2 = dt[ ,.(value = sum(tptcplt, na.rm=T)), by = .(age_cat, period)]
+tc2[ , sex:='Total']
+tc = rbind(tc1, tc2)
+tc[ , variable:='Completed TPT']
+
+# bind them together and reshape
+tca = rbind(ta, tc)
+tca = dcast(tca, age_cat~period+sex+variable)
+
+# export the table
+write.csv(tca, paste0(outDir, 'on_completed_tpt_age_sex.csv'))
+# ------------------------
 
 # ----------------------------------------------
 # OUTCOME TABLES: TB TESTING
@@ -624,10 +590,84 @@ write.csv(lt_res, paste0(outDir, 'lam_tested_result_age_sex.csv'))
 
 # ------------------------
 
+# ----------------------------------------------
+# OUTCOME TABLES: TB TREATMENT
+# ----------------------------------------------
+
+# ------------------------
+# check how many of the patients who started TB Tx had a positive TB test
+dt[, table(tbtx_start, period)]
+
+# of the 49 patients who started TB Tx, 37 have a documented positive test
+dt[tbtx_start==T, .(gxresult, ssresult, lamresult)]
+dt[tbtx_start==T & gxresult==T & lamresult==T] # no patients were + for both
+dt[tbtx_start==T,.(sum(lamresult, na.rm=T)+sum(gxresult, na.rm=T))]
+# ------------------------
+
+# ------------------------
+# create a table of started tb treatment by sex, age 
+tx1 = dt[ ,.(value = sum(tbtx_start, na.rm=T)), by = .(age_cat, sex, period)]
+tx2 = dt[ ,.(value = sum(tbtx_start, na.rm=T)), by = .(age_cat, period)]
+tx2[ , sex:='Total']
+tx = rbind(tx1, tx2)
+tx = dcast(tx, age_cat~period+sex)
+
+# export the table
+write.csv(tx, paste0(outDir, 'started_tb_tx_age_sex.csv'))
+# ------------------------
 
 
 
 
+
+
+
+
+
+# # ----------------------------------------------
+# # OUTCOME TABLES: ART & VIRAL LOAD
+# # ----------------------------------------------
+# 
+# # data quality checks - art and viral load variables
+# dt[ ,is.na(everart)]
+# dt[everart==F] # if ever on art is false, all subsuequent variables are missing
+# 
+# # ------------------------
+# # ever on art by sex, period
+# art1 = dt[, .(pts = length(unique(pid))), by = .(sex, period, everart)]
+# art2 = dt[, .(pts = length(unique(pid))), by = .(period, everart)]
+# art2[ , sex:='Total']
+# art = rbind(art1, art2)
+# art = dcast(art, sex~period+everart, value.var = 'pts')
+# 
+# # change the order
+# art = art[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
+# 
+# # export the table
+# write.csv(art, paste0(outDir, 'ever_on_art_sex.csv'))
+# # ------------------------
+# 
+# # ------------------------
+# # on art at six months by sex, period
+# art61 = dt[, .(pts = length(unique(pid))), by = .(sex, period, art6m)]
+# art62 = dt[, .(pts = length(unique(pid))), by = .(period, art6m)]
+# art62[ , sex:='Total']
+# art6 = rbind(art61, art62)
+# art6 = dcast(art6, sex~period+art6m, value.var = 'pts')
+# art6[ ,c('b_NA', 'e_NA'):=NULL]
+# 
+# # change the order
+# art6 = art6[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
+# 
+# # export the table
+# write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
+# # ------------------------
+# 
+# # ------------------------
+# # ever on art compared to on art at six months
+# 
+# 
+# # ------------------------
 
 
 

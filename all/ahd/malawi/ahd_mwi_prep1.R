@@ -292,6 +292,12 @@ dt[ahd_vl==2, ahd_vl:=0]
 #---------------------
 # 4 coded as inconclusive, treat as missing here
 dt[hivresult==4, hivresult:=NA] 
+
+# there is one patient who tested negative for tb on sept. 14
+# they were coded as false for starting tpt with a start date of sept. 14
+# and a completion date of the same day - remove date since it is incorrect
+dt[tptstart==F & tptcplt==T, tptstart:=TRUE]
+dt[tptstart==F & tptcplt==T, tptcplt_dt:=NA]
 #---------------------
 
 #---------------------

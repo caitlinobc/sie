@@ -85,9 +85,23 @@ for (v in unique(tt$variable)) {
   # run t-tests for samples with unequal variance
   print( t.test(tt[period=='b' & variable==var_name]$value, tt[period=='e' & variable==var_name]$value,
           var.eqal = FALSE)) 
-  }
+}
 
 # ------------------------
+
+# ------------------------
+# check that some variables are the same even with a subset denominator
+
+# compare the proportion of patients with symptoms of tb out of those screened
+ts = dt[tbsympscrn==T & !is.na(tbsympscrn_result), .(tbsympscrn_result, period)]
+t.test(ts[period=='b']$tbsympscrn_result, ts[period=='e']$tbsympscrn_result,
+       var.eqal = FALSE)
+
+# compare the proportion of patients who are virally suppressed out of those tested
+sup = dt[ahd_vl==T & !is.na(suppressed), .(suppressed, period)]
+t.test(sup[period=='b']$suppressed, sup[period=='e']$suppressed,
+       var.eqal = FALSE)
+
 
 # ----------------------------------------------
 # T-TESTS ON NUMERICAL OUTCOMES: MALAWI
