@@ -602,6 +602,12 @@ dt[, table(tbtx_start, period)]
 dt[tbtx_start==T, .(gxresult, ssresult, lamresult)]
 dt[tbtx_start==T & gxresult==T & lamresult==T] # no patients were + for both
 dt[tbtx_start==T,.(sum(lamresult, na.rm=T)+sum(gxresult, na.rm=T))]
+
+# did anyone have a positive result but was not on TB Tx?
+# there are 48 positive results in the data set
+dt[(gxresult==T | lamresult==T) & tbtx_start==F  ]
+
+# summary sex table is calculated in excel using sex, age tables
 # ------------------------
 
 # ------------------------
@@ -616,60 +622,175 @@ tx = dcast(tx, age_cat~period+sex)
 write.csv(tx, paste0(outDir, 'started_tb_tx_age_sex.csv'))
 # ------------------------
 
+# ------------------------
+# create a table of completed tb treatment by sex, age 
+tx3 = dt[ ,.(value = sum(tb_tx_cplt, na.rm=T)), by = .(age_cat, sex, period)]
+tx4 = dt[ ,.(value = sum(tb_tx_cplt, na.rm=T)), by = .(age_cat, period)]
+tx4[ , sex:='Total']
+tx5 = rbind(tx3, tx4)
+tx5 = dcast(tx5, age_cat~period+sex)
+
+# export the table
+write.csv(tx5, paste0(outDir, 'completed_tb_tx_age_sex.csv'))
+# ------------------------
+
+# ----------------------------------------------
+# OUTCOME TABLES: ART & VIRAL LOAD
+# ----------------------------------------------
+
+# data quality checks - art and viral load variables
+dt[is.na(everart)]
+dt[!is.na(everart)]
+
+dt[everart==T, unique(restarted_art)]
+dt[is.na(everart) & !is.na(restarted_art)]
+dt[is.na(everart) & is.na(restarted_art) & !is.na(art6m)]
+
+dt[everart==F] # if ever on art is false, all subsequent variables are missing
+
+c("everart", "firstart_dt", "restarted_art", "art_restart_dt", "art6m",
+"ahd_vl", "ahd_vl_dt", "ahd_vl_result")
+
+# ------------------------
+# started art by sex, period
+art1 = dt[everart==T, .(pts = length(unique(pid))), by = .(sex, period)]
+art2 = dt[everart==T, .(pts = length(unique(pid))), by = period]
+art2[ , sex:='Total']
+art = rbind(art1, art2)
+art[ , variable:='aStartedART']
+
+# restarted art by sex, period
+rart1 = dt[restarted_art==T, .(pts = length(unique(pid))), by = .(sex, period)]
+rart2 = dt[restarted_art==T, .(pts = length(unique(pid))), by = .(period)]
+rart2[ , sex:='Total']
+rart = rbind(rart1, rart2)
+rart[ , variable:='bRestartedART']
+
+# missing both 
+miss1 = dt[is.na(everart) & is.na(restarted_art), .(pts = length(unique(pid))), by = .(sex, period)]
+miss2 = dt[is.na(everart) & is.na(restarted_art), .(pts = length(unique(pid))), by = .(period)]
+miss2[ , sex:='Total']
+miss = rbind(miss1, miss2)
+miss[ , variable:='cMissingART']
+
+# bind them together and reshape
+art = rbind(art, rart)
+art = rbind(art, miss)
+art = dcast(art, variable~period+sex, value.var = 'pts')
+
+# export the table
+write.csv(art, paste0(outDir, 'started_restarted_art_sex.csv'))
+# ------------------------
+
+# ------------------------
+# on art at six months by sex, period
+art61 = dt[, .(pts = length(unique(pid))), by = .(sex, period, art6m)]
+art62 = dt[, .(pts = length(unique(pid))), by = .(period, art6m)]
+art62[ , sex:='Total']
+art6 = rbind(art61, art62)
+art6 = dcast(art6, sex~period+art6m, value.var = 'pts')
+
+# change the order
+art6 = art6[ ,.(sex, b_TRUE, b_FALSE, b_NA, e_TRUE, e_FALSE, e_NA)]
+
+# export the table
+write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
+# ------------------------
+
+# ------------------------
+# received a viral load test, did not receive, missing 
+avl1 = dt[ ,.(value = sum(ahd_vl, na.rm=T), variable = 'aReceivedVL'), by = .(sex, period)]
+avl2 = dt[ahd_vl==F,.(value = length(unique(pid)), variable = 'bNoVL'), by = .(sex, period)]
+avl3 = dt[is.na(ahd_vl),.(value = length(unique(pid)), variable = 'cMissing'), by = .(sex, period)]
+avl = rbind(avl1, avl2)
+avl = rbind(avl, avl3)
+
+# totals rows (not disaggregated by sex)
+avl4 = dt[ ,.(value = sum(ahd_vl, na.rm=T), variable = 'aReceivedVL', sex = 'Total'), by = period]
+avl5 = dt[ahd_vl==F,.(value = length(unique(pid)), variable = 'bNoVL', sex = 'Total'), by = period]
+avl6 = dt[is.na(ahd_vl),.(value = length(unique(pid)), variable = 'cMissing', sex = 'Total'), by = period]
+avl = rbind(avl, avl4)
+avl = rbind(avl, avl5)
+avl = rbind(avl, avl6)
+
+# reshape 
+avl = dcast(avl, variable~period+sex)
+
+# export the table
+write.csv(avl, paste0(outDir, 'received_no_vl_sex.csv'))
+# ------------------------
+
+# ------------------------
+# received a viral load test by age, sex
+
+vl1 = dt[ ,.(value = sum(ahd_vl, na.rm=T)), by = .(age_cat, sex, period)]
+vl2 = dt[ ,.(value = sum(ahd_vl, na.rm=T)), by = .(age_cat, period)]
+vl2[ , sex:='Total']
+vl = rbind(vl1, vl2)
+vl = dcast(vl, age_cat~period+sex)
+
+# export the table
+write.csv(vl, paste0(outDir, 'received_vl_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# virally suppressed by age, sex
+
+svl1 = dt[ ,.(value = sum(suppressed, na.rm=T)), by = .(age_cat, sex, period)]
+svl2 = dt[ ,.(value = sum(suppressed, na.rm=T)), by = .(age_cat, period)]
+svl2[ , sex:='Total']
+svl = rbind(svl1, svl2)
+svl = dcast(svl, age_cat~period+sex)
+
+# export the table
+write.csv(svl, paste0(outDir, 'vl_suppressed_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# create a denominator table of documented vl results 
+# 399 patients had a documented viral load
+
+# create the table of documented vl results
+sp1 = dt[!is.na(suppressed) ,.(value = length(unique(pid))), by = .(age_cat, sex, period)]
+sp2 = dt[!is.na(suppressed) ,.(value = length(unique(pid)), sex = 'Total'), by = .(age_cat, period)]
+sp = rbind(sp1, sp2)
+sp = dcast(sp, age_cat~period+sex)
+setnames(sp, c('age_cat', 'b_Femaled', 'b_Maled', 'b_Totald',
+               'e_Femaled', 'e_Maled', 'e_Totald'))
+
+# merge the documented vl results with vl suppression 
+sp = merge(svl, sp, by = 'age_cat')
+
+# calculate the percentages
+sp[ , b_Female_perc:=round(100*(b_Female/b_Femaled), 1)]
+sp[ , e_Female_perc:=round(100*(e_Female/e_Femaled), 1)]
+
+sp[ , b_Male_perc:=round(100*(b_Male/b_Maled), 1)]
+sp[ , e_Male_perc:=round(100*(e_Male/e_Maled), 1)]
+
+sp[ , b_Total_perc:=round(100*(b_Total/b_Totald), 1)]
+sp[ , e_Total_perc:=round(100*(e_Total/e_Totald), 1)]
+
+# rearrange the variables in an interpretable order
+sp = sp[,.(b_Female, b_Femaled, b_Female_perc, b_Male, b_Maled, b_Male_perc,
+           b_Total, b_Totald, b_Total_perc,
+           e_Female, e_Femaled, e_Female_perc, e_Male, e_Maled, e_Male_perc,
+           e_Total, e_Totald, e_Total_perc)]
+
+# export the table
+write.csv(sp, paste0(outDir, 'vl_suppression_rate_age_sex.csv'))
+# ------------------------
+
+# ------------------------
 
 
 
 
 
+# ------------------------
 
-
-
-# # ----------------------------------------------
-# # OUTCOME TABLES: ART & VIRAL LOAD
-# # ----------------------------------------------
-# 
-# # data quality checks - art and viral load variables
-# dt[ ,is.na(everart)]
-# dt[everart==F] # if ever on art is false, all subsuequent variables are missing
-# 
-# # ------------------------
-# # ever on art by sex, period
-# art1 = dt[, .(pts = length(unique(pid))), by = .(sex, period, everart)]
-# art2 = dt[, .(pts = length(unique(pid))), by = .(period, everart)]
-# art2[ , sex:='Total']
-# art = rbind(art1, art2)
-# art = dcast(art, sex~period+everart, value.var = 'pts')
-# 
-# # change the order
-# art = art[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
-# 
-# # export the table
-# write.csv(art, paste0(outDir, 'ever_on_art_sex.csv'))
-# # ------------------------
-# 
-# # ------------------------
-# # on art at six months by sex, period
-# art61 = dt[, .(pts = length(unique(pid))), by = .(sex, period, art6m)]
-# art62 = dt[, .(pts = length(unique(pid))), by = .(period, art6m)]
-# art62[ , sex:='Total']
-# art6 = rbind(art61, art62)
-# art6 = dcast(art6, sex~period+art6m, value.var = 'pts')
-# art6[ ,c('b_NA', 'e_NA'):=NULL]
-# 
-# # change the order
-# art6 = art6[ ,.(sex, b_TRUE, b_FALSE, e_TRUE, e_FALSE)]
-# 
-# # export the table
-# write.csv(art6, paste0(outDir, 'on_art_6m_sex.csv'))
-# # ------------------------
-# 
-# # ------------------------
-# # ever on art compared to on art at six months
-# 
-# 
-# # ------------------------
-
-
-
+# ----------------------------------------------
+# OUTCOME TABLES: MENINGITIS CASCADE
+# ----------------------------------------------
 
 
