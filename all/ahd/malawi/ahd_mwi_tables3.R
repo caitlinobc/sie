@@ -795,6 +795,7 @@ c("screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result",
 "lumbar_referred", "lumbarreferred_dt", "lumbar_done", "lumbar_done_dt",           
 
 "csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
+
 "csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
 "complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt")
 
@@ -818,7 +819,7 @@ write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
 # ------------------------
 
 # ------------------------
-# crypto screening result by age, sex
+# crypto screening (crag) result by age, sex
 
 cr1 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, sex, period)]
 cr2 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, period)]
@@ -830,16 +831,21 @@ cr = dcast(cr, age_cat~period+sex)
 write.csv(cr, paste0(outDir, 'crag_result_age_sex.csv'))
 # ------------------------
 
-
-
 # ------------------------
-# screened for crypto by age, sex
+# csf crag performed and csf result
 
-cry1 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, sex, period)]
-cry2 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, period)]
-cry2[ , sex:='Total']
-cry = rbind(cry1, cry2)
-cry = dcast(cry, age_cat~period+sex)
+# csf crag performed
+csf1 = dt[ ,.(value = sum(csf_cragperformed, na.rm=T)), by = .(age_cat, sex)]
+csf2 = dt[ ,.(value = sum(csf_cragperformed, na.rm=T), sex = 'Total'), by = .(age_cat)]
+csf = rbind(csf1, csf2)
+csf = dcast(csf, age_cat~sex)
+
+# csf crag positive result - no missing data 
+csf3 = dt[ ,.(value = sum(csf_result, na.rm=T)), by = .(age_cat, sex)]
+csf4 = dt[ ,.(value = sum(csf_result, na.rm=T), sex = 'Total'), by = .(age_cat)]
+csf5 = rbind(csf3, csf4)
+csf5 = dcast(csf5, age_cat~sex)
+setnames(csf5, c('age_cat', 'Female_r', 'Male_r', 'Total_r'))
 
 # export the table
 write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
