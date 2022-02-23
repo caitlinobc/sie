@@ -847,11 +847,15 @@ csf5 = rbind(csf3, csf4)
 csf5 = dcast(csf5, age_cat~sex)
 setnames(csf5, c('age_cat', 'Female_r', 'Male_r', 'Total_r'))
 
+# merge and arrange
+csf = merge(csf, csf5, by = 'age_cat')
+csf = csf[ ,.(age_cat, Female, Female_r, Male, Male_r, Total, Total_r)]
+
 # export the table
-write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
+write.csv(csf, paste0(outDir, 'csf_crag_results_age_sex.csv'))
 # ------------------------
 
-
+# ----------------------------------------------
 
 
 

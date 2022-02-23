@@ -56,8 +56,6 @@ dt[ , c('starttime', 'deviceid', 'capturedate', 'section1.SexFemale',
 # there are 8 repeat ids - none have the same DOB
 # these are unlikely to be duplicate entries
 dt[ , pt_count:=.N, by = participant_number]
-dt[pt_count==2][order(participant_number)]
-
 
 # create alternate IDs with no duplicates by adding a 'b' to the 2nd entry
 dt[pt_count==2, rank:=seq(1:2), by = participant_number]
@@ -116,13 +114,14 @@ setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1
        "gxtest", "gxtest_dt","gxreturn_dt", "gxresult", 
        "lamtest", "lamtest_dt", "lamreturn_dt", "lamresult",
        "tbtx_start", "tbtx_start_dt", "tb_tx_cplt", "tb_tx_cplt_dt",
-       "screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
-      
+       
+      "screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
        "lumbar_referred", "lumbarreferred_dt", "lumbar_done", "lumbar_done_dt",           
         "csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
         "csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
         "complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt",
-        "everart", "firstart_dt", "restarted_art", "art_restart_dt", "art6m",
+        
+      "everart", "firstart_dt", "restarted_art", "art_restart_dt", "art6m",
         "ahd_vl", "ahd_vl_dt", "ahd_vl_result"
       
       ))  
