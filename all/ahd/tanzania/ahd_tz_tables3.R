@@ -177,19 +177,16 @@ write.csv(dpt, paste0(outDir, 'age_at_hiv_diag_dt.csv'))
 # ----------------------------------------------
 #-------------------
 # basic descriptive statistics for cd4
-# there are no false entries and the majority of entries are missing (96%)
+# no outcome recorded is listed as false
 table(dt$cd4done_after_ahdelig)
-dt[!is.na(cd4done_after_ahdelig), length(unique(pid)), by = period]
-dt[is.na(cd4done_after_ahdelig), length(unique(pid))]
-dt[is.na(cd4done_after_ahdelig), length(unique(pid))]/nrow(dt)
-#-------------------
 
 #-------------------
 # number receiving cd4 after ahd by sex, period
-cd4_s1 = dt[!is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(sex, period)]
-cd4_s2 = dt[is.na(cd4done_after_ahdelig), .(value = length(unique(pid))), by = .(sex, period)]
+cd4_s1 = dt[cd4done_after_ahdelig==T, .(value = sum(cd4done_after_ahdelig, na.rm=T)), 
+            by = .(sex, period)]
+cd4_s2 = dt[cd4done_after_ahdelig==F, .(value = length(unique(pid))), by = .(sex, period)]
 cd4_s1[ , type:='CD4 Tested']
-cd4_s2[ , type:='Missing']
+cd4_s2[ , type:='No Outcome Recorded']
 cd4_s = rbind(cd4_s1, cd4_s2)
 cd4_s =  dcast(cd4_s, type~period+sex)
 

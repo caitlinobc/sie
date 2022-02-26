@@ -122,4 +122,12 @@ dt[tbsympscrn_result==FALSE, length(unique(pid))]
 dt[tbsympscrn_result==FALSE & tptstart==T, length(unique(pid))]
 
 # ----------------------------------------------
+# CRYPTO
+# ----------------------------------------------
+
+dt[, sum(csf_result, na.rm=T)]
+dt[!is.na(crypto_regimen)]
+
+dt[csf_result==T]
+# ----------------------------------------------
 
