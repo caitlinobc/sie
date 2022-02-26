@@ -1,9 +1,9 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/14/2021
-# Tanzania Baseline Cohort Data
-# Run a series of t-tests ok key outcome variables
+# 2/24/2021
+# Tanzania data 
+# Run t-tests on major variables
 # Sources the data prepped in ahd_tz_prep1.R
 # ----------------------------------------------
 
@@ -37,6 +37,7 @@ outDir = paste0(dir, 'outputs/tables/')
 # ------------------------
 # import the data
 dt = readRDS(paste0(prepDir, 'full_data.RDS'))
+
 # ------------------------
 
 # ----------------------------------------------
@@ -44,80 +45,91 @@ dt = readRDS(paste0(prepDir, 'full_data.RDS'))
 # ----------------------------------------------
 
 # ------------------------
-# was who staging completed?
-who = dt[, whostage1_done, by = period]
-who[is.na(whostage1_done), whostage1_done:=FALSE]
-t.test(who[period=='b']$whostage1_done, who[period=='e']$whostage1_done, var.eqal = FALSE)
+# run a loop that t-tests every binary variable
+
+# create a data set for only binary variables and cohort
+tt = dt[ ,c('period',
+            'cd4done_after_ahdelig', 'cd4_after_ahdelig_result',
+            'whostage1_done',
+            'tbsympscrn',  'sstest','gxtest',  
+            'everart', 'art6m')]
+
+# rename cd4 variables because the variable names are long 
+setnames(tt, c('cd4done_after_ahdelig', 'cd4_after_ahdelig_result'),
+         c('cd4_done', 'cd4_result'))
+
+# ------------------------
+# in Tanzania, some variables were coded as missing rather than false
+
+# 9 patients in TZ did not have documented WHO staging, coded as NA
+# recode as false
+tt[is.na(whostage1_done), whostage1_done:=FALSE]
+
+# tb symptom screening was coded T if any outcome recorded in the period
+# all other already coded FALSE - indicates no screen OR no outcome recorded
+
+# sstest and gxtest ok - small numbers
+# consider a different denominator - e.g. screened positive
+
+# ------------------------
+# shape the data long
+tt = melt(tt, id.vars='period')
+
+# drop missing data 
+tt = tt[!is.na(value)]
 # ------------------------
 
 # ------------------------
-# was cd4 testing completed on or after the ahd diagnosis?
-cd4 = dt[, .(cd4done_after_ahdelig), by = period]
-cd4[is.na(cd4done_after_ahdelig), cd4done_after_ahdelig:=FALSE]
-t.test(cd4[period=='b']$cd4done_after_ahdelig, cd4[period=='e']$cd4done_after_ahdelig)
+# test variable - tb lam tests performed go from 155 to 403
+table(tt[variable=='whostage1_done']$value)
+t.test(tt[period=='b' & variable=='whostage1_done']$value, tt[period=='e' & variable=='whostage1_done']$value,
+       var.eqal = FALSE)
+# ------------------------
+
+# write a loop that runs a Welch's t-test on every binary variable
+for (v in unique(tt$variable)) {
+  
+  # format the variable name 
+  var_name = as.character(v)
+  
+  # some variables do not have enough data and generate errors - exclude these
+  excl_vars = c('cd4done_after_ahdelig')
+  if (var_name %in% excl_vars) next
+  
+  # print the variable name so that the output is easy to recognize in a Word doc
+  print(paste0('Variable: ', var_name))
+  
+  # run t-tests for samples with unequal variance
+  print( t.test(tt[period=='b' & variable==var_name]$value, tt[period=='e' & variable==var_name]$value,
+                var.eqal = FALSE)) 
+}
+
 # ------------------------
 
 # ------------------------
-# was the patient screened for signs and symptoms of tb?
-tbs = dt[, .(tbsympscrn), by = period]
-t.test(tbs[period=='b']$tbsympscrn, tbs[period=='e']$tbsympscrn)
-# ------------------------
+# check that some variables are the same even with a subset denominator
+
+# compare the proportion of patients with symptoms of tb out of those screened
+ts = dt[tbsympscrn==T & !is.na(tbsympscrn_result), .(tbsympscrn_result, period)]
+t.test(ts[period=='b']$tbsympscrn_result, ts[period=='e']$tbsympscrn_result,
+       var.eqal = FALSE)
+
+# compare the proportion of patients who are virally suppressed out of those tested
+sup = dt[ahd_vl==T & !is.na(suppressed), .(suppressed, period)]
+t.test(sup[period=='b']$suppressed, sup[period=='e']$suppressed,
+       var.eqal = FALSE)
+
+
+# ----------------------------------------------
+# T-TESTS ON NUMERICAL OUTCOMES: TANZANIA
+# ----------------------------------------------
 
 # ------------------------
-# was the patient started on tb preventive therapy?
-tpt = dt[, .(tptstart, tptalready), by = period]
-tpt[tptstart==T | tptalready==T, tpt_ever:=TRUE]
-tpt[is.na(tpt_ever), tpt_ever:=FALSE]
-t.test(tpt[period=='b']$tpt_ever, tpt[period=='e']$tpt_ever)
-# ------------------------
+# viral load testing - result for suppression ran above
+t.test(dt[period=='b']$ahd_vl_result, dt[period=='e']$ahd_vl_result,
+       var.eqal = FALSE)
 
-# ------------------------
-# did the patient complete a regimen of tb preventive therapy?
-tptc = dt[, .(tptcplt), by = period]
-t.test(tptc[period=='b']$tptcplt, tptc[period=='e']$tptcplt)
-# ------------------------
-
-
-
-logicals = c('knwstat', 'hivtest', 'hivresult', 'cd4done_after_ahdelig',
-             'whostage1_done', 'tbsympscrn', 'tptstart', 'tptalready', 'tptcplt',
-             'ahd_cd4u200', 'sstest', 'sspos', 'gxtest', 'tbtxstart', 
-             'everart', 'art6m', 'hvl6m', 'ahd_newcd4', 'ahd_newwho')
-
-
-t.test(dt[period=='baseline']$whostage1_done, dt[period=='endline']$whostage1_done)
-t.test(dt[period=='baseline']$cd4done_after_ahdelig, dt[period=='endline']$cd4done_after_ahdelig)
-t.test(dt[period=='baseline']$tbsympscrn, dt[period=='endline']$tbsympscrn)
-
-
-#--------------------------
-# MALAWI
-
-dt = dt[ ,.(id, pre_post, who_staged, cd4_done)]
-tbscrn = data.table(tbscrn = df$TB_screening.screenedforTB)
-
-dt = cbind(dt, tbscrn = tbscrn$tbscrn)
-
-dt[who_staged==1, who_staged:=TRUE]
-dt[who_staged==2, who_staged:=FALSE]
-dt[who_staged==3, who_staged:=NA]
-dt[who_staged=='n/a', who_staged:=NA]
-dt[ ,who_staged:=as.logical(who_staged)]
-
-dt[cd4_done==1, cd4_done:=TRUE]
-dt[cd4_done==2, cd4_done:=FALSE]
-dt[cd4_done==3, cd4_done:=NA]
-dt[ ,cd4_done:=as.logical(cd4_done)]
-
-
-dt[tbscrn==1, tbscrn:=TRUE]
-dt[tbscrn==2, tbscrn:=FALSE]
-dt[tbscrn==3, tbscrn:=NA]
-dt[ ,tbscrn:=as.logical(tbscrn)]
-
-t.test(dt[pre_post=='Baseline']$who_staged, dt[pre_post=='Endline']$who_staged)
-t.test(dt[pre_post=='Baseline']$cd4_done, dt[pre_post=='Endline']$cd4_done)
-t.test(dt[pre_post=='Baseline']$tbscrn, dt[pre_post=='Endline']$tbscrn)
+# ----------------------------------------------
 
 
 

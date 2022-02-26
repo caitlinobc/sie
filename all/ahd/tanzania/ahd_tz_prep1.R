@@ -253,7 +253,7 @@ dt$age_cat = factor(dt$age_cat, c('<5', '5-9',
           '35-39', '40-44', '45-49', '50+'))
 
 # --------------------------
-# create a variable called site that reformats the names
+# create a variable called site that re-formats the names
 
 dt$site = factor(dt$dhisname, c("Arusha Lutheran Medical Hospital",
             "Dodoma  Regional Referral Hospital", "KCMC  Referral Hospital at Zonal Level",
@@ -274,6 +274,84 @@ dt[is.na(ahd_dt)]
 dt[is.na(siteid)]
 dt[is.na(ahd_elig)]
 dt[is.na(dob)]
+
+# -------------------------------------
+# FIX CD4 
+# -------------------------------------
+
+# --------------------------
+# check that cd4 results were obtained on or after ahd diagnosis
+# 
+# cd4 = dt[!is.na(cd4_after_ahdelig_result) | !is.na(ahd_cd4result) | !is.na(cd4_fvis) | !is.na(ahd_new_cd4result),
+#          .(cd4_after_ahdelig_result, ahd_cd4result, cd4_fvis, ahd_new_cd4result,
+#           ahd_dt, cd4_after_ahdelig_dt, ahd_cd4u200_dt, cd4_fvis_dt, ahd_new_cd4_dt)]
+# 
+# # check that cd4 after ahd eligibility is truly after
+# cd4[ , after_ahd:=(cd4_after_ahdelig_dt - ahd_dt)]
+# cd4[after_ahd <= 0] #all cd4 testing occurred on or after an ahd diagnosis
+# 
+# # check that first visit is truly after
+# cd4[ , fvis_after_ahd:=(cd4_fvis_dt - ahd_dt)]
+# # no first visit cd4 tests before ahd diagnosis in baseline, one in endline
+# cd4[fvis_after_ahd < 0] 
+# 
+# # check that new patients who received cd4 received it after ahd diagnosis
+# cd4[ , newcd4_afterahd:=(ahd_new_cd4_dt - ahd_dt)]
+# cd4[newcd4_afterahd < 0] # 0 entries
+# 
+# # check that the eligibility stream 6 patients received cd4 after ahd diagnosis
+# cd4[ ,  u200:=(ahd_cd4u200_dt - ahd_dt)]
+# # 33 patients received u200 cd4 testing before diagnosis in baseline, 7 endline
+# cd4[u200 < 0] 
+# cd4[u200 < 0, ahd_cd4result:=NA ] # drop the earlier results
+# --------------------------
+# 
+# # --------------------------
+# if one is missing, are the others missing?
+# dt[is.na(cd4_after_ahdelig_result) & !is.na(ahd_cd4result)]
+# dt[is.na(cd4_after_ahdelig_result) & !is.na(ahd_cd4result) & !is.na(cd4_fvis)] # never has both
+# dt[is.na(cd4_after_ahdelig_result) & !is.na(ahd_cd4result) & !is.na(ahd_new_cd4result)] # never has both
+# 
+# dt[is.na(cd4_after_ahdelig_result) & !is.na(cd4_fvis)] # adds 129 entries in baseline
+# dt[is.na(cd4_after_ahdelig_result) & !is.na(cd4_fvis) & !is.na(ahd_new_cd4result)] # sometimes has both
+# dt[is.na(cd4_after_ahdelig_result) & cd4_fvis!=ahd_new_cd4result] # but the values are always equal
+# 
+# dt[is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result)] # adds 129 entries in baseline
+
+# --------------------------
+# alter the actual data to maximize cd4 results
+
+# if missing ahd cd4 and cd4 under 200 was performed before ahd diagnosis, drop under 200
+# if missing ahd cd4 and first visit was before ahd diagnosis, drop first visit c4 (one entry)
+# all other results are on or after ahd diagnosis 
+dt[  , u200:=(ahd_cd4u200_dt - ahd_dt)] # drops 32 baseline results
+dt[u200 < 0, ahd_cd4result:=NA ]
+
+dt[ , fvis_after_ahd:=(cd4_fvis_dt - ahd_dt)]
+dt[fvis_after_ahd < 0, cd4_fvis:=NA] 
+
+# when cd4 after ahd eligibility is missing, replace with cd4 under 200
+dt[is.na(cd4_after_ahdelig_result), cd4_after_ahdelig_result:=ahd_cd4result]
+dt[is.na(cd4_after_ahdelig_result), cd4_after_ahdelig_dt:=ahd_cd4u200_dt]
+
+# when cd4 after ahd eligibility is missing, replace first visit cd4
+dt[is.na(cd4_after_ahdelig_result) & !is.na(cd4_fvis), cd4_after_ahdelig_result:=cd4_fvis]
+dt[is.na(cd4_after_ahdelig_result) & !is.na(cd4_fvis), cd4_after_ahdelig_dt:=cd4_fvis_dt]
+
+# one cd4 result has a decimal place ...
+dt[cd4_after_ahdelig_result==49.5, cd4_after_ahdelig_result:=NA]
+
+# change cd4 done binary to reflect the added results
+dt[!is.na(cd4_after_ahdelig_result) , cd4done_after_ahdelig:=TRUE]
+dt[is.na(cd4_after_ahdelig_result) , cd4done_after_ahdelig:=FALSE]
+
+# --------------------------
+
+# --------------------------
+# drop excess variables
+dt[ ,c('u200', 'fvis_after_ahd'):=NULL]
+
+# --------------------------
 
 # -------------------------------------
 # OUTPUT THE DATA SETS AND APPEND
@@ -341,6 +419,12 @@ if (append==T) {
   
   # --------------------------
   
+  # --------------------------
+  # fix the cd4 testing variable
+  
+  
+  # --------------------------
+  
   # rearrange the data set in the order that you prefer
   # data set starts with demographic variables, meta data
   
@@ -396,6 +480,7 @@ tab_full = setnames(full_data, c("Patient ID", "Period", "DOB", "Age", "Age Cate
 
 
 # -------------------------------------
+
 
 # -------------------------------------
 # LE FIN

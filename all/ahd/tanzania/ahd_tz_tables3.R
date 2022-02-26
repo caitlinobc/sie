@@ -175,28 +175,6 @@ write.csv(dpt, paste0(outDir, 'age_at_hiv_diag_dt.csv'))
 # ----------------------------------------------
 # OUTCOME TABLES: CD4 TESTING 
 # ----------------------------------------------
-
-#-------------------
-# check the cd4 data
-#-------------------
-# check if the cd4 counts for new patients are the same as all patients
-cd = dt[ , .(cd4done_after_ahdelig, cd4_after_ahdelig_dt, cd4_after_ahdelig_result,
-        ahd_newcd4, ahd_new_cd4_dt, ahd_new_cd4result)]
-x = cd[ , lapply(.SD, is.na)]
-x [ , check:=(apply(x[, c(1:6)], 1, sum))]
-cd = cbind(cd, test = x$check)
-cd = cd[test!=6]
-
-# there are three patients for which the new result is different than the general result
-cd[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result]
-
-# for these three patients, use the earlier result as baseline cd4 (they are very close, anyway)
-dt[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result,
-   cd4_after_ahdelig_result:=ahd_new_cd4result]
-dt[!is.na(cd4_after_ahdelig_result) & !is.na(ahd_new_cd4result) & cd4_after_ahdelig_result!=ahd_new_cd4result,
-   cd4_after_ahdelig_dt:=ahd_new_cd4_dt]
-#-------------------
-
 #-------------------
 # basic descriptive statistics for cd4
 # there are no false entries and the majority of entries are missing (96%)
@@ -249,6 +227,12 @@ cd4_ma =  dcast(cd4_ma, age_cat~period+sex)
 # export the table
 write.csv(cd4_ma, paste0(outDir, 'cd4_result_sex_age.csv'))
 #-------------------
+
+#-------------------
+#add a histogram 
+
+hist(dt[period=='b']$cd4_after_ahdelig_result, xlab = 'CD4 cell count', main = NULL)
+hist(dt[period=='e']$cd4_after_ahdelig_result, xlab = 'CD4 cell count', main = NULL)
 
 # ----------------------------------------------
 # OUTCOME TABLES: WHO STAGING
