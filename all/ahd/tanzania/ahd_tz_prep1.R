@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/14/2021
+# 2/25/2021
 # Tanzania Baseline Cohort Data
 # Import and clean the AHD study data
 # Processes both the baseline and endline data sets and appends
@@ -40,7 +40,7 @@ outDir = paste0(dir, 'outputs/')
 # select baseline or endline for processing raw data 
 # determine if you want to append the data sets together
 
-period = 'baseline'
+period = 'endline'
 
 # append the data sets? T/F
 append = TRUE

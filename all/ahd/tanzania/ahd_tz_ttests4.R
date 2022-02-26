@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/24/2021
+# 2/25/2021
 # Tanzania data 
 # Run t-tests on major variables
 # Sources the data prepped in ahd_tz_prep1.R
