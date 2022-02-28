@@ -458,7 +458,34 @@ if (append==T) {
 # -------------------------------------
 # format the names of the variables for Tableau
 
-tab_full = setnames(full_data, c("Patient ID", "Period", "DOB", "Age", "Age Category", "Under 5",  "Sex",     
+# create a copy of the data
+tab_full = copy(full_data)
+
+# format the variables you will visualize
+tab_full[period=='b', period:='Baseline']
+tab_full[period=='e', period:='Endline']
+
+# convert WHO stage
+tab_full[whostage1st==1, who_stage:='Stage 1']
+tab_full[whostage1st==2, who_stage:='Stage 2']
+tab_full[whostage1st==3, who_stage:='Stage 3']
+tab_full[whostage1st==4, who_stage:='Stage 4']
+
+# convert key variables to numerics
+tab_full[ ,knwstat:=as.numeric(knwstat)]
+tab_full[ ,cd4done_after_ahdelig:=as.numeric(cd4done_after_ahdelig)]
+tab_full[ ,whostage1_done:=as.numeric(whostage1_done)]
+tab_full[ ,tbsympscrn:=as.numeric(tbsympscrn)]
+tab_full[ ,tptstart:=as.numeric(tptstart)]
+
+tab_full[ ,tptalready:=as.numeric(tptalready)]
+tab_full[ ,sstest:=as.numeric(sstest)]
+tab_full[ ,sspos:=as.numeric(sspos)]
+tab_full[ ,gxtest:=as.numeric(gxtest)]
+tab_full[ ,gxpos:=as.numeric(gxpos)]
+
+# rename a few of the variables for Tableau  
+setnames(tab_full, c("Patients", "Period", "DOB", "Age", "Age Category", "Under 5",  "Sex",     
  "Site ID", "DHIS2 ID", "DHIS2 Site", "Site",  "District", "Region",
      "ahd_dt", "ahd_elig", "knwstat", "hivtest","dtpos", "hivresult",
          "cd4done_after_ahdelig", "cd4_after_ahdelig_dt","cd4_after_ahdelig_result", 
@@ -476,9 +503,10 @@ tab_full = setnames(full_data, c("Patient ID", "Period", "DOB", "Age", "Age Cate
                    "ahd_oclin","ahd_oclin_who_dt", "ahd_oclin_whostage", 
                         "ahd_tb", "ahd_tb_dt",  "ahd_incwho", "ahd_incwho_dt", "ahd_whostage_incwho", 
                              "ahd_hvl", "ahd_hvl_dt", "ahd_hvlresult","ahd_hvlcat", "ahd_cd4u200",
-                                "ahd_cd4u200_dt","ahd_cd4result"))
+                                "ahd_cd4u200_dt","ahd_cd4result", "WHO Stage"))
 
 
+write.csv(tab_full, paste0(prepDir, 'tz_tableau_data.csv'))
 # -------------------------------------
 
 
