@@ -2,7 +2,7 @@
 # Caitlin O'Brien-Carelli
 #
 # 2/8/21
-# Create an accurate list of health facilities
+# Create an accurate list of health facilities in Cameroon
 # As of February 2021, there are 72 implementing
 # ----------------------------------------------
 
