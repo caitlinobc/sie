@@ -502,3 +502,70 @@ ssa = ssa[ ,.(b_Positive, b_Tested, b_PP, e_Positive, e_Tested, e_PP), by = age_
 # export the table
 write.csv(ssa, paste0(outDir, 'ss_tested_age.csv'))
 # ------------------------
+
+# ----------------------------------------------
+# OUTCOME TABLES: VIRAL LOAD TESTING & SUPPRESSION
+# ----------------------------------------------
+
+# ------------------------
+# received a viral load test within six months of starting ART
+dt[, length(unique(pid)), by = .(period, hvl6m)] # type in - 6 values
+# ------------------------
+
+# ------------------------
+# received a viral load test within six months of starting ART, age, sex
+hvt = dt[, sum(hvl6m, na.rm=T), by = .(period, age_cat, sex)]
+hvt2 = dt[, sum(hvl6m, na.rm=T), by = .(period, age_cat)]
+hvt2[ , sex:='Total']
+hvt = rbind(hvt, hvt2)
+hvt = dcast(hvt, age_cat~period+sex)
+
+# export the table
+write.csv(hvt, paste0(outDir, 'vl_tested_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# viral suppression table 
+vl = dt[hvl6m==T & !is.na(hvl6mresult),
+   .(pid, hvl6m, hvl6mresult, age_cat, sex, period)]
+
+# create a viral suppression variable
+vl[hvl6mresult <= 1000 , sup:=TRUE]
+vl[is.na(sup), sup:=FALSE]
+
+# create the table
+vs = vl[, .(value = sum(sup)), by = .(period, age_cat)]
+vs[ ,var:='sup']
+vs = dcast(vs, age_cat~period+var, value.var = 'value')
+vt = hvt[ , .(age_cat, b_Total, e_Total)]
+vs = merge(vs, vt, by = 'age_cat')
+
+# rename the variables and reorder 
+vs = vs[ ,.(age_cat, b_tested = b_Total, b_sup,
+       e_tested = e_Total, e_sup)]
+
+# export the table
+write.csv(vs, paste0(outDir, 'vl_suppression_age_sex.csv'))
+# ------------------------
+
+# run ttests
+
+supt = vl[ ,.(pid, period, sup)]
+t.test(supt[period=='b']$sup, supt[period=='e']$sup,
+       var.eqal = FALSE)
+
+
+
+hvl = dt[!is.na(hvl6m), .(pid, hvl6m, period)]
+
+t.test(hvl[period=='b']$hvl6m, hvl[period=='e']$hvl6m,
+       var.eqal = FALSE)
+
+
+
+
+
+
+
+
+
