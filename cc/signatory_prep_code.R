@@ -12,7 +12,6 @@
 
 rm(list=ls()) # clear the workspace
 library(readxl)
-library(xlsx)
 library(data.table)
 library(lubridate)
 library(plyr)
@@ -20,12 +19,7 @@ library(tidyr)
 library(zoo)
 library(stringr)
 library(ggplot2)
-library(RColorBrewer)
-library(raster)
-library(ggrepel)
 library(tools)
-library(ggmap)
-library(sf)
 # ------------------------
 
 # ----------------------------------------------
