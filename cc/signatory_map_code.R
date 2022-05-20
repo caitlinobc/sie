@@ -124,7 +124,7 @@ centers[!is.na(value) , label:=paste0(county, ': ', value)]
 coord3 = merge(coord2, signats, by = 'county', all.x = TRUE)
 total = sum(signats$value)
 
-
+# total signatures by county
 ggplot(coord3, aes(x=long, y=lat, group = id, fill=value)) + 
   geom_polygon() + 
   geom_path(size=0.01) +
@@ -135,8 +135,6 @@ ggplot(coord3, aes(x=long, y=lat, group = id, fill=value)) +
        fill = "Signatures") +
   geom_label_repel(data = centers, aes(x = long, y = lat,
                               group = county, label = label), inherit.aes=FALSE)
-
-
 
 
 # ------------------------
