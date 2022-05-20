@@ -2,7 +2,7 @@
 # Caitlin O'Brien-Carelli
 #
 # 5/20/2022
-# Prep data and create maps for Castelli Campaign
+# Prep data and create maps
 # Use addresses to find geolocations
 # Map using county and district level shape files
 # ----------------------------------------------
