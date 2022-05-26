@@ -84,7 +84,7 @@ coord2[county %in% counties, county_name:=county]
 
 # ------------------------
 # Locations of signatiories by county
-ggplot(coord2, aes(x=long, y=lat, group = id, fill=county_name)) + 
+p2 = ggplot(coord2, aes(x=long, y=lat, group = id, fill=county_name)) + 
   geom_polygon() + 
   geom_path(size=0.01) +
   scale_fill_discrete(type = c(brewer.pal(9, 'Blues'), '#41b6c4',
@@ -125,7 +125,7 @@ coord3 = merge(coord2, signats, by = 'county', all.x = TRUE)
 total = sum(signats$value)
 
 # total signatures by county
-ggplot(coord3, aes(x=long, y=lat, group = id, fill=value)) + 
+p1 = ggplot(coord3, aes(x=long, y=lat, group = id, fill=value)) + 
   geom_polygon() + 
   geom_path(size=0.01) +
   scale_fill_gradientn(colors = brewer.pal(9, 'Blues') , na.value = '#f0f0f0') +
@@ -157,7 +157,7 @@ coord[ , tfirst:=as.factor(tfirst)]
 
 # ------------------------
 # Locations of signatiories by March 2022 Congressional District
-ggplot(coord, aes(x=long, y=lat, group = district, fill=tfirst)) + 
+p3 = ggplot(coord, aes(x=long, y=lat, group = district, fill=tfirst)) + 
   geom_polygon() + 
   geom_path(size=0.01) +
   scale_fill_manual(values = pal21, na.value = '#f0f0f0') +
@@ -170,9 +170,12 @@ ggplot(coord, aes(x=long, y=lat, group = district, fill=tfirst)) +
 
 # ------------------------
 
+pdf(paste0(dir, "Signature Maps.pdf") , width = 12, height = 9)
+p1
+p2
+p3
 
-
-
+dev.off()
 # ------------------------
 # accurate geographic map of location s
 nys = get_googlemap(center = c(lon = -74.2179, lat = 43.2994), zoom = 6, 

@@ -1,8 +1,9 @@
 #---------------------
 # Malawi AHD Initial Exploratory Analysis
+# Prep the data for analysis and check data quality
+# Preps the data for both cohorts simultaneously
 # Caitlin O'Brien-Carelli
-# 2/15/21
-# Prep the Malawi data for both cohorts
+# 5/26/222
 
 #---------------------
 # load the packages
@@ -41,11 +42,12 @@ dt = data.table(read.csv(paste0(dir, 'AHD_M&E_Valueslabels.csv'), na.strings = "
 # drop unnecessary variables
 
 # drop variables associated with identifying the data collector
-drop_names = names(dt)[grepl('^X', names(dt))]
+drop_names = names(dt)[grepl('^X', names(dt))] # starts with X - not needed
                
 dt[ , c('starttime', 'deviceid', 'capturedate', 'section1.SexFemale',
         'meta.instanceID', "studyid_calcu", "AHD_Diagnosisdate",
-        "hiv_treatment.artStarddate","hiv_treatment.artStarddate2", # binary for if start date is missing
+        "hiv_treatment.artStarddate",
+        "hiv_treatment.artStarddate2", # binary for if start date is missing
         drop_names):=NULL]
 #---------------------
 
@@ -56,6 +58,12 @@ dt[ , c('starttime', 'deviceid', 'capturedate', 'section1.SexFemale',
 # there are 8 repeat ids - none have the same DOB
 # these are unlikely to be duplicate entries
 dt[ , pt_count:=.N, by = participant_number]
+
+# export a table of the duplicate patients 
+dups = dt[pt_count==2, participant_number, 
+   by = section1.dob][order(participant_number)]
+setnames(dups, c('dob', 'pid'))
+write.csv(dups, paste0(outDir, 'tables/duplicate_patient_ids.csv'))
 
 # create alternate IDs with no duplicates by adding a 'b' to the 2nd entry
 dt[pt_count==2, rank:=seq(1:2), by = participant_number]
@@ -184,10 +192,10 @@ dt[49 < age, age_cat:='50+']
 
 # factor the age category to sort correctly in figures and tables
 dt$age_cat = factor(dt$age_cat, c('<5', '5-9',
-                                  '10-14', '15-19', '20-24', '25-29', '30-34',
-                                  '35-39', '40-44', '45-49', '50+'),
-                    c('<5', '5-9','10-14', '15-19', '20-24', '25-29', '30-34',
-                      '35-39', '40-44', '45-49', '50+'))
+       '10-14', '15-19', '20-24', '25-29', '30-34',
+         '35-39', '40-44', '45-49', '50+'),
+             c('<5', '5-9','10-14', '15-19', '20-24', '25-29', '30-34',
+                 '35-39', '40-44', '45-49', '50+'))
 #---------------------
 
 #---------------------
@@ -220,6 +228,7 @@ dt[siteid==9, site:='Police College Clinic']
 # format the variables in which 3 is coded as missing
 #---------------------
 # variables that are mysteriously coded correctly
+# one data entry person used 3 for missing, one left the field blank/NA
 # ssreslt, gxresult, lamresult, crag_result
 # lumbar_done is always missing 
 # crypto_regimen is categorical
@@ -294,7 +303,7 @@ dt[hivresult==4, hivresult:=NA]
 
 # there is one patient who tested negative for tb on sept. 14
 # they were coded as false for starting tpt with a start date of sept. 14
-# and a completion date of the same day - remove date since it is incorrect
+# and a completion date of the same day - remove completion date since it is incorrect
 dt[tptstart==F & tptcplt==T, tptstart:=TRUE]
 dt[tptstart==F & tptcplt==T, tptcplt_dt:=NA]
 #---------------------
@@ -326,28 +335,45 @@ dt = dt[ , lapply(.SD, as.logical), by = logi_byVars]
 # one result is an actual sentence
 dt[ahd_vl_result=="=5022 another sample collected on 2 July 2021 results not yet in", 
    ahd_vl_result:="5022"]
+
+# recode typos and write-ins noting missing data as missing
 dt[ahd_vl_result=="#NAME?", ahd_vl_result:=NA]
 dt[ahd_vl_result=="results not yet in", ahd_vl_result:=NA]
 dt[grepl("iss", ahd_vl_result), ahd_vl_result:=NA] # data collector wrote in missing
 dt[grepl("avail", ahd_vl_result), ahd_vl_result:=NA] 
 
-# drop the characters (some text variables)
-# undetectable viral load - recode as 0 but check
-dt[grepl('d', tolower(ahd_vl_result)), ahd_vl_result:=0]
+# create three categories: undetectable, treatment success, and detectable
+# undetectable: <50 copies/ml or LDL 
+# LDL - "lower than detectable limit" or <50 copies/ml (undetectable)
 
-# replace the less than/greater than signs to create a numeric
-dt[ , ahd_vl_result:=gsub('>', '', ahd_vl_result)]
-dt[ , ahd_vl_result:=gsub('<', '', ahd_vl_result)]
+# recode LDL as undetectable
+dt[grepl('d', tolower(ahd_vl_result)), ahd_vl_result:='Undetectable']
 
-# convert viral load to a numeric
-dt[ , ahd_vl_result:=as.numeric(ahd_vl_result)]
+# if data collector wrote in <1000, treatment success (WHO)
+dt[grepl('<1000', tolower(ahd_vl_result)), ahd_vl_result:='Success']
+
+# use numeric values to determine treatment success
+# select numeric values only (no values that include text)
+dt[!(grepl('<', ahd_vl_result) | grepl('>', ahd_vl_result)) & ahd_vl_result!='Undetectable' & ahd_vl_result!='Success', 
+   test:=as.numeric(ahd_vl_result)]
+dt[grepl('<', ahd_vl_result), 
+    test:=as.numeric(gsub('<', '', ahd_vl_result))]
+dt[test < 50, ahd_vl_result:='Undetectable']
+dt[test < 1000, ahd_vl_result:='Success']
+dt[1000 <= test, ahd_vl_result:='Detectable']
+
+# drop one entry in which the value is >906; unknown if suppressed
+dt[ahd_vl_result=='>906', ahd_vl_result:=NA]
+
+# every value with a greater than sign is above 1,000 - detectable
+dt[grepl('>', ahd_vl_result), ahd_vl_result:='Detectable']
 
 # add a binary for suppressed/unsuppressed
-dt[ahd_vl_result < 20, suppressed:=TRUE]
-dt[20 <= ahd_vl_result, suppressed:=FALSE]
+dt[ahd_vl_result=='Undetectable' | ahd_vl_result=='Success', suppressed:=TRUE]
+dt[ahd_vl_result=='Detectable', suppressed:=FALSE]
 
-# exclude one result over 3 million
-dt[ahd_vl_result==3128976, ahd_vl_result:=NA]
+# drop test (numeric created to code categorical variable)
+dt[ ,test:=NULL]
 
 #---------------------
 
@@ -382,9 +408,11 @@ saveRDS(dt, paste0(prepDir, 'full_data.RDS'))
 write.csv(dt, paste0(prepDir, 'full_data.csv'))
 #----------------------------------- 
 
-#--------------------------------------
-# format some variables for tableau
+#---------------------------------------------------
+# FORMAT A DATA SET SPECIFIC TO TABLEAU
+#---------------------------------------------------
 
+#----------------------------------- 
 # create a copy of the data
 tab_full = copy(dt)
 
