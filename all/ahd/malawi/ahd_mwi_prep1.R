@@ -372,6 +372,11 @@ dt[grepl('>', ahd_vl_result), ahd_vl_result:='Detectable']
 dt[ahd_vl_result=='Undetectable' | ahd_vl_result=='Success', suppressed:=TRUE]
 dt[ahd_vl_result=='Detectable', suppressed:=FALSE]
 
+# factor the variable for display
+dt$ahd_vl_result = factor(dt$ahd_vl_result, 
+            c('Undetectable', 'Success', 'Detectable'),
+            c('Undetectable', 'Success', 'Detectable'))
+
 # drop test (numeric created to code categorical variable)
 dt[ ,test:=NULL]
 
@@ -436,7 +441,7 @@ tab_full[ ,tptstart:=as.numeric(tptstart)]
 tab_full[ ,sstest:=as.numeric(sstest)]
 tab_full[ ,gxtest:=as.numeric(gxtest)]
 
-write.csv(tab_full, paste0(prepDir, 'mwi_tableau_data.csv'))
+write.csv(tab_full, paste0(prepDir, 'Malawi Tableau Data.csv'))
 
 
 
