@@ -294,8 +294,21 @@ dt_copy = NULL
 
 dem = data.table(read_xlsx(paste0(dir, 'full_voter_list.xlsx'), sheet = 1))
 
+dt = dt[!duplicated(dt)]
+dem = dem[!duplicated(dem)]
 
+dem[ ,id:=paste(FirstName, LastName)]
+dt[ , id:=paste(first, last)]
 
+dt_test = merge(dt, dem, by = 'id', all.x=T)
+
+dt_test[ ,count:=.N, by = id]
+
+dt_test[ , count:=NULL]
+
+write.csv(dt_test, paste0(dir, 'Dem Petition Signers Merged.csv'))
+
+wrote
 
 dem = dem[, 1:16]
 dem[!is.na(MiddleName) , name:=paste(FirstName, MiddleName, LastName)]
@@ -306,8 +319,7 @@ test = dem[ ,.(name, address = mAddress)]
 
 dt[!(name %in% dem$name)]
 
-dem[ ,name2:=paste(FirstName, LastName)]
-dt[ , name2:=paste(first, last)]
+
 
 dt[name2 %in% dem$name2]
 
