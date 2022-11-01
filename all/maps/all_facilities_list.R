@@ -24,11 +24,11 @@ library(openxlsx)
 # Files and directories
 
 # set the working directory to the location of the raw data
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/raw_data/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/all/maps/archive_maps/pepfar_org_units_old/raw_data/'
 setwd(dir)
 
 # set the output directory
-outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/pepfar_org_units/prepped/'
+outDir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtndata/all/maps/archive_maps/pepfar_org_units_old/prepped/'
 
 # set the main directory where all files are located
 main_dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
@@ -43,10 +43,6 @@ source('C:/Users/ccarelli/Documents/GitHub/sie/all/fix_diacritics_function.r')
 # country ids for all countries
 af =  fromJSON(paste0(dir, 'africa_country_ids.json'))
 af = data.table(af$children)
-
-
-
-
 
 
 # fill in the names of the countries by code

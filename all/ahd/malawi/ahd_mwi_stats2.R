@@ -1,10 +1,10 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 5/26/22
+# 11/1/22
 # Malawi data set
 # Run descriptive statistics for the technical report
-# Majority of descriptives are from the tables
+# Majority of descriptiv stats are from the tables
 # Sources the data prepped in ahd_mwi_prep1.R
 # ----------------------------------------------
 

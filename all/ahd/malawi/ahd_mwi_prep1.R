@@ -3,7 +3,7 @@
 # Prep the data for analysis and check data quality
 # Preps the data for both cohorts simultaneously
 # Caitlin O'Brien-Carelli
-# 5/26/222
+# 11/1/222
 
 #---------------------
 # load the packages
@@ -52,7 +52,7 @@ dt[ , c('starttime', 'deviceid', 'capturedate', 'section1.SexFemale',
 #---------------------
 
 #---------------------
-# check for repeat patient ids
+# de-duplication process
 
 # check for repeat patient ids
 # there are 8 repeat ids - none have the same DOB
@@ -303,6 +303,7 @@ dt[hivresult==4, hivresult:=NA]
 
 # there is one patient who tested negative for tb on sept. 14
 # they were coded as false for starting tpt with a start date of sept. 14
+# e.g. they started tpt - recode as true
 # and a completion date of the same day - remove completion date since it is incorrect
 dt[tptstart==F & tptcplt==T, tptstart:=TRUE]
 dt[tptstart==F & tptcplt==T, tptcplt_dt:=NA]
