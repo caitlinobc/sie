@@ -88,20 +88,64 @@ mdt[ ,gxresult:=as.numeric(gxresult)]
 mdt[ ,lamtest:=as.numeric(lamtest)]
 mdt[ ,lamresult:=as.numeric(lamresult)]
 mdt[ ,tbtx_start:=as.numeric(tbtx_start)]
+mdt[ ,tb_tx_cplt:=as.numeric(tb_tx_cplt)]
+
+mdt[ ,screenedfor_crypto:=as.numeric(screenedfor_crypto)]
+mdt[ ,crag_result:=as.numeric(crag_result)]
+mdt[ ,lumbar_referred:=as.numeric(lumbar_referred)]
+mdt[ ,lumbar_done:=as.numeric(lumbar_done)]
+mdt[ ,csf_cragperformed:=as.numeric(csf_cragperformed)]
+mdt[ ,csf_result:=as.numeric(csf_result)]
+mdt[ ,complete_cryptoindcuti2weeks:=as.numeric(complete_cryptoindcuti2weeks)]
+
+mdt[ ,everart:=as.numeric(everart)]
+mdt[ ,restarted_art:=as.numeric(restarted_art)]
+mdt[ ,art6m:=as.numeric(art6m)]
+mdt[ ,ahd_vl:=as.numeric(ahd_vl)]
+mdt[ ,suppressed:=as.numeric(suppressed)]
 
 
+#------------------------
+# rename the variables for display
+#------------------------
 
+setnames(mdt, c('ahd_dt', 'ahd_elig', 'knwstat', 'hivtest', 'dtpos', 'hivresult',
+     'cd4done_after_ahdelig', 'cd4_after_ahdelig_dt',
+     'cd4_afterahdelig_res_ret_dt', 'cd4_after_ahdelig_result', 
+     'whostage1_done', 'whostage1st_dt', 'whostage1st',
+     
+     'tbsympscrn', 'tbsympscrn_dt', 'tbsympscrn_result', 
+     'tptstart',  'tptstart_dt', 'tptcplt,tptcplt_dt',
+     
+     'sstest', 'sstest_dt', 'ssreturn_dt', 'ssresult',
+     'gxtest', 'gxtest_dt,gxreturn_dt', 'gxresult', 
+     'lamtest', 'lamtest_dt', 'lamreturn_dt', 'lamresult',
+     'tbtx_start', 'tbtx_start_dt', 'tb_tx_cplt', 'tb_tx_cplt_dt',
+     
+     'screenedfor_crypto', 'crag_dt', 'crag_result_dt', 'crag_result', 
+     'lumbar_referred', 'lumbarreferred_dt', 'lumbar_done', 'lumbar_done_dt',           
+     'csf_cragperformed', 'csf_cragperformed_dt', 'csfcragresultsreturned_dt',     
+     'csf_result', 'crypto_regimen', 'crypto_regimen_start_dt',    
+     'complete_cryptoindcuti2weeks', 'complete_cryptoindcuti2weeks_dt',
+     'everart', 'firstart_dt', 'restarted_art', 'art_restart_dt', 'art6m',
+     'ahd_vl', 'ahd_vl_dt', 'ahd_vl_result', 'suppressed'),
 
-
-
-
-
+     c('AHD Diagnosis Date', 'Eligibility Stream', 'Knowledge of HIV Status',
+       'HIV Test Completed', 'HIV Test Date', 'HIV Test Result',
+       'CD4 Test Completed', 'CD4 Test Date',
+       'CD4 Results Returned Date', 'CD4 Test Result', 
+       'Received WHO Staging', 'WHO Staging Date', 'WHO Stage'
+       
+       
+       ))
 
 
 #----------------------------------- 
 # export the data for Malawi 
 write.csv(mdt, paste0(mwiOutDir, 'Malawi Tableau Data.csv'))
 #----------------------------------- 
+
+#--------------------------------------------------------
 
 #--------------------------------------
 # TANZANIA

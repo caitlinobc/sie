@@ -78,7 +78,7 @@ dt[ ,c('pt_count', 'rank'):=NULL]
 #---------------------
 # change the names to match the names in the tanzania data 
 setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1.Sex", "StudySite",           
-     "AHD_Diagnosisdate1" , "peligibility", "section1.Patient_HIVknowledge",     "section1.HIV_Tested",
+     "AHD_Diagnosisdate1" , "peligibility", "section1.Patient_HIVknowledge", "section1.HIV_Tested",
       "section1.Date_tested", "section1.hivtestresult",   
      
      "section2.wascd4_done", "section2.wascd4_donedate", 
