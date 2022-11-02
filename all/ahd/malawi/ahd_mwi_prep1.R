@@ -414,42 +414,7 @@ saveRDS(dt, paste0(prepDir, 'full_data.RDS'))
 write.csv(dt, paste0(prepDir, 'full_data.csv'))
 #----------------------------------- 
 
-#---------------------------------------------------
-# FORMAT A DATA SET SPECIFIC TO TABLEAU
-#---------------------------------------------------
-
 #----------------------------------- 
-# create a copy of the data
-tab_full = copy(dt)
-
-# format the variables you will visualize
-tab_full[period=='b', period:='Baseline']
-tab_full[period=='e', period:='Endline']
-
-# convert WHO stage
-tab_full[whostage1st==1, who_stage:='Stage 1']
-tab_full[whostage1st==2, who_stage:='Stage 2']
-tab_full[whostage1st==3, who_stage:='Stage 3']
-tab_full[whostage1st==4, who_stage:='Stage 4']
-
-# convert key variables to numerics
-tab_full[ ,knwstat:=as.numeric(knwstat)]
-tab_full[ ,cd4done_after_ahdelig:=as.numeric(cd4done_after_ahdelig)]
-tab_full[ ,whostage1_done:=as.numeric(whostage1_done)]
-tab_full[ ,tbsympscrn:=as.numeric(tbsympscrn)]
-tab_full[ ,tptstart:=as.numeric(tptstart)]
-
-tab_full[ ,sstest:=as.numeric(sstest)]
-tab_full[ ,gxtest:=as.numeric(gxtest)]
-
-write.csv(tab_full, paste0(prepDir, 'Malawi Tableau Data.csv'))
-
-
-
-
-
-
-
-
-
+# END
+#----------------------------------- 
 
