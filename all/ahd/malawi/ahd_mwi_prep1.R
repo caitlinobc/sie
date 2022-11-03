@@ -88,6 +88,7 @@ setnames(dt, c( "participant_number", "prepostrecord", "section1.dob", "section1
      "TB_screening.screenedforTB", "TB_screening.datescreenedforTB", "TB_screening.patiernttb_Symptomsscreenresult",  
      "TB_screening.waspatient_startedonTB", "TB_screening.datepatient_startedonTB",        
      "TB_screening.didpatientcompleteTBtherapy",  "TB_screening.date_tbtherapycompleted",
+     
      "TB_screening.testedfo_TBvaiSputumSmear", "TB_screening.date_sputumCollected",     
      "TB_screening.date_sputumtestresultreturned", "TB_screening.sputSmeartestresult", 
      "TB_screening.wasGenXparttested",  "TB_screening.GenXparttesteddatecollected",         
