@@ -66,7 +66,7 @@ mdt[whostage1st==4, whostage1st:='Stage 4']
 #------------------------
 # logicals (Y/N)
 #------------------------
-# convert logical variables to numerics (works better in tableau)
+#convert logical variables to numerics (works better in tableau)
 mdt[ , knwstat:=as.numeric(knwstat)]
 mdt[ , hivtest:=as.numeric(hivtest)]
 mdt[ , hivresult:=as.numeric(hivresult)]
@@ -134,7 +134,7 @@ setnames(mdt, c('ahd_dt', 'ahd_elig', 'knwstat', 'hivtest', 'dtpos', 'hivresult'
      c('AHD Diagnosis Date', 'Eligibility Stream', 'Knowledge of HIV Status',
        'HIV Test Completed', 'HIV Test Date', 'HIV Test Result',
        'CD4 Test Completed', 'CD4 Test Date',
-       'CD4 Results Date', 'CD4 Test Result', 
+       'CD4 Result Date', 'CD4 Test Result', 
        'Received WHO Staging', 'WHO Staging Date', 'WHO Stage',
        
        'Screened for TB', 'TB Screening Date', 'TB Screening Result', 
@@ -159,7 +159,9 @@ setnames(mdt, c('ahd_dt', 'ahd_elig', 'knwstat', 'hivtest', 'dtpos', 'hivresult'
 
 #----------------------------------- 
 # export the data for Malawi 
+# ensure missing values coded as blank spaces
 write.csv(mdt, paste0(mwiOutDir, 'Malawi Tableau Data.csv'))
+
 #----------------------------------- 
 
 #--------------------------------------------------------
