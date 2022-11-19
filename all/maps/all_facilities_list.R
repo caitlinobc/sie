@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 2/8/21
+# 11/19/22
 # Create an accurate list of health facilities
 # Using the API call
 # ----------------------------------------------
@@ -35,7 +35,7 @@ main_dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
 
 # --------------------
 # load the function that fixes diacritical marks
-source('C:/Users/ccarelli/Documents/GitHub/sie/all/fix_diacritics_function.r')
+# source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie/all/fix_diacritics_function.r')
 
 # --------------------
 # pull geographic information for each country
@@ -58,7 +58,6 @@ af[id=='bQQJe0cC1eD', country:='Cameroon']
 
 # ----------------------------------------------
 # JSON facilities and locations - LOOP
-
 #
 # --------------------
 # loop through files, import, and format
@@ -186,7 +185,7 @@ fd = merge(fd, dist, by = 'parent', all.x = TRUE)
 # districts only have parents, not district parents (add)
 fd[type=='district', district_parent:=parent]
 
-# merge in theregions 
+# merge in the regions 
 reg = fd[type=='region', .(region = name, district_parent = id)]
 fd = merge(fd, reg, by = 'district_parent', all.x = TRUE)
 
@@ -202,6 +201,7 @@ fd[ , country:=toupper(country)]
 # create a binary for egpaf health facility
 
 # list the facilities specific to egpaf 
+# this was last updated last year - fix
 e_dt = data.table(read.csv(paste0(main_dir, 'pepfar_org_units/egpaf_facilities_list.csv')))
 setnames(e_dt, c('country','org_unit_id'), c('country_name', 'id'))
 e_dt[ , hts_tst:=NULL]

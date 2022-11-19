@@ -137,7 +137,7 @@ setnames(mdt, c('ahd_dt', 'ahd_elig', 'knwstat', 'hivtest', 'dtpos', 'hivresult'
        'CD4 Result Date', 'CD4 Test Result', 
        'Received WHO Staging', 'WHO Staging Date', 'WHO Stage',
        
-       'Screened for TB', 'TB Screening Date', 'TB Screening Result', 
+       'Screened TB+', 'TB Screening Date', 'TB Screening Result', 
        'Started TPT',  'TPT Start Date', 'Completed TPT' , 'TPT Completion Date',
        
        'Sputum Smear Test', 'SS Test Date', 'SS Result Date', 'Sputum Smear Result',
@@ -153,7 +153,7 @@ setnames(mdt, c('ahd_dt', 'ahd_elig', 'knwstat', 'hivtest', 'dtpos', 'hivresult'
        'Completed Crypto in <2 Weeks', 'Crypto Completion Date',
        
        'Started on ART', 'ART Start Date', 'Restarted ART', 'ART Restart Date',
-       'On ART for 6+ Months','VL Tested Performed', 'VL Test Date', 'VL Result', 
+       'On ART for 6+ Months','VL Test Performed', 'VL Test Date', 'VL Result', 
        'Virally Suppressed' ))
 
 
