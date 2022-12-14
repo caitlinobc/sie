@@ -125,7 +125,7 @@ stargazer(tb_model, tpts_model, tptc_model2,
                                'Chileka Health Centre', 'Malamulo Rural Hospital',
                                'St. Lukes Mission Hospital', 'Domasi Rural Hospital',
                                'Police College Clinic', 'Mpemba Health Centre'),
-          out = paste0(outDir, 'tb_regressions.txt'),
+          out = paste0(outDir, 'tb_regressions_mwi.txt'),
           single.row = TRUE)
 
 # ---------------------------------
@@ -135,33 +135,37 @@ stargazer(tb_model, tpts_model, tptc_model2,
 # ----------------------------------------------
 
 # --------------------
-# subset to a small data set on viral suppression 
-s_dt = dt[!is.na(suppressed) ,.(suppressed) , by =.(sex, age_cat, period, site)]
+# subset to the viral suppression data 
+v_dt = dt[ ,.(ahd_vl, suppressed) , by =.(sex, age_cat, period, site)]
 
 # --------------------
-# run a series of binomial models
-s_model = glm(formula = suppressed~sex+age_cat+period, family = "binomial", data = s_dt)
-summary(s_model)
+# run a series of binomial models - received a viral load test
+vl_model = glm(formula = ahd_vl~period+sex+age_cat+site, family = "binomial", data = v_dt)
+summary(vl_model)
 
-s_model2 = glm(formula = suppressed~sex+period, family = "binomial", data = s_dt)
-summary(s_model2)
+vl_model2 = glm(formula = ahd_vl~period+sex, family = "binomial", data = v_dt)
+summary(vl_model2)
 
-s_model3 = glm(formula = suppressed~age_cat+period, family = "binomial", data = s_dt)
-summary(s_model3)
-
-s_model4 = glm(formula = suppressed~period+sex+age_cat+site, family = "binomial", data = s_dt)
-summary(s_model4) # final model of interest
+vl_model3 = glm(formula = ahd_vl~period+sex+site, family = "binomial", data = v_dt)
+summary(vl_model3) # model of interest, age makes categories too small
 
 # --------------------
+# run a series of binomial models - viral suppression
+vs_model = glm(formula = suppressed~period+sex+age_cat+site, family = "binomial", data = v_dt)
+summary(vs_model)
+
+vs_model2 = glm(formula = suppressed~period+sex+age_cat, family = "binomial", data = v_dt)
+summary(vs_model2) # preferred model, no site was significant in first model
+
 # ---------------------------------
 
 # ---------------------------------
 # print the output
-stargazer(tb_model4, s_model4, 
-          title = 'Screening for Signs and Symptoms of TB & Viral Suppression', 
+stargazer(vl_model, vs_model2, 
+          title = 'Viral Load Testing & Viral Suppression', 
           align=T, type = 'text', no.space = TRUE, omit.stat = c("LL","ser","f"),
-          dep.var.labels = c("Screened for TB", 'Virally Suppressed'),
-          covariate.labels = c("Post-Intervention Cohort",
+          dep.var.labels = c("Received a VL Test", 'Virally Suppressed'),
+          covariate.labels = c("Endline Cohort",
            "Female", '5-9',
              '10-14', '15-19', '20-24', '25-29', '30-34',
                '35-39', '40-44', '45-49', '50+',
@@ -169,41 +173,9 @@ stargazer(tb_model4, s_model4,
            'Chileka Health Centre', 'Malamulo Rural Hospital',
            'St. Lukes Mission Hospital', 'Domasi Rural Hospital',
            'Police College Clinic', 'Mpemba Health Centre'),
-          out = paste0(outDir, 'sample_regressions.txt'),
+          out = paste0(outDir, 'viral_load_regressions_mwi.txt'),
           single.row = TRUE)
 
 # ---------------------------------
-
-# ---------------------------------
-# regression: viral load testing
-
-# --------------------
-# subset to a small data set on viral suppression 
-t_dt = dt[!is.na(ahd_vl) ,.(ahd_vl) , by =.(sex, age_cat, period, site)]
-
-# --------------------
-# run a series of binomial models
-t_model = glm(formula = ahd_vl~period, family = "binomial", data = t_dt)
-summary(t_model)
-
-t_model1 = glm(formula = ahd_vl~period+age_cat, family = "binomial", data = t_dt)
-summary(t_model1)
-
-t_model2 = glm(formula = ahd_vl~sex+period, family = "binomial", data = t_dt)
-summary(t_model2)
-
-
-# print the output
-stargazer(t_model1, 
-          title = 'Received a Viral Load Test', 
-          align=T, type = 'text', no.space = TRUE, omit.stat = c("LL","ser","f"),
-          dep.var.labels = c("Received a VL Test"),
-          covariate.labels = c("Post-Intervention Cohort",
-                               '5-9',
-                               '10-14', '15-19', '20-24', '25-29', '30-34',
-                               '35-39', '40-44', '45-49', '50+'),
-          out = paste0(outDir, 'sample_regressions2.txt'),
-          single.row = TRUE)
-
 
 
