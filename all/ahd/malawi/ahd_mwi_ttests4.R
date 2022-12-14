@@ -64,15 +64,10 @@ tt = tt[!is.na(value)]
 
 # ------------------------
 
-
-
 table(tt[variable=='lamtest']$value)
 
 test = t.test(tt[period=='b' & variable=='lamtest']$value, 
        tt[period=='e' & variable=='lamtest']$value, var.eqal = FALSE)
-
-
-
 
 
 # ----------------------------------------------
@@ -139,23 +134,6 @@ for (v in unique(tt$variable)) {
   i = i+1
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ------------------------
