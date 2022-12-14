@@ -1,7 +1,7 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 11/19/20
+# 12/14/2022
 # List of packages to install to set up R
 # You will need all of these to run my code
 # This list should include every package you need
@@ -43,6 +43,6 @@ install.packages('ggrepel')
 # webscrape packages
 install.packages('jsonlite')
 install.packages('httr')
-
+install.packages('RJSONIO')
 
 # ------------------------

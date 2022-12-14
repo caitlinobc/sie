@@ -40,14 +40,6 @@ outDir = paste0(dir, 'outputs/')
 dt = readRDS(paste0(prepDir, 'full_data.RDS'))
 # ------------------------
 
-#--------------------
-# data for MSA
-
-
-#--------------------
-
-
-
 # ----------------------------------------------
 # FORMAT THE DATA FOR REGRESSION ANALYSIS
 # ----------------------------------------------
@@ -71,7 +63,7 @@ c('Thyolo District Hospital',
              'Police College Clinic', 'Mpemba Health Centre'))
 
 # ----------------------------------------------
-# SAMPLE REGRESSIONS 
+# REGRESSIONS: TUBERCULOSIS
 # ----------------------------------------------
 
 # ---------------------------------
@@ -83,23 +75,64 @@ tb_dt = dt[ ,.(tbsympscrn) , by =.(sex, age_cat, period, site)]
 
 # --------------------
 # run a series of binomial models
-tb_model = glm(formula = tbsympscrn~sex+age_cat+period, family = "binomial", data = tb_dt)
-summary(tb_model)
 
-tb_model2 = glm(formula = tbsympscrn~sex+period, family = "binomial", data = tb_dt)
+# tb screening
+tb_model = glm(formula = tbsympscrn~period+sex+age_cat+site, family = "binomial", data = tb_dt)
+summary(tb_model) # selected model
+
+tb_model2 = glm(formula = tbsympscrn~period+sex, family = "binomial", data = tb_dt)
 summary(tb_model2)
 
-tb_model3 = glm(formula = tbsympscrn~age_cat+period, family = "binomial", data = tb_dt)
+tb_model3 = glm(formula = tbsympscrn~period+age_cat, family = "binomial", data = tb_dt)
 summary(tb_model3)
 
-tb_model4 = glm(formula = tbsympscrn~period+sex+age_cat+site, family = "binomial", data = tb_dt)
-summary(tb_model4) # final model of interest
+tb_model4 = glm(formula = tbsympscrn~period+sex+site, family = "binomial", data = tb_dt)
+summary(tb_model4)
+
+# ---------------------------------
+# regression: started and completed tb preventive therapy
 
 # --------------------
-# ---------------------------------
+# subset to a small data set on screening
+tpt_dt = dt[ ,.(tptstart, tptcplt) , by =.(sex, age_cat, period, site)]
+
+# --------------------
+# run a series of binomial models
+
+# starting tb preventive therapy
+tpts_model = glm(formula = tptstart~period+sex+age_cat+site, family = "binomial", data = tpt_dt)
+summary(tpts_model) # selected model
+
+# completing tb preventive therapy
+tptc_model = glm(formula = tptcplt~period+sex+age_cat+site, family = "binomial", data = tpt_dt)
+summary(tptc_model)
+
+tptc_model2 = glm(formula = tptcplt~period+sex+age_cat, family = "binomial", data = tpt_dt)
+summary(tptc_model2) # selected model - small sample size
 
 # ---------------------------------
-# regression: viral suppression
+# print the output - TB regressions
+
+stargazer(tb_model, tpts_model, tptc_model2,
+          title = 'TB Screening & TB Preventive Therapy', 
+          align=T, type = 'text', no.space = TRUE, omit.stat = c("LL","ser","f"),
+          dep.var.labels = c("Screened for TB", 'Started TPT', 'Completed TPT'),
+          covariate.labels = c("Endline Cohort",
+                               "Female", '5-9',
+                               '10-14', '15-19', '20-24', '25-29', '30-34',
+                               '35-39', '40-44', '45-49', '50+',
+                               'Mwanza District Hospital', 'Bangwe Health Centre',
+                               'Chileka Health Centre', 'Malamulo Rural Hospital',
+                               'St. Lukes Mission Hospital', 'Domasi Rural Hospital',
+                               'Police College Clinic', 'Mpemba Health Centre'),
+          out = paste0(outDir, 'tb_regressions.txt'),
+          single.row = TRUE)
+
+# ---------------------------------
+
+# ----------------------------------------------
+# REGRESSIONS: VIRAL SUPPRESSION
+# ----------------------------------------------
 
 # --------------------
 # subset to a small data set on viral suppression 
@@ -160,8 +193,6 @@ t_model2 = glm(formula = ahd_vl~sex+period, family = "binomial", data = t_dt)
 summary(t_model2)
 
 
-# --------------------
-
 # print the output
 stargazer(t_model1, 
           title = 'Received a Viral Load Test', 
@@ -173,3 +204,6 @@ stargazer(t_model1,
                                '35-39', '40-44', '45-49', '50+'),
           out = paste0(outDir, 'sample_regressions2.txt'),
           single.row = TRUE)
+
+
+
