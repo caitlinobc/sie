@@ -39,6 +39,11 @@ outDir = paste0(dir, 'outputs/tables/')
 dt = readRDS(paste0(prepDir, 'full_data.RDS'))
 # ------------------------
 
+dt[hvl6mresult <= 1000 , sup:=TRUE]
+dt[is.na(sup), sup:=FALSE]
+
+
+
 # -------------------------------------
 # DEMOGRAPHICS AND STUDY ELGIBILITY
 # -------------------------------------

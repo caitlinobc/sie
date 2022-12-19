@@ -514,7 +514,7 @@ dt[, length(unique(pid)), by = .(period, hvl6m)] # type in - 6 values
 
 # ------------------------
 # received a viral load test within six months of starting ART, age, sex
-hvt = dt[, sum(hvl6m, na.rm=T), by = .(period, age_cat, sex)]
+hvt = dt[, sum(hvl6m, na.rm=T), by = .(period, sex)]
 hvt2 = dt[, sum(hvl6m, na.rm=T), by = .(period, age_cat)]
 hvt2[ , sex:='Total']
 hvt = rbind(hvt, hvt2)
@@ -527,26 +527,74 @@ write.csv(hvt, paste0(outDir, 'vl_tested_age_sex.csv'))
 # ------------------------
 # viral suppression table 
 vl = dt[hvl6m==T & !is.na(hvl6mresult),
-   .(pid, hvl6m, hvl6mresult, age_cat, sex, period)]
+   .(pid, hvl6m, hvl6mresult, sex, period)]
 
 # create a viral suppression variable
 vl[hvl6mresult <= 1000 , sup:=TRUE]
 vl[is.na(sup), sup:=FALSE]
 
-# create the table
-vs = vl[, .(value = sum(sup)), by = .(period, age_cat)]
-vs[ ,var:='sup']
-vs = dcast(vs, age_cat~period+var, value.var = 'value')
-vt = hvt[ , .(age_cat, b_Total, e_Total)]
-vs = merge(vs, vt, by = 'age_cat')
-
-# rename the variables and reorder 
-vs = vs[ ,.(age_cat, b_tested = b_Total, b_sup,
-       e_tested = e_Total, e_sup)]
-
-# export the table
-write.csv(vs, paste0(outDir, 'vl_suppression_age_sex.csv'))
+# # create the table
+# vs = vl[, .(value = sum(sup)), by = .(period, sex)]
+# vs[ ,var:='sup']
+# vs = dcast(vs, sex~period+var, value.var = 'value')
+# vt = hvt[ , .(sex, b_Total, e_Total)]
+# vs = merge(vs, vt, by = 'age_cat')
+# 
+# # rename the variables and reorder 
+# vs = vs[ ,.(age_cat, b_tested = b_Total, b_sup,
+#        e_tested = e_Total, e_sup)]
+# 
+# # export the table
+# write.csv(vs, paste0(outDir, 'vl_suppression_age_sex.csv'))
 # ------------------------
+
+
+vt = dt[!is.na(hvl6m),.(pid, period, site, sex, age_cat, hvl6m, hvl6mresult)]
+vt[hvl6m==T & hvl6mresult <= 1000 , sup:=TRUE]
+vt[hvl6m==T & 1001 <= hvl6mresult, sup:=FALSE]
+
+vs_model = glm(formula = sup~period+sex+age_cat+site, family = "binomial", data = vt)
+summary(vs_model)
+
+vs_model2 = glm(formula = sup~period+sex+age_cat, family = "binomial", data = vt)
+summary(vs_model2)
+
+vl_model = glm(formula = hvl6m~period+sex+age_cat, family = "binomial", data = vt)
+summary(vl_model)
+
+
+
+# print the output
+stargazer(vl_model, vs_model2, 
+          title = 'Viral Load Testing & Viral Suppression', 
+          align=T, type = 'text', no.space = TRUE, omit.stat = c("LL","ser","f"),
+          dep.var.labels = c("Received a VL Test", 'Virally Suppressed'),
+          covariate.labels = c("Endline Cohort",
+                               "Female", '5-9',
+                               '10-14', '15-19', '20-24', '25-29', '30-34',
+                               '35-39', '40-44', '45-49', '50+'),
+          out = paste0(outDir, 'viral_load_regressions_tz.txt'),
+          single.row = TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # run ttests
 

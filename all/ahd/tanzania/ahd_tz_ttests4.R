@@ -40,6 +40,29 @@ dt = readRDS(paste0(prepDir, 'full_data.RDS'))
 
 # ------------------------
 
+# --------------------
+# subset to the viral suppression data 
+
+v_dt = dt[ ,.(ahd_hvl, suppressed) , by =.(sex, age_cat, period, site)]
+
+# --------------------
+# run a series of binomial models - received a viral load test
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ----------------------------------------------
 # T-TESTS ON BINARY OUTCOMES: TANZANIA
 # ----------------------------------------------
@@ -51,7 +74,8 @@ dt = readRDS(paste0(prepDir, 'full_data.RDS'))
 tt = dt[ ,c('period',
             'cd4done_after_ahdelig', 'cd4_after_ahdelig_result',
             'whostage1_done',
-            'tbsympscrn',  'sstest','gxtest',  
+            'tbsympscrn',  'sstest','gxtest',
+            'tptstart', 'tptcplt',
             'everart', 'art6m')]
 
 # rename cd4 variables because the variable names are long 
@@ -80,7 +104,7 @@ tt = tt[!is.na(value)]
 # ------------------------
 
 # ------------------------
-# test variable - tb lam tests performed go from 155 to 403
+# test variable 
 table(tt[variable=='whostage1_done']$value)
 t.test(tt[period=='b' & variable=='whostage1_done']$value, tt[period=='e' & variable=='whostage1_done']$value,
        var.eqal = FALSE)
