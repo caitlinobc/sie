@@ -3,7 +3,7 @@
 #
 # 12/19/2022
 # Cameroon API Model - DHIS2 aggregate data
-# Pull the meta data, including health facilities
+# Download all of the meta data using an API call
 # ----------------------------------------------
 
 # --------------------
@@ -30,10 +30,7 @@ dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/cameroon/dhis2/'
 setwd(dir)
 
 # set the output directory
-outDir = paste0(dir, 'prepped/')
-
-# set the main directory where all files are located
-main_dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/data/'
+outDir = paste0(dir, 'raw/')
 
 # --------------------
 # load the function that fixes diacritical marks
@@ -45,53 +42,51 @@ source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie
 # table of contents - all API links
 'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/resources'
 
-# full list of org units
+# specific org unit example 
+'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/organisationUnits/ME6mMdBOq6r'
+
+# for an example of all fields
+'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataSets.json?fields=:all'
+
+# --------------------
+# links for downloading data - includes all essential attributes
+
+# full list of org units - does not include ancestors
 org_url = "https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/organisationUnits.json?includeDescendants=true&paging=false&fields=id,name,parent,level,geometry"
 
+sets_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataSets.json?fields=:all'
+
+cat_combo_url = 'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos'# edit this
 
 # -----------------------------------------
 # DOWNLOAD THE FILES
 # -----------------------------------------
 
-# list of org units
+# download the list of organisational units
 download.file(org_url, 
-        destfile = paste0(dir, 'raw/organisationUnits.json'))
+              destfile = paste0(dir, 'raw/organisationUnits.json'))
+
+# download the list of data sets
+download.file(sets_url, 
+              destfile = paste0(dir, 'raw/data_sets.json'))
+
+
+# attributes
+
+# category combos
+
+# category options
+
+# indicator group sets/indicators
+
+# categories
+
+# data elements/program data elements
 
 
 
-
-
-# -----------------------------------------
-# PARSE THE PAGES
-# -----------------------------------------
-
-# --------------------
-# extract a list of all org units and health facilities
-
-# load the json file
-orgUnitList = jsonlite::fromJSON(paste0(dir, 'raw/organisationUnits.json'))
-
-# unlist the list/parse the file
-org_units = data.table(cbind(orgUnitID = orgUnitList$organisationUnits$id,
-                 orgUnit = orgUnitList$organisationUnits$name,
-                 level = orgUnitList$organisationUnits$level,
-                 parentID = orgUnitList$organisationUnits$parent$id))
-
-# four org units are duplicated with no associated name
-org_units = org_units[!(orgUnit=='.' | orgUnit=='-')]
-
-# export all org units as a csv
-write.csv(org_units, paste0(outDir, 'all_org_units.csv'))
-saveRDS(org_units, paste0(outDir, 'all_org_units.rds'))
-
-# create a list of just health facilities
-units = org_units[level==6]
-parents = org_units[level!=6]
-setnames(parents )
-
-
-
-merge(units, parents)
+# test code to see if the download worked
+jsonlite::fromJSON(paste0(dir, 'raw/data_sets.json'))
 
 
 
@@ -99,58 +94,3 @@ merge(units, parents)
 
 
 
-
-
-
-
-
-url = "https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/organisationUnits.xml"
-userID = "caitlin"
-password = "user001*"
-
-parse_page(url, userID, password)
-
-
-
-# ---------------------------------------------
-# pull the organisation unit meta data for every country in datim
-
-# set the index to 1
-dex = 1
-
-# loop through each country's file for the total units
-for (c in countries) {
-  
-  # -------------------
-  
-  # load a list of every unit in datim
-  dt = RJSONIO::fromJSON(paste0(dir, c, '.json'))
-  
-  # --------------------
-  # loop to get the entire list of org units for the country
-  
-  # loop through each unit, leaving off lat/long
-  i = 1
-  for (o in seq(1:length(dt$organisationUnits))) {
-    
-    org = dt$organisationUnits[i][[1]]
-    lt = c(level = org$level, name = org$name, id = org$id, parent = org$parent)
-    
-    if (i == 1) org_list = lt
-    if (1 < i) org_list = rbind(org_list, lt)
-    i = i +1}
-  
-  # --------------------
-  # convert to a data table for ease of use
-  org_list = data.table(org_list)  
-  org_list[ , country:=as.character(c)]
-  
-  # --------------------
-  # combine all countries 
-  if(dex==1) full_data = org_list
-  if(1 < dex) full_data = rbind(full_data, org_list)
-  dex = dex+1
-  
-  # --------------------
-  
-}
