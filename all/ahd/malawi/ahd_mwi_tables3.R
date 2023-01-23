@@ -274,8 +274,19 @@ write.csv(cd4_ma, paste0(outDir, 'cd4_result_sex_age.csv'))
 # check for missing data 
 dt[is.na(whostage1_done)] # 105 missing entries
 dt[!is.na(whostage1_done), length(unique(pid))]
-dt[, table(whostage1_done), by = .(period, sex)]
-dt[is.na(whostage1_done)][order(period)]
+
+# ------------------------
+# received who staging/did not receive who staging
+
+rs = dt[whostage1_done==T, .(received_staging = length(unique(pid))), by = .(period, sex)]
+ns = dt[whostage1_done==F, .(no_staging = length(unique(pid))), by = .(period, sex)]
+stage = merge(rs, ns, by = c('sex', 'period'))
+stage = melt(stage, id.vars = c('sex', 'period'))
+stage = dcast(stage, period~variable+sex)
+
+# export the table
+write.csv(stage, paste0(outDir, 'who_stage_received_sex.csv'))
+# ------------------------
 
 # ------------------------
 # who stage by sex, period
@@ -635,6 +646,77 @@ write.csv(tx5, paste0(outDir, 'completed_tb_tx_age_sex.csv'))
 # ------------------------
 
 # ----------------------------------------------
+# OUTCOME TABLES: MENINGITIS CASCADE
+# ----------------------------------------------
+
+# ------------------------
+# review the CrAg screening and testing data
+
+# list of variables related to CrAg
+crypto_vars = c("screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
+"lumbar_referred", "lumbarreferred_dt", "lumbar_done", "lumbar_done_dt",           
+"csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
+"csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
+"complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt")
+
+# tabulate the key variables
+dt[ , table(screenedfor_crypto, period)]
+dt[!is.na(screenedfor_crypto) ,length(unique(pid)), by = period]
+# ------------------------
+
+# ------------------------
+# screened for crypto by age, sex
+
+cry1 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, sex, period)]
+cry2 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, period)]
+cry2[ , sex:='Total']
+cry = rbind(cry1, cry2)
+cry = dcast(cry, age_cat~period+sex)
+
+# export the table
+write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# crypto screening (crag) result by age, sex
+
+cr1 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, sex, period)]
+cr2 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, period)]
+cr2[ , sex:='Total']
+cr = rbind(cr1, cr2)
+cr = dcast(cr, age_cat~period+sex)
+
+# export the table
+write.csv(cr, paste0(outDir, 'crag_result_age_sex.csv'))
+# ------------------------
+
+# ------------------------
+# csf crag performed and csf result
+
+# csf crag performed
+csf1 = dt[ ,.(value = sum(csf_cragperformed, na.rm=T)), by = .(age_cat, sex)]
+csf2 = dt[ ,.(value = sum(csf_cragperformed, na.rm=T), sex = 'Total'), by = .(age_cat)]
+csf = rbind(csf1, csf2)
+csf = dcast(csf, age_cat~sex)
+
+# csf crag positive result - no missing data 
+csf3 = dt[ ,.(value = sum(csf_result, na.rm=T)), by = .(age_cat, sex)]
+csf4 = dt[ ,.(value = sum(csf_result, na.rm=T), sex = 'Total'), by = .(age_cat)]
+csf5 = rbind(csf3, csf4)
+csf5 = dcast(csf5, age_cat~sex)
+setnames(csf5, c('age_cat', 'Female_r', 'Male_r', 'Total_r'))
+
+# merge and arrange
+csf = merge(csf, csf5, by = 'age_cat')
+csf = csf[ ,.(age_cat, Female, Female_r, Male, Male_r, Total, Total_r)]
+
+# export the table
+write.csv(csf, paste0(outDir, 'csf_crag_results_age_sex.csv'))
+# ------------------------
+
+# ----------------------------------------------
+
+# ----------------------------------------------
 # OUTCOME TABLES: ART & VIRAL LOAD
 # ----------------------------------------------
 
@@ -731,6 +813,30 @@ write.csv(vl, paste0(outDir, 'received_vl_age_sex.csv'))
 # ------------------------
 
 # ------------------------
+# received a viral load test by age, sex, with all documented patients
+
+#create a table showing all patients with documentation 
+vlp1 = dt[!is.na(ahd_vl) ,.(length(unique(pid))), by = .(age_cat, sex, period)]
+vlp2 = dt[!is.na(ahd_vl),.(length(unique(pid))), by = .(age_cat, period)]
+vlp2[ , sex:='Total']
+vlp = rbind(vlp1, vlp2)
+vlp = dcast(vlp, age_cat~period+sex)
+
+# rename the variables for the merge
+setnames(vlp, c('age_cat', 'b_Female_t', 'b_Male_t', 'b_Total_t',
+                'e_Female_t', 'e_Male_t', 'e_Total_t'))
+
+# merge the data sets and reorder
+vlp = merge(vl, vlp, by = 'age_cat')
+vlp = vlp[ ,.(age_cat, b_Female, b_Female_t, b_Male, b_Male_t,
+              b_Total, b_Total_t, e_Female, e_Female_t,
+              e_Male, e_Male_t, e_Total, e_Total_t)]
+
+# export the table
+write.csv(vlp, paste0(outDir, 'received_vl_all_documented_age_sex.csv'))
+# ------------------------
+
+# ------------------------
 # virally suppressed by age, sex
 
 svl1 = dt[ ,.(value = sum(suppressed, na.rm=T)), by = .(age_cat, sex, period)]
@@ -779,85 +885,26 @@ write.csv(sp, paste0(outDir, 'vl_suppression_rate_age_sex.csv'))
 # ------------------------
 
 # ------------------------
+# viral suppression by WHO stage
 
+# 355 patients received both a WHO stage and had a documented vl test result
+who_v = dt[!is.na(whostage1st) & !is.na(suppressed), 
+           .(pid, period, whostage1st, ahd_vl, suppressed)]
 
+# create a table showing suppression by who stage
+who_v1 = who_v[ , .(results = length(unique(pid))), by = .(whostage1st, period) ]
+who_v2 = who_v[ , .(suppressed = sum(suppressed)), by = .(whostage1st, period) ]
+who_v = merge(who_v2, who_v1, by = c('whostage1st', 'period'), all=TRUE)
+who_v[ , percent:=round(100*(suppressed/results), 1)]
 
-
-
-# ------------------------
-
-# ----------------------------------------------
-# OUTCOME TABLES: MENINGITIS CASCADE
-# ----------------------------------------------
-
-c("screenedfor_crypto", "crag_dt", "crag_result_dt", "crag_result", 
-  
-"lumbar_referred", "lumbarreferred_dt", "lumbar_done", "lumbar_done_dt",           
-
-"csf_cragperformed", "csf_cragperformed_dt", "csfcragresultsreturned_dt",     
-
-"csf_result", "crypto_regimen", "crypto_regimen_start_dt",    
-"complete_cryptoindcuti2weeks", "complete_cryptoindcuti2weeks_dt")
-
-
-dt[ , table(screenedfor_crypto, period)]
-
-dt[ , table(screenedfor_crypto, period)]
-
-
-# ------------------------
-# screened for crypto by age, sex
-
-cry1 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, sex, period)]
-cry2 = dt[ ,.(value = sum(screenedfor_crypto, na.rm=T)), by = .(age_cat, period)]
-cry2[ , sex:='Total']
-cry = rbind(cry1, cry2)
-cry = dcast(cry, age_cat~period+sex)
+# reshape the table
+who_v = melt(who_v, id.vars = c('whostage1st', 'period'))
+who_v = dcast(who_v, whostage1st~period+variable)
 
 # export the table
-write.csv(cry, paste0(outDir, 'crypto_screened_age_sex.csv'))
-# ------------------------
+write.csv(who_v, paste0(outDir, 'vl_suppression_who_stage.csv'))
 
 # ------------------------
-# crypto screening (crag) result by age, sex
-
-cr1 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, sex, period)]
-cr2 = dt[ ,.(value = sum(crag_result, na.rm=T)), by = .(age_cat, period)]
-cr2[ , sex:='Total']
-cr = rbind(cr1, cr2)
-cr = dcast(cr, age_cat~period+sex)
-
-# export the table
-write.csv(cr, paste0(outDir, 'crag_result_age_sex.csv'))
-# ------------------------
-
-# ------------------------
-# csf crag performed and csf result
-
-# csf crag performed
-csf1 = dt[ ,.(value = sum(csf_cragperformed, na.rm=T)), by = .(age_cat, sex)]
-csf2 = dt[ ,.(value = sum(csf_cragperformed, na.rm=T), sex = 'Total'), by = .(age_cat)]
-csf = rbind(csf1, csf2)
-csf = dcast(csf, age_cat~sex)
-
-# csf crag positive result - no missing data 
-csf3 = dt[ ,.(value = sum(csf_result, na.rm=T)), by = .(age_cat, sex)]
-csf4 = dt[ ,.(value = sum(csf_result, na.rm=T), sex = 'Total'), by = .(age_cat)]
-csf5 = rbind(csf3, csf4)
-csf5 = dcast(csf5, age_cat~sex)
-setnames(csf5, c('age_cat', 'Female_r', 'Male_r', 'Total_r'))
-
-# merge and arrange
-csf = merge(csf, csf5, by = 'age_cat')
-csf = csf[ ,.(age_cat, Female, Female_r, Male, Male_r, Total, Total_r)]
-
-# export the table
-write.csv(csf, paste0(outDir, 'csf_crag_results_age_sex.csv'))
-# ------------------------
-
-# ----------------------------------------------
-
-
 
 
 
