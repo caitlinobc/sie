@@ -317,7 +317,6 @@ setnames(who_a, c('Age Category', '1', '3', '4',
 write.csv(who_a, paste0(outDir, 'who_stage_age.csv'))
 # ------------------------
 
-
 # ----------------------------------------------
 # OUTCOME TABLES: TB SCREENING
 # ----------------------------------------------
@@ -457,6 +456,12 @@ write.csv(tscreen, paste0(outDir, 'on_tpt_screened_neg_sex.csv'))
 # ------------------------
 
 # ------------------------
+
+
+# ------------------------
+
+
+# ------------------------
 # started tpt and completed tpt by age, sex, cohort
 
 # create a table of anyone started on TB preventive therapy
@@ -484,6 +489,15 @@ write.csv(tca, paste0(outDir, 'on_completed_tpt_age_sex.csv'))
 # ----------------------------------------------
 # OUTCOME TABLES: TB TESTING
 # ----------------------------------------------
+
+# ------------------------
+# review the missingness within TB testing
+
+dt[!is.na(sstest), length(unique(pid))]
+dt[is.na(gxtest), length(unique(pid))]
+dt[!is.na(gxtest), length(unique(pid)), by = period]
+
+# ------------------------
 
 # ------------------------
 # create a table of sputum smear microscopy testing by sex
@@ -566,10 +580,11 @@ write.csv(gx, paste0(outDir, 'genexpert_tested_age_sex.csv'))
 # ------------------------
 
 # ------------------------
-# create a table of tb lam testing by sex, age 
+# create a table of tb lam ag testing by sex, age 
 
-# there are almost no values for genexpert testing - only 14 
-dt[, sum(lamtest, na.rm=T)]
+# check the number of values in each cohort
+dt[!is.na(lamtest), length(unique(pid)) , by = period]
+dt[, sum(lamtest, na.rm=T), by = period]
 
 lt1 = dt[ ,.(value = sum(lamtest, na.rm=T)), by = .(age_cat, sex, period)]
 lt2 = dt[ ,.(value = sum(lamtest, na.rm=T)), by = .(age_cat, period)]
@@ -713,6 +728,11 @@ csf = csf[ ,.(age_cat, Female, Female_r, Male, Male_r, Total, Total_r)]
 # export the table
 write.csv(csf, paste0(outDir, 'csf_crag_results_age_sex.csv'))
 # ------------------------
+
+# ------------------------
+# crypto regimen
+
+dt[!is.na(crypto_regimen), .(pid, period) , by = c(crypto_vars)]
 
 # ----------------------------------------------
 

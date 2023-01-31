@@ -5,8 +5,6 @@
 # Caitlin O'Brien-Carelli
 # 11/1/222
 
-# CHANGE THE CODE
-
 #---------------------
 # load the packages
 

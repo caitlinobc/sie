@@ -77,7 +77,7 @@ tb_dt = dt[ ,.(tbsympscrn) , by =.(sex, age_cat, period, site)]
 # run a series of binomial models
 
 # tb screening
-tb_model = glm(formula = tbsympscrn~period+sex+age_cat+site, family = "binomial", data = tb_dt)
+tb_model = glm(formula = tbsympscrn~period+sex+age_cat, family = "binomial", data = tb_dt)
 summary(tb_model) # selected model
 
 tb_model2 = glm(formula = tbsympscrn~period+sex, family = "binomial", data = tb_dt)
@@ -100,11 +100,11 @@ tpt_dt = dt[ ,.(tptstart, tptcplt) , by =.(sex, age_cat, period, site)]
 # run a series of binomial models
 
 # starting tb preventive therapy
-tpts_model = glm(formula = tptstart~period+sex+age_cat+site, family = "binomial", data = tpt_dt)
+tpts_model = glm(formula = tptstart~period+sex+age_cat, family = "binomial", data = tpt_dt)
 summary(tpts_model) # selected model
 
 # completing tb preventive therapy
-tptc_model = glm(formula = tptcplt~period+sex+age_cat+site, family = "binomial", data = tpt_dt)
+tptc_model = glm(formula = tptcplt~period+sex+age_cat, family = "binomial", data = tpt_dt)
 summary(tptc_model)
 
 tptc_model2 = glm(formula = tptcplt~period+sex+age_cat, family = "binomial", data = tpt_dt)
@@ -113,7 +113,7 @@ summary(tptc_model2) # selected model - small sample size
 # ---------------------------------
 # print the output - TB regressions
 
-stargazer(tb_model, tpts_model, tptc_model2,
+stargazer(tb_model, tpts_model, tptc_model,
           title = 'TB Screening & TB Preventive Therapy', 
           align=T, type = 'text', no.space = TRUE, omit.stat = c("LL","ser","f"),
           dep.var.labels = c("Screened for TB", 'Started TPT', 'Completed TPT'),
@@ -140,7 +140,7 @@ v_dt = dt[ ,.(ahd_vl, suppressed) , by =.(sex, age_cat, period, site)]
 
 # --------------------
 # run a series of binomial models - received a viral load test
-vl_model = glm(formula = ahd_vl~period+sex+age_cat+site, family = "binomial", data = v_dt)
+vl_model = glm(formula = ahd_vl~period+sex+age_cat, family = "binomial", data = v_dt)
 summary(vl_model)
 
 vl_model2 = glm(formula = ahd_vl~period+sex, family = "binomial", data = v_dt)
