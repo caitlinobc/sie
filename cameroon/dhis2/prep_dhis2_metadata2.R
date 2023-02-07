@@ -46,25 +46,12 @@ source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie
 # table of contents - all API links
 'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/resources'
 
-
 # -----------------------------------------
-# PARSE THE PAGES
+# PREP THE FILES FOR ANALYSIS AND MODELING
 # -----------------------------------------
 
-# --------------------
-# extract a list of all org units and health facilities
 
-# load the json file
-orgUnitList = jsonlite::fromJSON(paste0(dir, 'raw/organisationUnits2.json'))
 
-# unlist the list/parse the file
-org_units = data.table(cbind(orgUnitID = orgUnitList$organisationUnits$id,
-                 orgUnit = orgUnitList$organisationUnits$name,
-                 level = orgUnitList$organisationUnits$level,
-                 parentID = orgUnitList$organisationUnits$parent$id))
-
-# four org units are duplicated with no associated name
-org_units = org_units[!(orgUnit=='.' | orgUnit=='-')]
 
 # export all org units as a csv
 write.csv(org_units, paste0(outDir, 'all_org_units.csv'))
@@ -78,11 +65,6 @@ setnames(parents )
 
 
 merge(units, parents)
-
-
-
-
-
 
 
 

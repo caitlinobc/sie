@@ -11,7 +11,7 @@
 
 rm(list=ls()) # clear the workspace
 library(readxl)
-library(xlsx)
+library(openxlsx)
 library(data.table)
 library(lubridate)
 library(plyr)
@@ -54,14 +54,17 @@ source('C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/Documents/GitHub/sie
 # full list of org units - does not include ancestors
 org_url = "https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/organisationUnits.json?includeDescendants=true&paging=false&fields=id,name,parent,level,geometry"
 
-sets_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataSets.json?fields=:all'
+sets_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataSets.json?includeDescendants=true&paging=false&fields=:all'
 
-cat_combo_url = 'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos'# edit this
+elements_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataElements.json?includeDescendants=true&paging=false&fields=:all'
+
+cat_combo_url = 'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos?includeDescendants=true&paging=false&fields=:all'# edit this
 
 # -----------------------------------------
 # DOWNLOAD THE FILES
 # -----------------------------------------
 
+# -------------------------
 # download the list of organisational units
 download.file(org_url, 
               destfile = paste0(dir, 'raw/organisationUnits.json'))
@@ -70,27 +73,95 @@ download.file(org_url,
 download.file(sets_url, 
               destfile = paste0(dir, 'raw/data_sets.json'))
 
+# data elements/program data elements
+download.file(elements_url, 
+              destfile = paste0(dir, 'raw/data_elements.json'))
+
+# categories and their associated category option combos
+download.file(cat_combo_url, 
+              destfile = paste0(dir, 'raw/categories.json'))
+
+# indicator group sets/indicators 
 
 # attributes
 
-# category combos
+# -------------------------
 
-# category options
+# -----------------------------------------
+# DE-LIST THE FILES TO READY FOR PREP
+# -----------------------------------------
 
-# indicator group sets/indicators
+# --------------------------
+# CREATE A SET OF ORG UNITS
 
-# categories
+# de-soup the file from the json 
+orgUnitList = jsonlite::fromJSON(paste0(dir, 'raw/organisationUnits.json'))
 
-# data elements/program data elements
+# unlist the list/parse the file
+org_units = data.table(cbind(orgUnitID = orgUnitList$organisationUnits$id,
+                             orgUnit = orgUnitList$organisationUnits$name,
+                             level = orgUnitList$organisationUnits$level,
+                             parentID = orgUnitList$organisationUnits$parent$id))
+
+# four org units are duplicated with no associated name
+org_units = org_units[!(orgUnit=='.' | orgUnit=='-')]
+# --------------------------
+
+# --------------------------
+# CREATE A SET OF DATA SETS
+
+# de-soup the file from the json 
+DataSetList = jsonlite::fromJSON(paste0(dir, 'raw/data_sets.json'))
+
+# unlist the list/parse the file
+data_sets = data.table(cbind(name = DataSetList$dataSets$name,
+                             shortName = DataSetList$dataSets$shortName,
+                             id = DataSetList$dataSets$id,
+                             lastUpdated = DataSetList$dataSets$lastUpdated,
+                             displayFormName = DataSetList$dataSets$displayFormName,
+                             displayName = DataSetList$dataSets$displayName,
+                             href = DataSetList$dataSets$href ))
+
+# drop the CM before the short names
+data_sets = data_sets[,gsub('CM.', '', shortName)]
+
+# --------------------------
+
+# --------------------------
+# CREATE A SET OF DATA ELEMENTS 
+
+# create a list of the data sets associated with each element
+data_elements_sets = data.table(cbind(name = DataSetList$dataSets$name,
+                                      set_id = DataSetList$dataSets$id,
+                                      element_id = unlist(DataSetList$dataSets$dataSetElements)))
+
+# de-soup the file from the json 
+DataElementList = jsonlite::fromJSON(paste0(dir, 'raw/data_elements.json'))
+
+# unlist the list/parse the file
+data_elements = data.table(cbind(name = DataElementList$dataElements$name, 
+                                 shortName = DataElementList$dataElements$shortName,
+                                 displayName = DataElementList$dataElements$displayName, 
+                                 displayShortName = DataElementList$dataElements$displayShortName, 
+                                 element_id = DataElementList$dataElements$id,
+                                 lastUpdated = DataElementList$dataElements$lastUpdated))
+
+# --------------------------
+
+# --------------------------
+# CREATE A SET OF CATEGORIES AND THEIR OPTIONAL RESPONSES
+
+# de-soup the file from the json 
+CategoryList = jsonlite::fromJSON(paste0(dir, 'raw/categories.json'))
 
 
 
-# test code to see if the download worked
-jsonlite::fromJSON(paste0(dir, 'raw/data_sets.json'))
 
 
 
 
+
+# -------------------------
 
 
 
