@@ -149,7 +149,7 @@ data_elements = data.table(cbind(name = DataElementList$dataElements$name,
 
 # save the data table (subset of the full json extraction)
 saveRDS(data_elements, paste0(dir, 'raw/data_elements.rds'))
-write.csv(data_elements, paste0(dir, 'raw/data_elements.csv') )
+write.csv(data_elements, paste0(dir, 'raw/data_elements.csv'))
 # --------------------------
 
 # --------------------------
@@ -184,21 +184,43 @@ CategoryList = jsonlite::fromJSON(paste0(dir, 'raw/categories.json'))
 # create a data table showing the sets of category option combos
 cats = data.table(cbind(code = CategoryList$categoryCombos$code,
                         displayName = CategoryList$categoryCombos$displayName,
-                        id = CategoryList$categoryCombos$id,
+                        set_id = CategoryList$categoryCombos$id,
                         name = CategoryList$categoryCombos$name,
                         dimensionType = str_to_title(CategoryList$categoryCombos$dataDimensionType)))
 
+# --------------
+# loop through and get all of the categories
 
+i = 1
+for (c in seq(1:length(CategoryList$categoryCombos$categories))) {
+  
+  cat = data.table(CategoryList$categoryCombos$categories[[c]])
+  cat[ , option:=c]
+  if(i==1) full_data = cat
+  if(1 < i) full_data = rbind(full_data, cat)
+  
+  i = i+1
+}
+# --------------
 
-cats = unlist(CategoryList$categoryCombos$categories)
+# --------------
+# merge the categories in with their option sets
 
-categories = 3
+# number the lines of the data table in order
+cats[ , option:=1:nrow(cats)]
 
+# merge on the option 
+cats = merge(full_data, cats, by = 'option')
+# --------------
 
-# save the data table (subset of the full json extraction)
-saveRDS(categories, paste0(dir, 'raw/categories.rds'))
+# --------------
+# merge in the names of the categories based on their id 
 
 # -------------------------
+# save the data table (subset of the full json extraction)
+saveRDS(cats, paste0(dir, 'raw/categories.rds'))
+write.csv(cats, paste0(dir, 'raw/categories.csv'))
+# -------------------------
 
-
+# --------------------------
 

@@ -87,6 +87,17 @@ units[orgUnitID=='mcxNt5Ri37j', orgUnitClean:='CSIU Number 1']
 # convert to title case
 units[ ,  orgUnitClean:=str_to_title(orgUnitClean)]
 
+# acronyms should not be in title case
+units[ , orgUnitClean:=gsub('Csiu', 'CSIU', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Csm', 'CSM ', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Csi', 'CSI ', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Cs ', 'CS ', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Hd', 'HD', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Cma', 'CMA ', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Cms', 'CMS ', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Cm', 'CM ', orgUnitClean)]
+units[ , orgUnitClean:=gsub('Cmes', 'CMES ', orgUnitClean)]
+
 # re-arrange to an intuitive order
 units = units[ ,.(orgUnit, orgUnitClean, orgUnitID, parentID = site_parent, level,
           district, cluster, region, country)]
