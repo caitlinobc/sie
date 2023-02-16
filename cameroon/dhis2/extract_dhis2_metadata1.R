@@ -58,7 +58,9 @@ sets_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/a
 
 elements_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataElements.json?includeDescendants=true&paging=false&fields=:all'
 
-cat_combo_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos?includeDescendants=true&paging=false&fields=:all'# edit this
+cat_combo_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos?includeDescendants=true&paging=false&fields=:all'
+
+cat_options_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryOptions?includeDescendants=true&paging=false'
 
 # -----------------------------------------
 # DOWNLOAD THE FILES
@@ -77,9 +79,11 @@ download.file(sets_url,
 download.file(elements_url, 
               destfile = paste0(dir, 'raw/data_elements.json'))
 
-# categories and their associated category option combos
+# categories and their associated options 
 download.file(cat_combo_url, 
               destfile = paste0(dir, 'raw/categories.json'))
+download.file(cat_options_url, 
+              destfile = paste0(dir, 'raw/category_options.json'))
 
 # indicator group sets/indicators 
 
@@ -215,6 +219,14 @@ cats = merge(full_data, cats, by = 'option')
 
 # --------------
 # merge in the names of the categories based on their id 
+
+# de-soup the file from the json 
+CategoryOptionsList = jsonlite::fromJSON(paste0(dir, 'raw/category_options.json'))
+
+# create a table of the options
+opts = data.table(cbind(id = CategoryOptionsList$categoryOptions$id,
+                        name = CategoryOptionsList$categoryOptions$displayName))
+
 
 # -------------------------
 # save the data table (subset of the full json extraction)
