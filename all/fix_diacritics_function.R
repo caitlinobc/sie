@@ -1,5 +1,7 @@
 # --------------------
 # load the ihme function to remove diacritical marks
+# function sometimes breaks based on pc - just paste in again from the web
+# link: https://github.com/caitlinobc/sie/blob/main/all/fix_diacritics_function.R
 
 fix_diacritics = function(x) {
   replacement_chars = list('S'='S', 's'='s', 'Z'='Z', 'z'='z', 'À'='A', 'Á'='A', 'Â'='A', 'Ã'='A', 'Ä'='A', 'Å'='A', 'Æ'='A', 'Ç'='C', 'È'='E', 'É'='E',

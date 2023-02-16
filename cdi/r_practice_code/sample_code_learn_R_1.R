@@ -38,7 +38,7 @@ library(RColorBrewer) # allows for nice changes in color palettes
 # CHANGE THIS TO THE LOCATION OF THE DATA ON YOUR COMPUTER
 # set the main directory where the data are stored
 # use forward slashes / for file names
-dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/CDI/data/r_training_data/'
+dir = 'C:/Users/ccarelli/OneDrive - E Glaser Ped AIDS Fdtn/cdi/data/r_training_data/'
 
 # --------------------
 # load the data 
@@ -88,7 +88,6 @@ unique(dt$region)
 
 # now it's your turn:
 # add code that prints the unique values of the variable
-
 
 
 # --------------------

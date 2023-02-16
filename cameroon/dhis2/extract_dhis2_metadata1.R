@@ -58,7 +58,7 @@ sets_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/a
 
 elements_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/dataElements.json?includeDescendants=true&paging=false&fields=:all'
 
-cat_combo_url = 'https://cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos?includeDescendants=true&paging=false&fields=:all'# edit this
+cat_combo_url = 'https://Caitlin:User001*@cmrdhis.eastus.cloudapp.azure.com/pldcare/api/categoryCombos?includeDescendants=true&paging=false&fields=:all'# edit this
 
 # -----------------------------------------
 # DOWNLOAD THE FILES
@@ -105,6 +105,9 @@ org_units = data.table(cbind(orgUnitID = orgUnitList$organisationUnits$id,
 
 # four org units are duplicated with no associated name
 org_units = org_units[!(orgUnit=='.' | orgUnit=='-')]
+
+# save the data table (subset of the full json extraction)
+saveRDS(org_units, paste0(dir, 'raw/organisationUnits.rds'))
 # --------------------------
 
 # --------------------------
@@ -114,26 +117,23 @@ org_units = org_units[!(orgUnit=='.' | orgUnit=='-')]
 DataSetList = jsonlite::fromJSON(paste0(dir, 'raw/data_sets.json'))
 
 # unlist the list/parse the file
+# can add the href if you want the set location and associated information
 data_sets = data.table(cbind(name = DataSetList$dataSets$name,
                              shortName = DataSetList$dataSets$shortName,
                              id = DataSetList$dataSets$id,
                              lastUpdated = DataSetList$dataSets$lastUpdated,
                              displayFormName = DataSetList$dataSets$displayFormName,
-                             displayName = DataSetList$dataSets$displayName,
-                             href = DataSetList$dataSets$href ))
+                             displayName = DataSetList$dataSets$displayName ))
 
 # drop the CM before the short names
-data_sets = data_sets[,gsub('CM.', '', shortName)]
+data_sets = data_sets[ ,shortName:=gsub('CM.', '', shortName)]
 
+# save the data table (subset of the full json extraction)
+saveRDS(data_sets, paste0(dir, 'raw/data_sets.rds'))
 # --------------------------
 
 # --------------------------
 # CREATE A SET OF DATA ELEMENTS 
-
-# create a list of the data sets associated with each element
-data_elements_sets = data.table(cbind(name = DataSetList$dataSets$name,
-                                      set_id = DataSetList$dataSets$id,
-                                      element_id = unlist(DataSetList$dataSets$dataSetElements)))
 
 # de-soup the file from the json 
 DataElementList = jsonlite::fromJSON(paste0(dir, 'raw/data_elements.json'))
@@ -146,7 +146,34 @@ data_elements = data.table(cbind(name = DataElementList$dataElements$name,
                                  element_id = DataElementList$dataElements$id,
                                  lastUpdated = DataElementList$dataElements$lastUpdated))
 
+
+# save the data table (subset of the full json extraction)
+saveRDS(data_elements, paste0(dir, 'raw/data_elements.rds'))
+write.csv(data_elements, paste0(dir, 'raw/data_elements.csv') )
 # --------------------------
+
+# --------------------------
+# CREATE A LINK BETWEEN ELEMENTS AND SETS
+
+
+# create a list of the data sets associated with each element
+data_elements_sets = data.table(cbind(name = DataSetList$dataSets$name,
+                                      set_id = DataSetList$dataSets$id,
+                                      element_id = unlist(DataSetList$dataSets$dataSetElements)))
+
+
+# all of the data set ids are in the element set ids 
+data_sets$id %in% data_elements_sets$set_id
+
+data_elements$element_id %in% data_elements_sets$element_id
+
+data_elements_sets$element_id %in% data_elements$element_id
+
+
+# merge the data 
+
+
+
 
 # --------------------------
 # CREATE A SET OF CATEGORIES AND THEIR OPTIONAL RESPONSES
@@ -154,12 +181,22 @@ data_elements = data.table(cbind(name = DataElementList$dataElements$name,
 # de-soup the file from the json 
 CategoryList = jsonlite::fromJSON(paste0(dir, 'raw/categories.json'))
 
+# create a data table showing the sets of category option combos
+cats = data.table(cbind(code = CategoryList$categoryCombos$code,
+                        displayName = CategoryList$categoryCombos$displayName,
+                        id = CategoryList$categoryCombos$id,
+                        name = CategoryList$categoryCombos$name,
+                        dimensionType = str_to_title(CategoryList$categoryCombos$dataDimensionType)))
 
 
 
+cats = unlist(CategoryList$categoryCombos$categories)
+
+categories = 3
 
 
-
+# save the data table (subset of the full json extraction)
+saveRDS(categories, paste0(dir, 'raw/categories.rds'))
 
 # -------------------------
 
