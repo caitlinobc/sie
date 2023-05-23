@@ -72,18 +72,18 @@ download.file(org_url,
               destfile = paste0(dir, 'raw/organisationUnits.json'))
 
 # download the list of data sets
-download.file(sets_url, 
-              destfile = paste0(dir, 'raw/data_sets.json'))
-
-# data elements/program data elements
-download.file(elements_url, 
-              destfile = paste0(dir, 'raw/data_elements.json'))
-
-# categories and their associated options 
-download.file(cat_combo_url, 
-              destfile = paste0(dir, 'raw/categories.json'))
-download.file(cat_options_url, 
-              destfile = paste0(dir, 'raw/category_options.json'))
+# download.file(sets_url, 
+#               destfile = paste0(dir, 'raw/data_sets.json'))
+# 
+# # data elements/program data elements
+# download.file(elements_url, 
+#               destfile = paste0(dir, 'raw/data_elements.json'))
+# 
+# # categories and their associated options 
+# download.file(cat_combo_url, 
+#               destfile = paste0(dir, 'raw/categories.json'))
+# download.file(cat_options_url, 
+#               destfile = paste0(dir, 'raw/category_options.json'))
 
 # indicator group sets/indicators 
 
