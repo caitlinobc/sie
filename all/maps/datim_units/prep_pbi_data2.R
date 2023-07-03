@@ -50,8 +50,9 @@ fy = 'fy23'
 dt = data.table(read.csv(paste0(dir, 'raw/active_sites_', quarter, '_', fy, '.csv')))
 
 # format the sites to be at the same level - pbi as level 6 or level 7
-setnames(dt, c('country', 'region', 'district',
-               'level6', 'level7', 'hts', 'fq', 'orgunit_id'))
+setnames(dt, c('country', 'region', 'district', 'level6', 'level7', 
+               'hts', 'tx_curr', 'fq', 'orgunit_id',
+               'lat', 'long'))
 
 # Cameroon, DRC, Eswatini, Lesotho, Moz never have subdistrict (no Level 7 in Model)
 dt[level7=="", site:=level6]
@@ -68,7 +69,7 @@ dt[orgunit_id=="MTlUjdz0HYY", country:="DRC"]
 
 # re-arrange the columns to an intuitive order
 dt = dt[ ,.(country, region, district, subdist, site, orgunit_id, 
-            fq, hts)]
+            fq, hts, tx_curr, lat, long)]
 # --------------------
 
 # --------------------
@@ -79,6 +80,10 @@ dt[country=="Cameroon" & site=="", site:=NA]
 
 # some data are reported at the district level in CdI, DRC, and Moz
 dt[is.na(subdist) & grepl('Cote', country), site:=NA]
+
+
+dt[country=="Cote d\'Ivoire", length(unique(site)), by = fq]
+
 
 # eswatini is aok - no missing data 
 
@@ -95,19 +100,23 @@ dt[is.na(subdist) & grepl('Cote', country), site:=NA]
 # cameroon had 72 sites throughout FY21 and FY22, but 74/75 in FY23
 cam = dt[(fq=="FY22 Q4" | fq=="FY23 Q1" | fq=="FY23 Q2") & country=="Cameroon"]
 
-# # number of newly added sites in fy23
+# check that all the fy22 sites are kept in fy23
 table(cam[fq=="FY23 Q1"]$orgunit_id %in% cam[fq=="FY22 Q4"]$orgunit_id)
 table(cam[fq=="FY23 Q2"]$orgunit_id %in% cam[fq=="FY22 Q4"]$orgunit_id)
 
+# what are the additional sites added in fy23?
 subset(cam[fq=="FY23 Q2"], !(cam[fq=="FY23 Q2"]$orgunit_id %in% cam[fq=="FY22 Q4"]$orgunit_id))
-
 # --------------------
 
 # --------------------
 # ESWATINI 
 
+# eswatini had 66 sites until fy23, 78 sites
 dt[country=="Eswatini", length(unique(site)), by = fq]
+esw = dt[(fq=="FY23 Q1" | fq=="FY22 Q4") & country=="Eswatini"]
 
-
+# list of new sites in fy23 (12 new sites)
+subset(esw[fq=="FY23 Q1"], !(esw[fq=="FY23 Q1"]$orgunit_id %in% esw[fq=="FY22 Q4"]$orgunit_id))
+# --------------------
 
 
