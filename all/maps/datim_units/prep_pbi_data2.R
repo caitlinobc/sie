@@ -3,7 +3,8 @@
 #
 # 7/3/2023
 # Prep sites from PBI Data Model 2.0
-# Extract all org_units that report HTS_TST
+# Extract all org_units that report HTS_TST and TX_CURR
+# Check for duplicate site entries and data errors
 # ----------------------------------------------
 
 # --------------------
@@ -19,6 +20,7 @@ library(tidyr)
 library(zoo)
 library(stringr)
 library(RJSONIO)
+library(openxlsx)
 # --------------------
 
 # --------------------
@@ -33,6 +35,9 @@ prepDir = paste0(dir, 'prepped/')
 
 # set the output directory for visualizations and other products
 outDir = paste0(dir, 'outputs/')
+
+# country-specific lists to validate
+valDir = paste0(dir, 'validate/')
 
 # change the value for the most recent quarter to accurately import
 quarter = 'q2'
@@ -51,7 +56,7 @@ dt = data.table(read.csv(paste0(dir, 'raw/active_sites_', quarter, '_', fy, '.cs
 
 # format the sites to be at the same level - pbi as level 6 or level 7
 setnames(dt, c('country', 'region', 'district', 'level6', 'level7', 
-               'hts', 'tx_curr', 'fq', 'orgunit_id',
+               'hts_tst', 'tx_curr', 'fq', 'orgunit_id',
                'lat', 'long'))
 
 # Cameroon, DRC, Eswatini, Lesotho, Moz never have subdistrict (no Level 7 in Model)
@@ -69,7 +74,7 @@ dt[orgunit_id=="MTlUjdz0HYY", country:="DRC"]
 
 # re-arrange the columns to an intuitive order
 dt = dt[ ,.(country, region, district, subdist, site, orgunit_id, 
-            fq, hts, tx_curr, lat, long)]
+            fq, hts_tst, tx_curr, lat, long)]
 # --------------------
 
 # --------------------
@@ -81,17 +86,18 @@ dt[country=="Cameroon" & site=="", site:=NA]
 # some data are reported at the district level in CdI, DRC, and Moz
 dt[is.na(subdist) & grepl('Cote', country), site:=NA]
 
-
-dt[country=="Cote d\'Ivoire", length(unique(site)), by = fq]
-
+# a few sites did not reporting testing in fy19/20, but did report tx_curr
+# site counts are otherwise consistent - 54 in fy23, and 103 in fy22
+dt[country=="Cote d\'Ivoire" & is.na(hts_tst), length(unique(site)), by = fq]
 
 # eswatini is aok - no missing data 
 
+# --------------------
 
 
 
 # ----------------------------------------------
-# DATA VALIDATION AND LISTS
+# DATA VALIDATION 
 # ----------------------------------------------
 
 # --------------------
@@ -119,4 +125,18 @@ esw = dt[(fq=="FY23 Q1" | fq=="FY22 Q4") & country=="Eswatini"]
 subset(esw[fq=="FY23 Q1"], !(esw[fq=="FY23 Q1"]$orgunit_id %in% esw[fq=="FY22 Q4"]$orgunit_id))
 # --------------------
 
+# ----------------------------------------------
+# EXPORT LISTS
+# ----------------------------------------------
+
+# subset to the variables and fiscal years to validate
+val_dt = dt[fq=='FY23 Q2' | fq=='FY22 Q4',
+            .(country, region, site, orgunit_id, fq, hts_tst, tx_curr)]
+
+# set the country input to export a country specific sheet
+country_input = 'DRC'
+
+# export to the validate folder
+write.xlsx(val_dt[country==country_input], paste0(valDir, 
+                  country_input, "_", quarter, fy, "_to_check.xlsx"))
 
