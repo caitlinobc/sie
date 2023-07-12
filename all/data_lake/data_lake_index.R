@@ -3,7 +3,7 @@
 #
 # 7/12/2023
 # Examining the Data Lake elements
-# searching for PrEP indicators
+# sCreate a detailed table of contents of the variables
 # ----------------------------------------------
 
 # ------------------------
@@ -85,7 +85,9 @@ dt = dt[,.(country, element = var, element_id)]
 # CATALOGUE THE DATA
 # ----------------------------------------------
 # use to view variables by type
-View(dt[grepl("ahd", tolower(element)) | grepl("advanced", tolower(element))])
+# remember to add new columns to the export names
+
+# View(dt[grepl("ahd", tolower(element)) | grepl("advanced", tolower(element))])
 
 # search for prep related variables
 dt[grepl("prep", tolower(element)), prep:=TRUE]
@@ -95,9 +97,9 @@ dt[is.na(prep), prep:=FALSE]
 dt[grepl("pmtct", tolower(element)) | grepl("ptme", tolower(element)), pmtct:=TRUE]
 dt[is.na(pmtct), pmtct:=FALSE]
 
-# search for tb variables
-dt[grepl("ahd", tolower(element)), tb:=TRUE]
-dt[is.na(tb), tb:=FALSE]
+# search for ahd-related variables
+dt[grepl("ahd", tolower(element)) | grepl("advanced", tolower(element)), ahd:=TRUE]
+dt[is.na(ahd), ahd:=FALSE]
 
 # search for tb variables
 dt[grepl("tb", tolower(element)), tb:=TRUE]
@@ -112,7 +114,7 @@ dt[is.na(tb), tb:=FALSE]
 # set the names for the table of contents export
 dt1 = copy(dt)
 setnames(dt1, c('Country', 'Data Element', 'DHIS2 Element ID', 'PrEP',
-                'PMTCT', 'TB'))
+                'PMTCT', 'AHD', 'TB'))
 
 # create a header style that looks pretty
 hs = createStyle(fontColour = "#000000", fgFill = "#deebf7",
@@ -120,7 +122,7 @@ hs = createStyle(fontColour = "#000000", fgFill = "#deebf7",
                  border = "TopBottomLeftRight")
 
 # export the data to the prepped folder
-write.xlsx(dt1, paste0(outDir, 'table_of_contents.xlsx'),
+write.xlsx(dt1, paste0(outDir, 'Data Lake Table of Contents.xlsx'),
            sheetName = "Data Lake Elements", headerStyle = hs)
 
 # ---------------------------
