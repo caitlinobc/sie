@@ -1,10 +1,10 @@
 # ----------------------------------------------
 # Caitlin O'Brien-Carelli
 #
-# 1/31/2023
+# 8/15/2023
 # PrEP SLT presentation
 # imports, cleans, and analyzes data on prep_new and prep_ct
-# Updated to reflect Q1 FY23 data 
+# Updated to reflect Q3 FY23 data 
 # ----------------------------------------------
 
 # ------------------------
@@ -42,7 +42,7 @@ plot(map)
 coord = data.table(fortify(map))
 
 # merge in the names of the countries to match the data 
-names = data.table(cbind(country = c(map@data$COUNTRY), id =  c(0, seq(1:47))))
+names = data.table(cbind(country = c(map@data$COUNTRY), id =  seq(1:48)))
 coord = merge(coord, names, by = 'id')
 
 # fix the map by creating a South Africa specific map
@@ -55,14 +55,14 @@ s_africa_layer = geom_polygon(aes(x = long, y = lat, group = group),
 # IMPORT DATA 
 # ----------------------------------------------
 # import prep_new and rename the columns
-dt1 = data.table(read.csv(paste0(dir, 'raw/prep_new_fy23_q1_slt.csv')))
+dt1 = data.table(read.csv(paste0(dir, 'raw/prep_new_fy23_q3_slt.csv')))
 
 setnames(dt1, c('country', 'region', 'district', 'site', 'site2', 
                  'sex', 'age',  'value', 'fq'))
 dt1[ , variable:='PREP_NEW']
 
 # import prep_curr and rename the columns
-dt2 = data.table(read.csv(paste0(dir, 'raw/prep_ct_fy23_q1_slt.csv')))
+dt2 = data.table(read.csv(paste0(dir, 'raw/prep_ct_fy23_q3_slt.csv')))
 setnames(dt2, c('country', 'region', 'district', 'site', 'site2', 
                 'sex', 'age',  'value', 'fq'))
 dt2[ , variable:='PREP_CT']
@@ -92,7 +92,7 @@ dt = dt[ ,.(country, region, district, site, fq, yr,
             age, sex, variable, value)]
 
 # export the full data set
-write.csv(dt, paste0(dir, 'prepped/full_data_q1_fy23.csv'))
+write.csv(dt, paste0(dir, 'prepped/full_data_q3_fy23.csv'))
 
 # ------------------------
 
@@ -102,16 +102,15 @@ write.csv(dt, paste0(dir, 'prepped/full_data_q1_fy23.csv'))
 # ----------------------------------------------
 
 # total new prep enrollments 2022
-dt[variable=='PREP_NEW' & yr=='FY22', sum(value)]
-dt[variable=='PREP_NEW' & yr=='FY22', sum(value), by = sex]
+dt[variable=='PREP_NEW' & yr=='FY23', sum(value)]
+dt[variable=='PREP_NEW' & yr=='FY23', sum(value), by = sex]
 
 # percentage new prep enrollments by sex
-dt[variable=='PREP_NEW' & yr=='FY22' & sex=='Female', sum(value)]/dt[variable=='PREP_NEW' & yr=='FY22', sum(value)]
-dt[variable=='PREP_NEW' & yr=='FY22' & sex=='Male', sum(value)]/dt[variable=='PREP_NEW' & yr=='FY22', sum(value)]
+dt[variable=='PREP_NEW' & yr=='FY23' & sex=='Female', sum(value)]/dt[variable=='PREP_NEW' & yr=='FY23', sum(value)]
+dt[variable=='PREP_NEW' & yr=='FY23' & sex=='Male', sum(value)]/dt[variable=='PREP_NEW' & yr=='FY23', sum(value)]
 
 # total cameroon enrollments (new program)
 dt[variable=='PREP_NEW' & country=='Cameroon', sum(value, na.rm=T)]
-
 
 # total re-initiations, Q4 FY22
 dt[variable=='PREP_CT' & fq=='FY22 Q4', sum(value)]
@@ -126,10 +125,10 @@ dt[variable=='PREP_CT' & fq=='FY22 Q4' & sex=='Male', sum(value)]/dt[variable=='
 # ----------------------------------------------
 
 # ------------------------
-# map of prep_new in FY22 by country (african continent)
+# map of prep_new in FY23 by country (african continent)
 
 # sum prep_new to the country level
-pn_map = dt[yr=='FY22' & variable=='PREP_NEW', .(prep_new= sum(value)), by = country]
+pn_map = dt[yr=='FY23' & variable=='PREP_NEW', .(prep_new= sum(value)), by = country]
 coord = merge(coord, pn_map, by = 'country', all = T)
 
 # --------------------
@@ -155,16 +154,16 @@ ggplot(coord[country!='South Africa'], aes(x=long, y=lat, group=group, fill=prep
   scale_fill_gradientn(colors = brewer.pal(9, 'Spectral'), na.value='#ffffff') + 
   theme_void(base_size =16) +
   labs(fill="PREP_NEW")+
-  theme( text=element_text(size=18))+
+  theme(text=element_text(size=18))+
   s_africa_layer+
   geom_label_repel(data = labels, aes(label = pn_label, 
   x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
 
 # ------------------------
-# map of prep_CT in FY22 by country (african continent)
+# map of prep_CT in FY23 by country (african continent)
 
 # sum prep_ct to the country level
-pc_map = dt[fq=='FY22 Q4' & variable=='PREP_CT', .(prep_ct= sum(value)), by = country]
+pc_map = dt[fq=='FY23 Q3' & variable=='PREP_CT', .(prep_ct= sum(value)), by = country]
 coord = merge(coord, pc_map, by = 'country', all = T)
 
 # --------------------
