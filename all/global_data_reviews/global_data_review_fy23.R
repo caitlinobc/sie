@@ -250,16 +250,23 @@ ggplot(fy23_map[country!='South Africa'], aes(x=long, y=lat, group=group, fill=t
 # create the pediatric data set
 dt_kids = dt[age=='Child (<15)']
 
+# add a fiscal year variable
+dt_kids[ , fy:=unlist(lapply(str_split(fq, ' +'), '[', 1))]
+
+# sum to the fiscal year level 
+dt_kids = dt_kids[ ,.(hts_tst = sum(hts_tst, na.rm=T), hts_tst_pos = sum(hts_tst_pos, na.rm=T)),
+             by = .(country, fy)]
+
 # merge the data set with the coordinates
-coord1 = merge(coord, dt_kids[fq=='FY23 Q1'], by = 'country', all=T)
-coord1[, fq:='FY23 Q1']
-coord2 = merge(coord, dt_kids[fq=='FY23 Q2'], by = 'country', all=T)
-coord2[, fq:='FY23 Q2']
-coord_kids_fq = rbind(coord1, coord2)
+coord1 = merge(coord, dt_kids[fy=='FY22'], by = 'country', all=T)
+coord1[, fy:='FY22']
+coord2 = merge(coord, dt_kids[fy=='FY23'], by = 'country', all=T)
+coord2[, fy:='FY23']
+coord_kids_fy = rbind(coord1, coord2)
 
 # shape the data long
-coord_kids_long = melt(coord_kids_fq, id.vars = c('country', 'id', 'long', 'lat', 'order',
-                                'hole', 'piece', 'group', 'fq', 'age'))
+coord_kids_long = melt(coord_kids_fy, id.vars = c('country', 'id', 'long', 'lat', 'order',
+                                'hole', 'piece', 'group', 'fy'))
 
 # --------------------
 # create labels
@@ -270,20 +277,36 @@ setnames(klabels, c('long', 'lat'))
 klabels = cbind(klabels, country = names$country)
 
 # add specific variables by indicator
-klabels1 = merge(klabels, dt_kids[fq=='FY23 Q1'], by = 'country', all = T)
-klabels2 = merge(klabels, dt_kids[fq=='FY23 Q2'], by = 'country', all = T)
+klabels1 = merge(klabels, dt_kids[fy=='FY22'], by = 'country', all = T)
+klabels2 = merge(klabels, dt_kids[fy=='FY23'], by = 'country', all = T)
 klabels = rbind(klabels1, klabels2)
 
 # create the labels
 klabels[!is.na(hts_tst) , hts_tst_label:=paste0(country, ": ", hts_tst)]
 klabels[!is.na(hts_tst) , hts_tst_pos_label:=paste0(country, ": ", hts_tst_pos)]
-klabels[!is.na(hts_tst) , tx_curr_label:=paste0(country, ": ", tx_curr)]
-klabels[!is.na(hts_tst) , hts_rate_label:=paste0(country, ": ", hts_rate, '%')]
+# --------------------
 
+# -------------------------------------------
 # create the map of hiv testing among kids by quarter
 ggplot(coord_kids_long[country!='South Africa' & variable=='hts_tst'], 
        aes(x=long, y=lat, group=group, fill=value)) + 
-  facet_wrap(~fq)+
+  facet_wrap(~fy)+
+  coord_fixed() +
+  geom_polygon() + 
+  geom_path(size=0.01) + 
+  scale_fill_gradientn(colors = brewer.pal(9, 'YlOrRd'), na.value='#ffffff',labels=comma) + 
+  theme_void(base_size =16) +
+  labs(fill="Children tested for HIV (HTS_TST)")+
+  theme( text=element_text(size=18))+
+  s_africa_layer+
+  geom_label_repel(data = klabels, aes(label = hts_tst_label, 
+              x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
+
+# -------------------------------------------
+# create the map of hiv cases identified among kids by quarter
+ggplot(coord_kids_long[country!='South Africa' & variable=='hts_tst_pos'], 
+       aes(x=long, y=lat, group=group, fill=value)) + 
+  facet_wrap(~fy)+
   coord_fixed() +
   geom_polygon() + 
   geom_path(size=0.01) + 
@@ -293,22 +316,6 @@ ggplot(coord_kids_long[country!='South Africa' & variable=='hts_tst'],
   theme( text=element_text(size=18))+
   s_africa_layer+
   geom_label_repel(data = klabels, aes(label = hts_tst_pos_label, 
-              x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
-
-# -------------------------------------------
-
-# create the map of the art cohort of kids by quarter
-ggplot(coord_kids_long[country!='South Africa' & variable=='tx_curr' & fq=='FY23 Q2'], 
-       aes(x=long, y=lat, group=group, fill=value)) + 
-  coord_fixed() +
-  geom_polygon() + 
-  geom_path(size=0.01) + 
-  scale_fill_gradientn(colors = brewer.pal(9, 'GnBu'), na.value='#ffffff',labels=comma) + 
-  theme_void(base_size =16) +
-  labs(fill="Pediatric Cohort (TX_CURR)")+
-  theme( text=element_text(size=18))+
-  s_africa_layer+
-  geom_label_repel(data = klabels[fq=='FY23 Q2'], aes(label = tx_curr_label, 
-             x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
+                                       x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
 
 # -------------------------------------------
