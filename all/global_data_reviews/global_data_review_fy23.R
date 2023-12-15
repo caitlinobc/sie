@@ -75,6 +75,10 @@ dt1 = data.table(read.csv(paste0(dir, 'gdr_dec23_maps_data.csv')))
 
 setnames(dt1, c('award', 'country', 'fq', 'age', 'hts_tst', 'hts_tst_pos', 'tx_curr'))
 
+# load in the kenya and drc lisanga data and format, merge 
+plus = data.table(read_excel(paste0(dir, 'kenya_gdr_values.xlsx')))
+dt1 = rbind(dt1, plus)
+
 # create a data set at the country, not award, level
 # ihap values for q2 fy23 added manually (sent via e-mail, not in datim)
 dt = dt1[ ,.(hts_tst = sum(hts_tst, na.rm=T), hts_tst_pos = sum(hts_tst_pos, na.rm=T),
@@ -218,14 +222,14 @@ ggplot(fy23_map[country!='South Africa'], aes(x=long, y=lat, group=group, fill=t
   coord_fixed() +
   geom_polygon() + 
   geom_path(size=0.01) + 
-  scale_fill_gradientn(colors = brewer.pal(9, 'Greens'), na.value='#ffffff',labels=comma) + 
+  scale_fill_gradientn(colors = brewer.pal(9, 'RdYlBu'), na.value='#ffffff',labels=comma) + 
   theme_void(base_size =16) +
   labs(fill="ART Cohort (TX_CURR), Q4 FY23")+
   theme( text=element_text(size=18))+
   s_africa_layer+
   geom_label_repel(data = labels, aes(label = tx_curr_label, 
                                       x=long, y=lat, group=country), inherit.aes=FALSE, size=5)
-# ------------------------
+# ------------------------http://127.0.0.1:11517/graphics/plot_zoom_png?width=1904&height=978
 
 # --------------------
 # map of ict contribution, fy23 
